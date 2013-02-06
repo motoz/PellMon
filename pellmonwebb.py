@@ -1,0 +1,150 @@
+#! /usr/bin/python
+# -*- encoding: UTF-8 -*-
+"""
+    Copyright (C) 2013  Anders Nylund
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+import os.path
+import cherrypy
+from cherrypy.lib.static import serve_file
+import ConfigParser
+from mako.template import Template
+from mako.lookup import TemplateLookup
+from cherrypy.lib import caching
+import dbus
+from auth import AuthController, require, member_of, name_is
+
+#Look for temlates in this directory
+lookup = TemplateLookup(directories=['html'])
+
+parser = ConfigParser.ConfigParser()
+
+# Load the configuration file
+parser.read('pellmon.conf')
+
+# The RRD database, updated by pellMon
+db = parser.get('conf', 'database') 
+
+# And the colors to use when drawing the graph
+colors = parser.items('graphcolors')
+colorsDict = {}
+for key, value in colors:
+	colorsDict[key] = value
+	
+# Get the names of the polled data 
+polldata = parser.items("pollvalues")
+
+class PellMonWebb:
+    
+	auth = AuthController()
+
+	@cherrypy.expose
+	def image(self, **args):
+		#Build the command string to make a graph from the database
+		RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now --start end-6990s "
+		for key,value in polldata:
+			if cherrypy.session.get(value)=='yes':
+				RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)	
+
+		RrdGraphString1=RrdGraphString1+">>/dev/null"	
+	
+		os.system(RrdGraphString1)
+		cherrypy.response.headers['Pragma'] = 'no-cache'
+		return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
+
+
+	@cherrypy.expose
+	@require() #requires valid login
+	def parameters(self, **args):
+		# Get list of data/parameters 
+		parameterlist=getdb()
+		params={}
+		for item in parameterlist:
+			params[item] = ' '
+			if args.has_key(item):
+				if cherrypy.request.method == "POST": 
+					# set parameter
+					try:
+						setItem(item, args[item][1])
+						params[item]=getItem(item)
+					except:
+						pass
+				else:
+					# get parameter
+					try:
+						params[item]=getItem(item)	
+					except:
+						pass
+		tmpl = lookup.get_template("parameters.html")
+		return tmpl.render(params=params.items())
+
+	
+	@cherrypy.expose
+	def index(self, **args):
+
+		# The checkboxes are submitted with 'post'
+		if cherrypy.request.method == "POST": 
+			# put put the selection in session
+			for key,val in polldata:
+				# is this dataset checked?
+				if args.has_key(val):
+					# if so, set it in the session
+					cherrypy.session[val] = 'yes'
+				else:
+					cherrypy.session[val] = 'no' 
+			if args.has_key('autorefresh'):
+				cherrypy.session['autorefresh']='yes'
+			else:
+				cherrypy.session['autorefresh']='no'
+				
+		checkboxes=[] 
+		empty=True
+		for key, val in polldata:  
+			if cherrypy.session.get(val)=='yes':  
+				checkboxes.append((val,True))
+				empty=False
+			else:
+				checkboxes.append((val,''))
+		autorefresh = cherrypy.session.get('autorefresh')=='yes'
+			
+		tmpl = lookup.get_template("index.html")
+		return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh)    
+
+
+
+global_conf = {
+       'global':    { 'server.environment': 'debug',
+                      'tools.sessions.on' : True,
+                      'tools.sessions.timeout': 7200,
+                      'tools.auth.on': True,
+                      'engine.autoreload_on': True,
+                      'engine.autoreload_frequency': 5,
+                      'server.socket_host': '0.0.0.0',
+                      'server.socket_port': int(parser.get('conf', 'port')),
+                    }
+              }
+              
+# Connect to pellmonsrv on the dbus system bus
+bus = dbus.SystemBus()
+pelletService = bus.get_object('org.pellmon.int', '/org/pellmon/int')
+getItem = pelletService.get_dbus_method('GetItem', 'org.pellmon.int')
+setItem = pelletService.get_dbus_method('SetItem', 'org.pellmon.int')
+getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+cherrypy.config.update(global_conf)                        
+cherrypy.quickstart(PellMonWebb())

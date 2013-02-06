@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+
+<title>Pellet monitor</title>
+</head>
+
+
+<script type="text/javascript">
+refreshImage = function()
+{
+	img = document.getElementById("graph");
+	img.src="image?rand=" + Math.random();
+}
+</script>
+
+
+%if autorefresh:
+<body onload="window.setInterval(refreshImage, 10000);">
+%else:
+<body>
+%endif 
+
+<%
+from random import random
+rnd=str(random())
+%>
+
+<div style="float: right;">
+<a href=auth/login>Login</a>&nbsp;<a href=auth/logout>Logout</a>
+</div>
+
+%if not empty: 
+<img src="image?rand=${rnd}" " id="graph" />
+%else:
+ Select from:  
+%endif
+
+<form id="frm1" action="" method="post"> 
+
+%for key, val in checkboxes:
+<%
+	if val: 
+		checked = 'checked=\"yes\"'
+	else:
+		checked = ''
+%>
+	<input type="checkbox" name="${key}" value="On"" ${checked}>${key}
+%endfor
+
+<%
+if autorefresh: 
+	refreshstr = 'checked=\"yes\"'
+else:
+	refreshstr = ''
+%>
+<input type="checkbox" name="autorefresh" value="On"" ${refreshstr}>autorefresh<p>
+<input type="submit" value="Set">
+</form> 
+<a href="parameters"> Parameters </a>
+</body>
+</html>
