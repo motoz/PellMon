@@ -56,8 +56,21 @@ else:
 	refreshstr = ''
 %>
 <input type="checkbox" name="autorefresh" value="On"" ${refreshstr}>autorefresh<p>
+Time period to plot:<br>
+%for index in range(len(timeChoices)):
+<%
+	key=timeChoices[index]
+	val=timeNames[index]
+	if timeChoice==key:
+		selected='checked'
+	else:
+		selected=''
+%>
+	<input type="radio" name="graphtime" value="${key}" ${selected}>${val}<br>
+%endfor
 <input type="submit" value="Set">
 </form> 
+
 <a href="parameters"> Parameters </a>
 </body>
 </html>

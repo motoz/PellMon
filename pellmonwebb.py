@@ -47,14 +47,20 @@ for key, value in colors:
 # Get the names of the polled data 
 polldata = parser.items("pollvalues")
 
+timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
+timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]    
+
 class PellMonWebb:
-    
+
 	auth = AuthController()
 
 	@cherrypy.expose
 	def image(self, **args):
-		#Build the command string to make a graph from the database
-		RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now --start end-6990s "
+		graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
+		graphTime=str(graphTime)
+		#Build the command string to make a graph from the database			
+		RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now --start end-"+graphTime+"s "
 		for key,value in polldata:
 			if cherrypy.session.get(value)=='yes':
 				RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)	
@@ -94,10 +100,10 @@ class PellMonWebb:
 	
 	@cherrypy.expose
 	def index(self, **args):
-
+	
 		# The checkboxes are submitted with 'post'
 		if cherrypy.request.method == "POST": 
-			# put put the selection in session
+			# put the selection in session
 			for key,val in polldata:
 				# is this dataset checked?
 				if args.has_key(val):
@@ -105,11 +111,17 @@ class PellMonWebb:
 					cherrypy.session[val] = 'yes'
 				else:
 					cherrypy.session[val] = 'no' 
+			
 			if args.has_key('autorefresh'):
 				cherrypy.session['autorefresh']='yes'
 			else:
 				cherrypy.session['autorefresh']='no'
-				
+
+			if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
+				cherrypy.session['timeChoice']=args.get('graphtime')
+
+		if not cherrypy.session.get('timeChoice'):
+			cherrypy.session['timeChoice']=timeChoices[0]				
 		checkboxes=[] 
 		empty=True
 		for key, val in polldata:  
@@ -119,10 +131,9 @@ class PellMonWebb:
 			else:
 				checkboxes.append((val,''))
 		autorefresh = cherrypy.session.get('autorefresh')=='yes'
-			
+		
 		tmpl = lookup.get_template("index.html")
-		return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh)    
-
+		return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
 
 
 global_conf = {
