@@ -37,7 +37,7 @@ rnd=str(random())
  Select from:  
 %endif
 
-<form id="frm1" action="" method="post"> 
+<form id="frm1" action="form1" method="post"> 
 
 %for key, val in checkboxes:
 <%
@@ -55,7 +55,11 @@ if autorefresh:
 else:
 	refreshstr = ''
 %>
-<input type="checkbox" name="autorefresh" value="On"" ${refreshstr}>autorefresh<p>
+<input type="checkbox" name="autorefresh" value="On"" ${refreshstr}>autorefresh<br>
+<input type="submit" value="Set">
+</form> 
+
+<form id="frm2" action="form2" method="post"> 
 Time period to plot:<br>
 %for index in range(len(timeChoices)):
 <%

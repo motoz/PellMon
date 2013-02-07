@@ -54,7 +54,36 @@ timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
 class PellMonWebb:
 
 	auth = AuthController()
+	
+	@cherrypy.expose
+	def form1(self, **args):
+		# The checkboxes are submitted with 'post'
+		if cherrypy.request.method == "POST": 
+			# put the selection in session
+			for key,val in polldata:
+				# is this dataset checked?
+				if args.has_key(val):
+					# if so, set it in the session
+					cherrypy.session[val] = 'yes'
+				else:
+					cherrypy.session[val] = 'no' 
+			
+			if args.has_key('autorefresh'):
+				cherrypy.session['autorefresh']='yes'
+			else:
+				cherrypy.session['autorefresh']='no'
+		# redirect back after setting selection in session
+		raise cherrypy.HTTPRedirect('/')
 
+	@cherrypy.expose
+	def form2(self, **args):
+		# The radiobuttons are submitted with 'post'
+		if cherrypy.request.method == "POST": 
+			if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
+				cherrypy.session['timeChoice']=args.get('graphtime')
+		# redirect back after setting selection in session
+		raise cherrypy.HTTPRedirect('/')
+		
 	@cherrypy.expose
 	def image(self, **args):
 		graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
@@ -100,26 +129,6 @@ class PellMonWebb:
 	
 	@cherrypy.expose
 	def index(self, **args):
-	
-		# The checkboxes are submitted with 'post'
-		if cherrypy.request.method == "POST": 
-			# put the selection in session
-			for key,val in polldata:
-				# is this dataset checked?
-				if args.has_key(val):
-					# if so, set it in the session
-					cherrypy.session[val] = 'yes'
-				else:
-					cherrypy.session[val] = 'no' 
-			
-			if args.has_key('autorefresh'):
-				cherrypy.session['autorefresh']='yes'
-			else:
-				cherrypy.session['autorefresh']='no'
-
-			if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
-				cherrypy.session['timeChoice']=args.get('graphtime')
-
 		if not cherrypy.session.get('timeChoice'):
 			cherrypy.session['timeChoice']=timeChoices[0]				
 		checkboxes=[] 
