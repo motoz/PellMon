@@ -32,7 +32,30 @@ rnd=str(random())
 </div>
 
 %if not empty: 
+<div style="clear:both;">
+<div style="float:left;position:relative;top:200px">
+<div id="left" style="background;float:left;">
+
+<form id="left" action="left" method="post"> 
+	<input type="hidden" name="left" value="left" checked="yes">
+<input type="submit" value="<">
+</form> 
+</div>
+</div>
+
+<div style="float:left;">
 <img src="image?rand=${rnd}" " id="graph" />
+</div>
+
+<div style="float:left;position:relative;top:200px">
+<form id="right" action="right" method="post"> 
+	<input type="hidden" name="right" value="right">
+<input type="submit" value=">">
+</form>
+</div>
+</div>
+
+<div style="clear:both;">
 %else:
  Select from:  
 %endif
@@ -76,5 +99,6 @@ Time period to plot:<br>
 </form> 
 
 <a href="parameters"> Parameters </a>
+<div>
 </body>
 </html>

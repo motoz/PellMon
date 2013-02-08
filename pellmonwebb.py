@@ -85,21 +85,51 @@ class PellMonWebb:
 		raise cherrypy.HTTPRedirect('/')
 		
 	@cherrypy.expose
+	def left(self, **args):
+		if not cherrypy.session.get('time'):
+			cherrypy.session['time'] = '0'
+		if not cherrypy.session.get('timeChoice'):
+			cherrypy.session['timeChoice'] = 'time1h'
+		if cherrypy.request.method == "POST": 
+			seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
+			cherrypy.session['time']=str(int(cherrypy.session['time'])+seconds)
+		# redirect back after setting selection in session
+		raise cherrypy.HTTPRedirect('/')		
+
+	@cherrypy.expose
+	def right(self, **args):
+		if not cherrypy.session.get('time'):
+			cherrypy.session['time'] = '0'
+		if not cherrypy.session.get('timeChoice'):
+			cherrypy.session['timeChoice'] = 'time1h'
+		if cherrypy.request.method == "POST": 
+			seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
+			time=int(cherrypy.session['time'])-seconds
+			if time<0:
+				time=0
+			cherrypy.session['time']=str(time)
+		# redirect back after setting selection in session
+		raise cherrypy.HTTPRedirect('/')	
+				
+	@cherrypy.expose
 	def image(self, **args):
+		if not cherrypy.session.get('timeChoice'):
+			cherrypy.session['timeChoice'] = 'time1h'
+		if not cherrypy.session.get('time'):
+			cherrypy.session['time'] = '0'			
 		graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
-		graphTime=str(graphTime)
+		offset = int(cherrypy.session['time'])
+		graphTimeStart=str(graphTime + offset)
+		graphTimeEnd=str(offset)
 		#Build the command string to make a graph from the database			
-		RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now --start end-"+graphTime+"s "
+		RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
 		for key,value in polldata:
 			if cherrypy.session.get(value)=='yes':
 				RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)	
-
 		RrdGraphString1=RrdGraphString1+">>/dev/null"	
-	
 		os.system(RrdGraphString1)
 		cherrypy.response.headers['Pragma'] = 'no-cache'
 		return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
-
 
 	@cherrypy.expose
 	@require() #requires valid login
@@ -116,13 +146,13 @@ class PellMonWebb:
 						setItem(item, args[item][1])
 						params[item]=getItem(item)
 					except:
-						pass
+						params[item]='error'
 				else:
 					# get parameter
 					try:
 						params[item]=getItem(item)	
 					except:
-						pass
+						params[item]='error'
 		tmpl = lookup.get_template("parameters.html")
 		return tmpl.render(params=params.items())
 
@@ -140,7 +170,6 @@ class PellMonWebb:
 			else:
 				checkboxes.append((val,''))
 		autorefresh = cherrypy.session.get('autorefresh')=='yes'
-		
 		tmpl = lookup.get_template("index.html")
 		return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
 
