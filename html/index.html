@@ -10,8 +10,8 @@
 <script type="text/javascript">
 refreshImage = function()
 {
-	img = document.getElementById("graph");
-	img.src="image?rand=" + Math.random();
+    img = document.getElementById("graph");
+    img.src="image?rand=" + Math.random();
 }
 </script>
 
@@ -37,7 +37,7 @@ rnd=str(random())
 <div id="left" style="background;float:left;">
 
 <form id="left" action="left" method="post"> 
-	<input type="hidden" name="left" value="left" checked="yes">
+    <input type="hidden" name="left" value="left" checked="yes">
 <input type="submit" value="<">
 </form> 
 </div>
@@ -49,7 +49,7 @@ rnd=str(random())
 
 <div style="float:left;position:relative;top:200px">
 <form id="right" action="right" method="post"> 
-	<input type="hidden" name="right" value="right">
+    <input type="hidden" name="right" value="right">
 <input type="submit" value=">">
 </form>
 </div>
@@ -64,19 +64,19 @@ rnd=str(random())
 
 %for key, val in checkboxes:
 <%
-	if val: 
-		checked = 'checked=\"yes\"'
-	else:
-		checked = ''
+    if val: 
+        checked = 'checked=\"yes\"'
+    else:
+        checked = ''
 %>
-	<input type="checkbox" name="${key}" value="On"" ${checked}>${key}
+    <input type="checkbox" name="${key}" value="On"" ${checked}>${key}
 %endfor
 
 <%
 if autorefresh: 
-	refreshstr = 'checked=\"yes\"'
+    refreshstr = 'checked=\"yes\"'
 else:
-	refreshstr = ''
+    refreshstr = ''
 %>
 <input type="checkbox" name="autorefresh" value="On"" ${refreshstr}>autorefresh<br>
 <input type="submit" value="Set">
@@ -86,14 +86,14 @@ else:
 Time period to plot:<br>
 %for index in range(len(timeChoices)):
 <%
-	key=timeChoices[index]
-	val=timeNames[index]
-	if timeChoice==key:
-		selected='checked'
-	else:
-		selected=''
+    key=timeChoices[index]
+    val=timeNames[index]
+    if timeChoice==key:
+        selected='checked'
+    else:
+        selected=''
 %>
-	<input type="radio" name="graphtime" value="${key}" ${selected}>${val}<br>
+    <input type="radio" name="graphtime" value="${key}" ${selected}>${val}<br>
 %endfor
 <input type="submit" value="Set">
 </form> 

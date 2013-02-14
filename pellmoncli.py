@@ -23,74 +23,74 @@ import sys
 
 # Handles tab completion with input_raw
 def complete(text, state):
-	completerTexts=COMMANDS
-	line = readline.get_line_buffer()
-	splitline = line.split()
-	if splitline:
-		if line.startswith('get ') or line.startswith('g '):
-			completerTexts=db
-		elif line.startswith('set ') or line.startswith('s '):
-			completerTexts=db
-		else:
-			completerTexts=COMMANDS
-	for cmd in completerTexts:
-		if cmd.startswith(text):
-			if not state:
-				return cmd+' '
-			else:
-				state -= 1
+    completerTexts=COMMANDS
+    line = readline.get_line_buffer()
+    splitline = line.split()
+    if splitline:
+        if line.startswith('get ') or line.startswith('g '):
+            completerTexts=db
+        elif line.startswith('set ') or line.startswith('s '):
+            completerTexts=db
+        else:
+            completerTexts=COMMANDS
+    for cmd in completerTexts:
+        if cmd.startswith(text):
+            if not state:
+                return cmd+' '
+            else:
+                state -= 1
 
 if __name__ == "__main__":
 
-	# Connect to pellmonsrv on the dbus system bus
-	bus = dbus.SystemBus()
-	pelletService = bus.get_object('org.pellmon.int', '/org/pellmon/int')
-	getItem = pelletService.get_dbus_method('GetItem', 'org.pellmon.int')
-	setItem = pelletService.get_dbus_method('SetItem', 'org.pellmon.int')
-	getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
-	
-	# Get list of data/parameters
-	db=getdb()
+    # Connect to pellmonsrv on the dbus system bus
+    bus = dbus.SystemBus()
+    pelletService = bus.get_object('org.pellmon.int', '/org/pellmon/int')
+    getItem = pelletService.get_dbus_method('GetItem', 'org.pellmon.int')
+    setItem = pelletService.get_dbus_method('SetItem', 'org.pellmon.int')
+    getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
+    
+    # Get list of data/parameters
+    db=getdb()
 
-	run=True
-	COMMANDS = ['get', 'set', 'quit']
-	completerTexts=COMMANDS
-	# Sets up readline for tab completion
-	readline.parse_and_bind("tab: complete")
-	readline.set_completer(complete)
+    run=True
+    COMMANDS = ['get', 'set', 'quit']
+    completerTexts=COMMANDS
+    # Sets up readline for tab completion
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer(complete)
 
-	while run:
-		try:
-			a=raw_input(">")
-			l=a.split()
-			if len(l)==2:
-				if l[0] in ['get', 'g']:
-					if l[1] == "all":
-						for item in db:
-							try:
-								print item, getItem(item)			
-							except:
-								pass
-					else:
-						if l[1] in db:
-							try:
-								print getItem(l[1])
-							except dbus.exceptions.DBusException as e: 
-								print "dbus error"
-						else:
-							print l[1]+" is not a data/parameter name "
+    while run:
+        try:
+            a=raw_input(">")
+            l=a.split()
+            if len(l)==2:
+                if l[0] in ['get', 'g']:
+                    if l[1] == "all":
+                        for item in db:
+                            try:
+                                print item, getItem(item)           
+                            except:
+                                pass
+                    else:
+                        if l[1] in db:
+                            try:
+                                print getItem(l[1])
+                            except dbus.exceptions.DBusException as e: 
+                                print "dbus error"
+                        else:
+                            print l[1]+" is not a data/parameter name "
 
-			elif len(l)==3:
-				if l[0] in ['set', 's']:
-					if l[1] in db:
-						print setItem(l[1], l[2])
-					else:
-						print l[1]+" is not a parameter/command name"
+            elif len(l)==3:
+                if l[0] in ['set', 's']:
+                    if l[1] in db:
+                        print setItem(l[1], l[2])
+                    else:
+                        print l[1]+" is not a parameter/command name"
 
-			elif len(l)==1:
-				if l[0] in ['quit','q']:
-					run=False
-					
-		except KeyboardInterrupt:
-			run=False
+            elif len(l)==1:
+                if l[0] in ['quit','q']:
+                    run=False
+                    
+        except KeyboardInterrupt:
+            run=False
 

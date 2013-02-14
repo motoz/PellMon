@@ -42,8 +42,8 @@ db = parser.get('conf', 'database')
 colors = parser.items('graphcolors')
 colorsDict = {}
 for key, value in colors:
-	colorsDict[key] = value
-	
+    colorsDict[key] = value
+    
 # Get the names of the polled data 
 polldata = parser.items("pollvalues")
 
@@ -53,125 +53,125 @@ timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
 
 class PellMonWebb:
 
-	auth = AuthController()
-	
-	@cherrypy.expose
-	def form1(self, **args):
-		# The checkboxes are submitted with 'post'
-		if cherrypy.request.method == "POST": 
-			# put the selection in session
-			for key,val in polldata:
-				# is this dataset checked?
-				if args.has_key(val):
-					# if so, set it in the session
-					cherrypy.session[val] = 'yes'
-				else:
-					cherrypy.session[val] = 'no' 
-			
-			if args.has_key('autorefresh'):
-				cherrypy.session['autorefresh']='yes'
-			else:
-				cherrypy.session['autorefresh']='no'
-		# redirect back after setting selection in session
-		raise cherrypy.HTTPRedirect('/')
+    auth = AuthController()
+    
+    @cherrypy.expose
+    def form1(self, **args):
+        # The checkboxes are submitted with 'post'
+        if cherrypy.request.method == "POST": 
+            # put the selection in session
+            for key,val in polldata:
+                # is this dataset checked?
+                if args.has_key(val):
+                    # if so, set it in the session
+                    cherrypy.session[val] = 'yes'
+                else:
+                    cherrypy.session[val] = 'no' 
+            
+            if args.has_key('autorefresh'):
+                cherrypy.session['autorefresh']='yes'
+            else:
+                cherrypy.session['autorefresh']='no'
+        # redirect back after setting selection in session
+        raise cherrypy.HTTPRedirect('/')
 
-	@cherrypy.expose
-	def form2(self, **args):
-		# The radiobuttons are submitted with 'post'
-		if cherrypy.request.method == "POST": 
-			if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
-				cherrypy.session['timeChoice']=args.get('graphtime')
-		# redirect back after setting selection in session
-		raise cherrypy.HTTPRedirect('/')
-		
-	@cherrypy.expose
-	def left(self, **args):
-		if not cherrypy.session.get('time'):
-			cherrypy.session['time'] = '0'
-		if not cherrypy.session.get('timeChoice'):
-			cherrypy.session['timeChoice'] = 'time1h'
-		if cherrypy.request.method == "POST": 
-			seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-			cherrypy.session['time']=str(int(cherrypy.session['time'])+seconds)
-		# redirect back after setting selection in session
-		raise cherrypy.HTTPRedirect('/')		
+    @cherrypy.expose
+    def form2(self, **args):
+        # The radiobuttons are submitted with 'post'
+        if cherrypy.request.method == "POST": 
+            if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
+                cherrypy.session['timeChoice']=args.get('graphtime')
+        # redirect back after setting selection in session
+        raise cherrypy.HTTPRedirect('/')
+        
+    @cherrypy.expose
+    def left(self, **args):
+        if not cherrypy.session.get('time'):
+            cherrypy.session['time'] = '0'
+        if not cherrypy.session.get('timeChoice'):
+            cherrypy.session['timeChoice'] = 'time1h'
+        if cherrypy.request.method == "POST": 
+            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
+            cherrypy.session['time']=str(int(cherrypy.session['time'])+seconds)
+        # redirect back after setting selection in session
+        raise cherrypy.HTTPRedirect('/')        
 
-	@cherrypy.expose
-	def right(self, **args):
-		if not cherrypy.session.get('time'):
-			cherrypy.session['time'] = '0'
-		if not cherrypy.session.get('timeChoice'):
-			cherrypy.session['timeChoice'] = 'time1h'
-		if cherrypy.request.method == "POST": 
-			seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-			time=int(cherrypy.session['time'])-seconds
-			if time<0:
-				time=0
-			cherrypy.session['time']=str(time)
-		# redirect back after setting selection in session
-		raise cherrypy.HTTPRedirect('/')	
-				
-	@cherrypy.expose
-	def image(self, **args):
-		if not cherrypy.session.get('timeChoice'):
-			cherrypy.session['timeChoice'] = 'time1h'
-		if not cherrypy.session.get('time'):
-			cherrypy.session['time'] = '0'			
-		graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
-		offset = int(cherrypy.session['time'])
-		graphTimeStart=str(graphTime + offset)
-		graphTimeEnd=str(offset)
-		#Build the command string to make a graph from the database			
-		RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
-		for key,value in polldata:
-			if cherrypy.session.get(value)=='yes':
-				RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)	
-		RrdGraphString1=RrdGraphString1+">>/dev/null"	
-		os.system(RrdGraphString1)
-		cherrypy.response.headers['Pragma'] = 'no-cache'
-		return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
+    @cherrypy.expose
+    def right(self, **args):
+        if not cherrypy.session.get('time'):
+            cherrypy.session['time'] = '0'
+        if not cherrypy.session.get('timeChoice'):
+            cherrypy.session['timeChoice'] = 'time1h'
+        if cherrypy.request.method == "POST": 
+            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
+            time=int(cherrypy.session['time'])-seconds
+            if time<0:
+                time=0
+            cherrypy.session['time']=str(time)
+        # redirect back after setting selection in session
+        raise cherrypy.HTTPRedirect('/')    
+                
+    @cherrypy.expose
+    def image(self, **args):
+        if not cherrypy.session.get('timeChoice'):
+            cherrypy.session['timeChoice'] = 'time1h'
+        if not cherrypy.session.get('time'):
+            cherrypy.session['time'] = '0'          
+        graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
+        offset = int(cherrypy.session['time'])
+        graphTimeStart=str(graphTime + offset)
+        graphTimeEnd=str(offset)
+        #Build the command string to make a graph from the database         
+        RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
+        for key,value in polldata:
+            if cherrypy.session.get(value)=='yes':
+                RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value) 
+        RrdGraphString1=RrdGraphString1+">>/dev/null"   
+        os.system(RrdGraphString1)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
 
-	@cherrypy.expose
-	@require() #requires valid login
-	def parameters(self, **args):
-		# Get list of data/parameters 
-		parameterlist=getdb()
-		params={}
-		for item in parameterlist:
-			params[item] = ' '
-			if args.has_key(item):
-				if cherrypy.request.method == "POST": 
-					# set parameter
-					try:
-						setItem(item, args[item][1])
-						params[item]=getItem(item)
-					except:
-						params[item]='error'
-				else:
-					# get parameter
-					try:
-						params[item]=getItem(item)	
-					except:
-						params[item]='error'
-		tmpl = lookup.get_template("parameters.html")
-		return tmpl.render(params=params.items())
+    @cherrypy.expose
+    @require() #requires valid login
+    def parameters(self, **args):
+        # Get list of data/parameters 
+        parameterlist=getdb()
+        params={}
+        for item in parameterlist:
+            params[item] = ' '
+            if args.has_key(item):
+                if cherrypy.request.method == "POST": 
+                    # set parameter
+                    try:
+                        setItem(item, args[item][1])
+                        params[item]=getItem(item)
+                    except:
+                        params[item]='error'
+                else:
+                    # get parameter
+                    try:
+                        params[item]=getItem(item)  
+                    except:
+                        params[item]='error'
+        tmpl = lookup.get_template("parameters.html")
+        return tmpl.render(params=params.items())
 
-	
-	@cherrypy.expose
-	def index(self, **args):
-		if not cherrypy.session.get('timeChoice'):
-			cherrypy.session['timeChoice']=timeChoices[0]				
-		checkboxes=[] 
-		empty=True
-		for key, val in polldata:  
-			if cherrypy.session.get(val)=='yes':  
-				checkboxes.append((val,True))
-				empty=False
-			else:
-				checkboxes.append((val,''))
-		autorefresh = cherrypy.session.get('autorefresh')=='yes'
-		tmpl = lookup.get_template("index.html")
-		return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
+    
+    @cherrypy.expose
+    def index(self, **args):
+        if not cherrypy.session.get('timeChoice'):
+            cherrypy.session['timeChoice']=timeChoices[0]               
+        checkboxes=[] 
+        empty=True
+        for key, val in polldata:  
+            if cherrypy.session.get(val)=='yes':  
+                checkboxes.append((val,True))
+                empty=False
+            else:
+                checkboxes.append((val,''))
+        autorefresh = cherrypy.session.get('autorefresh')=='yes'
+        tmpl = lookup.get_template("index.html")
+        return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
 
 
 global_conf = {
