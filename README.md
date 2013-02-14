@@ -15,19 +15,19 @@ pellmoncli.py:
 Interactive command line client with tab completion. Uses the DBUS interface to read and write setting values, and read measurement data. 
 
 pellmonwebb.py:
-Implements a webbserver showing a graph of selected measurement data from the RRD database.
+Webbserver and webbapp, plotting of measurement data and parameter reading/writing.
 
 pellmon.conf
 setting values, edit as desired
 
 pellmon_dbus.conf
-should be copied to /etc/dbus_1/system.d/ to allow pellmonsrv running as user "pi" to implement the DBUS interface on the system bus, edit the file to match the user name
+should be copied to /etc/dbus-1/system.d/ to allow pellmonsrv running as user "pi" to implement the DBUS interface on the system bus, edit the file to match the user name
 
-html/index.html
-template for the webb interface
+html/
+templates for the webb interface
 
 dependencies:
-rrdtool, python-cherrypy3, python-dbus, python-moko, python-gobject
-(and maybe something more I forgot)
+rrdtool, python-cherrypy3, python-dbus, python-mako, python-gobject
+(and maybe something else I forgot)
 
 
