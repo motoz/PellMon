@@ -26,6 +26,7 @@ from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
 import dbus
 from auth import AuthController, require, member_of, name_is
+import simplejson
 
 #Look for temlates in this directory
 lookup = TemplateLookup(directories=['html'])
@@ -93,8 +94,10 @@ class PellMonWebb:
         if cherrypy.request.method == "POST": 
             seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
             cherrypy.session['time']=str(int(cherrypy.session['time'])+seconds)
+        cherrypy.response.headers['Content-Type'] = 'application/json'
+        return simplejson.dumps(dict(title="Hello"))
         # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect('/')        
+        #raise cherrypy.HTTPRedirect('/')        
 
     @cherrypy.expose
     def right(self, **args):
@@ -108,8 +111,10 @@ class PellMonWebb:
             if time<0:
                 time=0
             cherrypy.session['time']=str(time)
+        cherrypy.response.headers['Content-Type'] = 'application/json'
+        return simplejson.dumps(dict(title="Hello, %s" % name))
         # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect('/')    
+        #raise cherrypy.HTTPRedirect('/')    
                 
     @cherrypy.expose
     def image(self, **args):
@@ -131,6 +136,32 @@ class PellMonWebb:
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
 
+    @cherrypy.expose
+    def getparam(self, param):
+        parameterlist=getdb()
+        if cherrypy.request.method == "GET": 
+            if param in(parameterlist): 
+                try:
+                    result = getItem(param)
+                except:
+                    result = 'error'
+            else: result = 'not found'
+            cherrypy.response.headers['Content-Type'] = 'application/json'
+            return simplejson.dumps(dict(data=result))
+
+    @cherrypy.expose
+    def setparam(self, param, data=None):
+        parameterlist=getdb()
+        if cherrypy.request.method == "POST": 
+            if param in(parameterlist): 
+                try:
+                    result = setItem(param, data)
+                except:
+                    result = 'error'
+            else: result = 'not found'
+            cherrypy.response.headers['Content-Type'] = 'application/json'
+            return simplejson.dumps(dict(data=result))
+        
     @cherrypy.expose
     @require() #requires valid login
     def parameters(self, **args):
@@ -173,6 +204,12 @@ class PellMonWebb:
         tmpl = lookup.get_template("index.html")
         return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
 
+    @cherrypy.expose
+    def submit(self, name):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
+        return simplejson.dumps(dict(title="Hello"))
+
+MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
 global_conf = {
        'global':    { 'server.environment': 'debug',
@@ -185,6 +222,10 @@ global_conf = {
                       'server.socket_port': int(parser.get('conf', 'port')),
                     }
               }
+app_conf =  {'/media':
+                {'tools.staticdir.on': True,
+                 'tools.staticdir.dir': MEDIA_DIR}
+            }              
               
 # Connect to pellmonsrv on the dbus system bus
 bus = dbus.SystemBus()
@@ -196,4 +237,7 @@ getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)                        
-cherrypy.quickstart(PellMonWebb())
+cherrypy.quickstart(PellMonWebb(), config=app_conf)
+                 
+                 
+                 

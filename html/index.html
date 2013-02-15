@@ -6,7 +6,21 @@
 <title>Pellet monitor</title>
 </head>
 
-
+<script type="text/javascript" src="/media/jquery-1.4.2.min.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                // When the testform is submitted...
+                $("#testform").submit(function() {
+                    // post the form values via AJAX...
+                    $.post('/submit', {name: $("#name").val()}, function(data) {
+                            // and set the title with the result
+                            $("#title").html(data['title']) ;
+                           });
+                    return false ;
+                    });
+            });
+        </script>
+        
 <script type="text/javascript">
 refreshImage = function()
 {
@@ -14,6 +28,39 @@ refreshImage = function()
     img.src="image?rand=" + Math.random();
 }
 </script>
+        
+        <script type="text/javascript">
+            $(function() {
+                // When the testform is submitted...
+                $("#left").submit(function(e) {
+                    // post the form values via AJAX...
+                    $.post('/left', {}, function(data) {
+                                refreshImage();
+                           });
+                    refreshImage();
+                    e.preventDefault();
+                    });
+            });
+        </script>        
+
+        <script type="text/javascript">
+            $(function() {
+                // When the testform is submitted...
+                $("#right").submit(function(e) {
+                    // post the form values via AJAX...
+                    $.post('/right', {}, function(data) {
+                                refreshImage();
+                           });
+                    refreshImage();
+                    e.preventDefault();
+                    });
+            });
+        </script>        
+
+
+
+
+
 
 
 %if autorefresh:
@@ -100,5 +147,18 @@ Time period to plot:<br>
 
 <a href="parameters"> Parameters </a>
 <div>
+
+	<h1 id="title">What's your name?</h1>
+
+        <form id="testform" action="#" method="post">
+            <p>
+                <label for="name">Name:</label>
+                <input type="text" id="name" /> <br />
+
+                <input type="submit" value="Set" />
+            </p>
+        </form>
+        
+        
 </body>
 </html>

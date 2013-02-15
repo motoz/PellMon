@@ -27,7 +27,7 @@ html/
 templates for the webb interface
 
 dependencies:
-rrdtool, python-cherrypy3, python-dbus, python-mako, python-gobject
+rrdtool, python-cherrypy3, python-dbus, python-mako, python-gobject, python-simplejson
 (and maybe something else I forgot)
 
 
