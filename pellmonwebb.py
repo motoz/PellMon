@@ -167,6 +167,7 @@ class PellMonWebb:
     def parameters(self, **args):
         # Get list of data/parameters 
         parameterlist=getdb()
+        values=['']*len(parameterlist)
         params={}
         for item in parameterlist:
             params[item] = ' '
@@ -174,18 +175,17 @@ class PellMonWebb:
                 if cherrypy.request.method == "POST": 
                     # set parameter
                     try:
-                        setItem(item, args[item][1])
-                        params[item]=getItem(item)
+                        values[parameterlist.index(item)]=setItem(item, args[item][1])
                     except:
-                        params[item]='error'
+                        values[parameterlist.index(item)]='error'
                 else:
                     # get parameter
                     try:
-                        params[item]=getItem(item)  
+                        values[parameterlist.index(item)]=getItem(item)  
                     except:
-                        params[item]='error'
+                        values[parameterlist.index(item)]='error'
         tmpl = lookup.get_template("parameters.html")
-        return tmpl.render(params=params.items())
+        return tmpl.render(params=parameterlist, values=values)
 
     
     @cherrypy.expose

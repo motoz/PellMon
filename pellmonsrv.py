@@ -52,6 +52,7 @@ class MyDBUSService(dbus.service.Object):
         l=[]
         for item in dataBase:
             l.append(item)
+        l.sort()
         return l
 
 def addCheckSum(s):

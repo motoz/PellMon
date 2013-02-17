@@ -62,8 +62,10 @@ $(document).ready(function(){
 });
 </script>
 
-%for key,val in params:
-
+%for key in params:
+<%
+    val=values[params.index(key)]
+%>
 <div class="container">
     <div class="left">
         <div style="float:left;">
