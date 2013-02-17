@@ -28,62 +28,61 @@ padding:1em;
 </style>
 
 <script type="text/javascript" src="/media/jquery-1.4.2.min.js"></script>
-		
+
 <a href="/"> Back </a>
 <body>
 
-%for key,val in params:
+<script type="text/javascript">
+$(document).ready(function(){
+        // When the testform is submitted...
+        $(".setform").submit(function(e) {
+            // post the form values via AJAX...
+            s=this.name;
+            $.post('/setparam/'+s, {data: $("#"+s+"text").val()}, function(data) {
+                        // and set the textfield with the result
+                        $("#"+s+"text").val(data['data']);
+                   });
+            e.preventDefault();
+            });
+});
+</script> 
 
 <script type="text/javascript">
-    $(function() {
+$(document).ready(function(){
         // When the testform is submitted...
-        $("#${key}set").submit(function(e) {
+        $(".getform").submit(function(e) {
             // post the form values via AJAX...
-            $.post('/setparam/${key}', {data: $("#${key}text").val()}, function(data) {
+            s=this.name;
+            $.get('/getparam/'+s, function(data) {
                         // and set the textfield with the result
-                        $("#${key}text").val(data['data']) ;
-                   });
-            e.preventDefault();
-            return false;
-            });
-    });
-</script> 
-<script type="text/javascript">
-    $(function() {
-        // When the testform is submitted...
-        $("#${key}get").submit(function(e) {
-            // post the form values via AJAX...
-            $.get('/getparam/${key}', function(data) {
-                        // and set the textfield with the result
-                        $("#${key}text").val(data['data']) ;
+                        $("#"+s+"text").val(data['data']);
                    });
             e.preventDefault();
             });
-    });
+});
 </script>
 
+%for key,val in params:
+
 <div class="container">
-
-<div class="left">
-
-
-<div style="float:left; padding=1em">
-<form id=${key}set action="" method="post"> 
+    <div class="left">
+        <div style="float:left;">
+<form id="${key}set" name="${key}" class="setform" action="" method="post"> 
 ${key}:&nbsp;
-</div>
+        </div>
     <input type="text" id=${key}text value="${val}"name=${key} />
-        <div style="float: right; padding=1em">
-            <input type="submit" value="Set" />
+        <div style="float:right;">
+    <input type="submit" value="Set" />
         </div>
 </form> 
-</div>
+    </div>
 
-<div class="content">
-<form id=${key}get action="" method="get"> 
-<input type="hidden" value="${val}"name=${key} />
-<input type="submit" value="Get" />
+    <div class="content">
+<form id="${key}get" name="${key}" class="getform" action="" method="get"> 
+    <input type="hidden" value="${val}"name=${key} />
+    <input type="submit" value="Get" />
 </form>
-</div>
+    </div>
 </div>
 %endfor
 
