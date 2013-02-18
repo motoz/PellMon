@@ -68,13 +68,17 @@ $(document).ready(function(){
 %>
 <div class="container">
     <div class="left">
-        <div style="float:left;">
+        <div >
+            <div style="float:left;">
 <form id="${key}set" name="${key}" class="setform" action="" method="post"> 
 ${key}:&nbsp;
-        </div>
-    <input type="text" id=${key}text value="${val}"name=${key} />
-        <div style="float:right;">
+            </div>
+            <div style="float:right;">
     <input type="submit" value="Set" />
+            </div>
+            <div style="float:right; margin-right:20px">
+    <input type="text" id=${key}text value="${val}"name=${key} />
+            </div>
         </div>
 </form> 
     </div>
