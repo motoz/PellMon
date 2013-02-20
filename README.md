@@ -14,8 +14,8 @@ Communication daemon. Implements a DBUS interface for reading and writing settin
 pellmoncli.py:
 Interactive command line client with tab completion. Uses the DBUS interface to read and write setting values, and read measurement data. 
 
-pellmonwebb.py:
-Webbserver and webbapp, plotting of measurement data and parameter reading/writing.
+pellmonweb.py:
+webserver and webapp, plotting of measurement data and parameter reading/writing.
 
 pellmon.conf
 setting values, edit as desired
