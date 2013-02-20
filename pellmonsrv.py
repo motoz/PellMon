@@ -381,32 +381,43 @@ FrameZ06 = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z060000')
 # 'param' type is for setting values that can be read and written
 # 'data' type is for read-only measurement values
 # 'command' type is for write-only data
-param   = namedtuple(  'param', 'frame index length decimals address min  max') 
-data    = namedtuple(   'data', 'frame index length decimals') 
+param   = namedtuple(  'param', 'frame     index  decimals address min  max') 
+data    = namedtuple(   'data', 'frame     index  decimals') 
 command = namedtuple('command',                             'address min  max')
 
+# Version identifiers, these are lists containing the version strings returned by Z040000. 
+# All versions included in a version identifier need to have identical protocol mappings
+
+V_623_633 = ['6.24','6.33'] 
+V_650_651 = ['6.50','6.51'] 
+
 # The 'dataBase'
-global dataBase
 dataBase =  {
-    'power':                data (FrameZ00, 0 ,  5,     0),
-    'power_kW':             data (FrameZ00, 1 ,  5,     1),
-    'boiler_temp':          data (FrameZ00, 2,   5,     1), 
-    'chute_temp':           data (FrameZ00, 3 ,  5,     0),
-    'smoke_temp':           data (FrameZ00, 4 ,  5,     0),
-    'oxygen':               data (FrameZ00, 5 ,  5,     1),
-    'light':                data (FrameZ00, 6 ,  5,     0),
-    'feeder_time':          data (FrameZ00, 7 ,  5,     0),
-    'ignition_time':        data (FrameZ00, 8 ,  5,     0),
-    'alarm':                data (FrameZ00, 9 ,  5,     0), 
-    'oxygen_desired':       data (FrameZ00, 11 , 5,     1), 
-    'mode':                 data (FrameZ00, 16,  5,     0),         
-    'model':                data (FrameZ00, 17,  5,     0),         
-    'motor_time':           data (FrameZ02, 0 ,  10,    0),
-    'el_time':              data (FrameZ02, 1 ,  10,    0),
-    'motor_time_perm':      data (FrameZ02, 2 ,  10,    0),
-    'el_time_perm':         data (FrameZ02, 3 ,  10,    0),
-    'ignition_count':       data (FrameZ03, 8 ,  5,     0),
-    'version':              data (FrameZ04, 1,   5,    -1),
+""" Dictionary of parameter names and their protocol mappings.
+    The protocol mapping is itself a dictionary with version identifier as key and a 
+    param, data or command named tuple as value. This way a parameter name can have
+    several protocol mappings identified by the version identifier. """
+#    parameter name           version    type  frame     index decimals
+    'power':                { V_624_633: data (FrameZ00, 0 ,   0),
+                              V_650_651: data (FrameZ00, 0 ,   0) },
+    'power_kW':             { V_624_633: data (FrameZ00, 1 ,   1) },
+    'boiler_temp':          { V_624_633: data (FrameZ00, 2,    1) }, 
+    'chute_temp':           { V_624_633: data (FrameZ00, 3 ,   0) },
+    'smoke_temp':           { V_624_633: data (FrameZ00, 4 ,   0) },
+    'oxygen':               { V_624_633: data (FrameZ00, 5 ,   1) },
+    'light':                { V_624_633: data (FrameZ00, 6 ,   0) },
+    'feeder_time':          data (FrameZ00, 7 ,   0),
+    'ignition_time':        data (FrameZ00, 8 ,   0),
+    'alarm':                data (FrameZ00, 9 ,   0), 
+    'oxygen_desired':       data (FrameZ00, 11,   1), 
+    'mode':                 data (FrameZ00, 16,   0),
+    'model':                data (FrameZ00, 17,   0),
+    'motor_time':           data (FrameZ02, 0 ,   0),
+    'el_time':              data (FrameZ02, 1 ,   0),
+    'motor_time_perm':      data (FrameZ02, 2 ,   0),
+    'el_time_perm':         data (FrameZ02, 3 ,   0),
+    'ignition_count':       data (FrameZ03, 8 ,   0),
+    'version':              data (FrameZ04, 1,    1),
 
     'blower_low':           param(FrameZ01, 0,   5,     0,       'A00',   4,  50),
     'blower_high':          param(FrameZ01, 1,   5,     0,       'A01',   5, 100),
