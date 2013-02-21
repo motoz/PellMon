@@ -100,9 +100,9 @@ def pollThread():
             ser.write(s+'\r')   
             logger.debug('serial written'+s)        
             line=""
+            ser.flushInput()
             try:
-                #data=srv.recv(1024)
-                line=str(ser.read(300))
+                line=str(ser.read(3))
                 logger.debug('serial read'+line)
                 #while data != '':
                 #   line = line + data
@@ -124,7 +124,8 @@ def pollThread():
         # Get frame
         if commandqueue[0]==3:
             responsequeue = commandqueue[2]
-            sendFrame = addCheckSum(commandqueue[1].pollFrame)+"\r"
+            frame = commandqueue[1]
+            sendFrame = addCheckSum(frame.pollFrame)+"\r"
             logger.debug('sendFrame = '+sendFrame)
             logger.debug('serial write')
             ser.write(sendFrame+'\r')   
@@ -132,8 +133,8 @@ def pollThread():
             #srv.sendall(sendFrame)
             line=""
             try:
-                #data=srv.recv(1024)
-                line=str(ser.read(300))
+                ser.flushInput()
+                line=str(ser.read(frame.getLengh()))
                 logger.debug('serial read'+line)
                 #while data != '':
                 #   line = line + data
@@ -198,7 +199,11 @@ class Frame:
         self.frameLength=0
         for i in self.dataDef:
             self.frameLength += i
-        self.frameLength+=1
+        #include checksum byte
+        self.frameLength+=1 
+    
+    def getLength(self):
+        return self.frameLength
             
     def parse(self, s):
         logger.debug('Check checksum in parse '+s)
