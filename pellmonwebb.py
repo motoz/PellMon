@@ -137,6 +137,7 @@ class PellMonWebb:
         return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
 
     @cherrypy.expose
+    @require() #requires valid login
     def getparam(self, param):
         parameterlist=getdb()
         if cherrypy.request.method == "GET": 
@@ -150,6 +151,7 @@ class PellMonWebb:
             return simplejson.dumps(dict(data=result))
 
     @cherrypy.expose
+    @require() #requires valid login
     def setparam(self, param, data=None):
         parameterlist=getdb()
         if cherrypy.request.method == "POST": 
