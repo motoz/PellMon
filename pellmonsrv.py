@@ -95,7 +95,6 @@ def pollThread():
         # Write parameter/command       
         if commandqueue[0]==2:
             s=addCheckSum(commandqueue[1])
-            #srv.sendall(s+"\r")
             logger.debug('serial write'+s)
             ser.write(s+'\r')   
             logger.debug('serial written'+s)        
@@ -134,7 +133,7 @@ def pollThread():
             line=""
             try:
                 ser.flushInput()
-                line=str(ser.read(frame.getLengh()))
+                line=str(ser.read(frame.getLength())) 
                 logger.debug('serial read'+line)
                 #while data != '':
                 #   line = line + data
