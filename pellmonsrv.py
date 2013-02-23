@@ -274,6 +274,10 @@ class MyDaemon(Daemon):
     def run(self):
         logger.info('starting pelletMonitor')
 
+        # Create and start poll_thread
+        POLLTHREAD = threading.Thread(name='poll_thread', target=pollThread)
+        POLLTHREAD.start()
+
         # Create 10s periodic signal handler
         signal.signal(signal.SIGALRM, handler)
         logger.info('created signalhandler')
@@ -284,10 +288,6 @@ class MyDaemon(Daemon):
         if not os.path.exists(db):
             os.system(RrdCreateString)
     
-        # Create and start poll_thread
-        POLLTHREAD = threading.Thread(name='poll_thread', target=pollThread)
-        POLLTHREAD.start()
-
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
         
@@ -336,6 +336,20 @@ logger.info('loglevel: '+loglevel)
 # message queue, used to send frame polling commands to pollThread
 q = Queue.Queue(3)
 
+# Open serial port
+ser = serial.Serial()
+ser.port     = parser.get('conf', 'serialport') 
+ser.baudrate = 9600
+ser.parity   = 'N'
+ser.rtscts   = False
+ser.xonxoff  = False
+ser.timeout  = 1        
+try:
+    ser.open()
+except serial.SerialException, e:
+    logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
+logger.info('serial port ok')
+
 # 'param' type is for setting values that can be read and written
 # 'data' type is for read-only measurement values
 # 'command' type is for write-only data
@@ -345,9 +359,34 @@ command = namedtuple('command', 'address min max')
 
 version_string = parser.get('conf', 'chipversion')
 
+if version_string == 'auto':
+    # This frame had better be the same in all chip versions
+    FrameZ04  = Frame([5,5],'Z040000')
+    dataBase = {'version': data (FrameZ04,  1,    -1) }
+    # PollThread not running yet so it's work is done here for version reading
+    try:
+        v = dataBase['version']
+        sendFrame = addCheckSum(v.frame.pollFrame)+"\r"
+        ser.write(sendFrame+'\r')   
+        line=""
+        try:
+            ser.flushInput()
+            line=str(ser.read(v.frame.getLength())) 
+        except:
+            logger.debug('Serial read error')
+        if line:    
+            v.frame.parse(line)
+            version_string = v.frame.get(v.index).lstrip()
+        else: 
+            version_string=None
+    except:
+        logger.info('Chip version detection failed') 
+        version_string = None        
+
 if version_string == None:
-    logger.info('Chip version unspecified')
     version_string = '0.0'
+
+logger.info('Chip version: %s'%version_string)    
 
 # 'FrameXXX' defines the serial bus response frame format
 # [list of character count per value], 'string with the frame address'
@@ -368,7 +407,7 @@ FrameZ08  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z080000')
 
 dataBaseMap =  {
     
-#    parameter name           version           type   frame   index decimals  
+#    parameter name             versions        type   frame   index decimals  
     'power':                { ('0000','zzzz') : data (FrameZ00,  0,     0) }, # Z00 is probably supported on all version
     'power_kW':             { ('0000','zzzz') : data (FrameZ00,  1,     1) },
     'boiler_temp':          { ('0000','zzzz') : data (FrameZ00,  2,     1) }, 
@@ -389,7 +428,7 @@ dataBaseMap =  {
     'ignition_count':       { ('4.99','zzzz') : data (FrameZ03,  8,     0) },
     'version':              { ('0000','zzzz') : data (FrameZ04,  1,    -1) }, # decimals = -1 means that this is a string, not a number
 
-#    parameter name           version    type   frame   index  dec    addr   min    max
+#    parameter name             versions        type   frame    index  dec    addr   min    max
     'blower_low':           { ('4.99','zzzz') : param (FrameZ01,  0,    0,    'A00',   4,    50) },
     'blower_high':          { ('4.99','zzzz') : param (FrameZ01,  1,    0,    'A01',   5,   100) },
     'blower_mid':           { ('4.99','zzzz') : param (FrameZ03, 14,    0,    'A06',   5,    75) },
@@ -415,7 +454,7 @@ dataBaseMap =  {
     'feeder_capacity':      { ('0000','zzzz') : param (FrameZ00, 12,    0,    'F01', 400,  8000) },
     'feeder_capacity_max':  { ('4.99','zzzz') : param (FrameZ01, 29,    0,    'F02', 400,  8000) },
 
-#    parameter name           version    type   frame   index  dec    addr   min    max
+#    parameter name             versions        type   frame    index  dec    addr   min    max
     'chimney_draught':      { ('0000','zzzz') : param (FrameZ00, 13,    0,    'G00',   0,    10) },
     'chute_temp_max':       { ('4.99','zzzz') : param (FrameZ01, 31,    0,    'G01',  50,    90) },
     'regulator_P':          { ('4.99','zzzz') : param (FrameZ01, 32,    1,    'G02',   1,    20) },
@@ -445,7 +484,7 @@ dataBaseMap =  {
 
     'blower_corr_mid':      { ('4.99','zzzz') : param (FrameZ05, 22,    0,    'M00',  50,   150) },
 
-#    parameter name           version    type   frame   index  dec    addr   min    max
+#    parameter name             versions        type   frame    index  dec    addr   min    max
     'min_power':            { ('4.99','zzzz') : param (FrameZ01, 37,    0,    'H02',  10,   100) },
     'max_power':            { ('4.99','zzzz') : param (FrameZ01, 38,    0,    'H03',  10,   100) },
 
@@ -461,20 +500,6 @@ for param_name in dataBaseMap:
     for supported_versions in mappings: 
         if version_string >= supported_versions[0] and version_string < supported_versions[1]:
             dataBase[param_name] = mappings[supported_versions]
-
-# Open serial port
-ser = serial.Serial()
-ser.port     = parser.get('conf', 'serialport') 
-ser.baudrate = 9600
-ser.parity   = 'N'
-ser.rtscts   = False
-ser.xonxoff  = False
-ser.timeout  = 1        
-try:
-    ser.open()
-except serial.SerialException, e:
-    logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
-logger.info('serial port ok')
 
 # DBUS needs the gobject main loop, this way it seems to work...
 gobject.threads_init()
