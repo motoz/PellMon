@@ -53,7 +53,10 @@ class MyDBUSService(dbus.service.Object):
         for item in dataBase:
             l.append(item)
         l.sort()
-        return l
+        if l==[]:
+            return ['unsupported_version']
+        else:
+            return l
 
 def addCheckSum(s):
     x=0;
@@ -70,27 +73,8 @@ def checkCheckSum(s):
     return x
         
 def pollThread():
-    connected=False
-    run=True
-    
-    while run:  
+    while True:  
         commandqueue = q.get() 
-        if commandqueue[0]==99:
-            run=False
-            continue
-
-        if not connected:
-#           try:    
-#               logger.info("trying to connect")
-#               srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#               srv.settimeout(1.0)
-#               srv.connect( ('raspberrypi.local', 7777) )
-#               connected=True
-#               logger.info("Connected!")
-#           except:
-#               logger.info("connection failed")
-#               continue
-            connected=True
 
         # Write parameter/command       
         if commandqueue[0]==2:
@@ -103,24 +87,16 @@ def pollThread():
             try:
                 line=str(ser.read(3))
                 logger.debug('serial read'+line)
-                #while data != '':
-                #   line = line + data
-                #   data=srv.recv(1024)
-                #logger.info("No data, shut down socket")
-                #connected=False
-                #srv.shutdown(socket.SHUT_RDWR)
-                #srv.close()
-                #commandqueue[2].put(False)
-                #continue
-            except: #socket.timeout:
-                logger.debug('Socket timeout, frame ready or empty')
+            except: 
+                logger.debug('Serial read error')
             if line:
+                # Send back the response
                 commandqueue[2].put(line)
             else:
                 commandqueue[2].put("No answer")
                 logger.info('No answer')
         
-        # Get frame
+        # Get frame command
         if commandqueue[0]==3:
             responsequeue = commandqueue[2]
             frame = commandqueue[1]
@@ -129,28 +105,17 @@ def pollThread():
             logger.debug('serial write')
             ser.write(sendFrame+'\r')   
             logger.debug('serial written')  
-            #srv.sendall(sendFrame)
             line=""
             try:
                 ser.flushInput()
                 line=str(ser.read(frame.getLength())) 
                 logger.debug('serial read'+line)
-                #while data != '':
-                #   line = line + data
-                #   data=srv.recv(1024)
-                #logger.info("No data, shut down socket")
-                #connected=False
-                #srv.shutdown(socket.SHUT_RDWR)
-                #srv.close()
-                #responsequeue.put(False)
-                #continue
-            except:# socket.timeout:
-                logger.debug('Socket timeout, frame ready or empty')
+            except:
+                logger.debug('Serial read error')
             if line:    
                 logger.debug('Got answer, parsing') 
                 result=commandqueue[1].parse(line)
                 try:
-                    logger.debug('Try to put parse result')
                     responsequeue.put(result)
                 except:
                     logger.debug('command response queue put 1 fail')               
@@ -161,8 +126,6 @@ def pollThread():
                 except:
                     logger.debug('command response queue put 2 fail')               
                 logger.info('Empty, no answer')
-
-    logger.info("Pollthread end")
 
 # Poll data and update the RRD database
 def handlerThread():
@@ -297,14 +260,15 @@ def setItem(param, s):
             # Send "write parameter value" message to pollThread
             responseQueue = Queue.Queue() 
             q.put((2,dataparam.address + s, responseQueue))
-            return responseQueue.get()
+            response = responseQueue.get()
+            if response == addCheckSum('OK'):
+                logger.info('Parameter %s = %s'%(param,s))
+            return response
         else:
             return "Expected value "+str(dataparam.min)+".."+str(dataparam.max)
     else:
         return 'Not a setting value'
 
-
-#***************************************************
 
 class MyDaemon(Daemon):
     def run(self):
@@ -372,114 +336,131 @@ logger.info('loglevel: '+loglevel)
 # message queue, used to send frame polling commands to pollThread
 q = Queue.Queue(3)
 
-# 'FrameXXX' defines the serial bus frame format
-# [list of character count per value], 'string with the frame address'
-FrameZ00 = Frame([5,5,5,5,5,5,5,10,10,5,5,5,5,5,5,5,5,5],'Z000000')
-FrameZ01 = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5], 'Z010000')
-FrameZ02 = Frame([10,10,10,10],'Z020000')
-FrameZ03 = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z030000')
-FrameZ04 = Frame([5,5],'Z040000')
-FrameZ05 = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z050000')
-FrameZ06 = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z060000')
-
 # 'param' type is for setting values that can be read and written
 # 'data' type is for read-only measurement values
 # 'command' type is for write-only data
-param   = namedtuple(  'param', 'frame index length decimals address min  max') 
-data    = namedtuple(   'data', 'frame index length decimals') 
-command = namedtuple('command',                             'address min  max')
+param   = namedtuple('param',   'frame index decimals address min max') 
+data    = namedtuple('data',    'frame index decimals') 
+command = namedtuple('command', 'address min max')
 
-# The 'dataBase'
-global dataBase
-dataBase =  {
-    'power':                data (FrameZ00, 0 ,  5,     0),
-    'power_kW':             data (FrameZ00, 1 ,  5,     1),
-    'boiler_temp':          data (FrameZ00, 2,   5,     1), 
-    'chute_temp':           data (FrameZ00, 3 ,  5,     0),
-    'smoke_temp':           data (FrameZ00, 4 ,  5,     0),
-    'oxygen':               data (FrameZ00, 5 ,  5,     1),
-    'light':                data (FrameZ00, 6 ,  5,     0),
-    'feeder_time':          data (FrameZ00, 7 ,  5,     0),
-    'ignition_time':        data (FrameZ00, 8 ,  5,     0),
-    'alarm':                data (FrameZ00, 9 ,  5,     0), 
-    'oxygen_desired':       data (FrameZ00, 11 , 5,     1), 
-    'mode':                 data (FrameZ00, 16,  5,     0),         
-    'model':                data (FrameZ00, 17,  5,     0),         
-    'motor_time':           data (FrameZ02, 0 ,  10,    0),
-    'el_time':              data (FrameZ02, 1 ,  10,    0),
-    'motor_time_perm':      data (FrameZ02, 2 ,  10,    0),
-    'el_time_perm':         data (FrameZ02, 3 ,  10,    0),
-    'ignition_count':       data (FrameZ03, 8 ,  5,     0),
-    'version':              data (FrameZ04, 1,   5,    -1),
+version_string = parser.get('conf', 'chipversion')
 
-    'blower_low':           param(FrameZ01, 0,   5,     0,       'A00',   4,  50),
-    'blower_high':          param(FrameZ01, 1,   5,     0,       'A01',   5, 100),
-    'blower_mid':           param(FrameZ03, 14,  5,     0,       'A06',   5,  75),
-    'blower_cleaning':      param(FrameZ01,  4,  5,     0,       'A04',  25, 200),
-    'boiler_temp_set':      param(FrameZ00, 10,  5,     0,       'B01',  40,  85),
-    'boiler_temp_min':      param(FrameZ01,  9,  5,     0,       'B03',  10,  70),
-    'feeder_low':           param(FrameZ01, 10,  5,     2,       'B04', 0.5,  25),
-    'feeder_high':          param(FrameZ01, 11,  5,     1,       'B05',   1, 100),
-    'feed_per_minute':      param(FrameZ01, 12,  5,     0,       'B06',   1,   3),
+if version_string == None:
+    logger.info('Chip version unspecified')
+    version_string = '0.0'
 
-    'boiler_temp_diff_up':  param(FrameZ01, 17,  5,     0,       'C03',   0,  20),
-    'boiler_temp_diff_down':param(FrameZ03, 13,  5,     0,       'C04',   0,  15),
+# 'FrameXXX' defines the serial bus response frame format
+# [list of character count per value], 'string with the frame address'
+FrameZ00  = Frame([5,5,5,5,5,5,5,10,10,5,5,5,5,5,5,5,5,5],'Z000000')
+FrameZ01  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5], 'Z010000')
+FrameZ02  = Frame([10,10,10,10],'Z020000')
+FrameZ03  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z030000')
+FrameZ04  = Frame([5,5],'Z040000')
+FrameZ05  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z050000')
+FrameZ06  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z060000')
+FrameZ07  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z070000')    
+FrameZ08  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z080000')    
 
-    'light_required':       param(FrameZ01, 22,  5,     0,       'D03',   0, 100),
+# Dictionary of parameter names and their protocol mappings.
+# The protocol mapping is itself a dictionary with "start from" and "end at" version strings 
+# as key and a param, data or command named tuple as value. This way a parameter name can have
+# several protocol mappings identified by the version identifier. 
 
-    'oxygen_regulation':    param(FrameZ01, 23,  5,     0,       'E00',   0,   2),
-    'oxygen_low':           param(FrameZ01, 24,  5,     1,       'E01',  10,  19),
-    'oxygen_high':          param(FrameZ01, 25,  5,     1,       'E02',   2,  12),
-    'oxygen_gain':          param(FrameZ01, 26,  5,     2,       'E03',   0,  99.99),
+dataBaseMap =  {
+    
+#    parameter name           version           type   frame   index decimals  
+    'power':                { ('0000','zzzz') : data (FrameZ00,  0,     0) }, # Z00 is probably supported on all version
+    'power_kW':             { ('0000','zzzz') : data (FrameZ00,  1,     1) },
+    'boiler_temp':          { ('0000','zzzz') : data (FrameZ00,  2,     1) }, 
+    'chute_temp':           { ('0000','zzzz') : data (FrameZ00,  3,     0) },
+    'smoke_temp':           { ('0000','zzzz') : data (FrameZ00,  4,     0) },
+    'oxygen':               { ('0000','zzzz') : data (FrameZ00,  5,     1) },
+    'light':                { ('0000','zzzz') : data (FrameZ00,  6,     0) },
+    'feeder_time':          { ('0000','zzzz') : data (FrameZ00,  7,     0) },
+    'ignition_time':        { ('0000','zzzz') : data (FrameZ00,  8,     0) },
+    'alarm':                { ('0000','zzzz') : data (FrameZ00,  9,     0) },
+    'oxygen_desired':       { ('0000','zzzz') : data (FrameZ00, 11,     1) }, 
+    'mode':                 { ('0000','zzzz') : data (FrameZ00, 16,     0) },
+    'model':                { ('0000','zzzz') : data (FrameZ00, 17,     0) },
+    'motor_time':           { ('0000','zzzz') : data (FrameZ02,  0,     0) },
+    'el_time':              { ('0000','zzzz') : data (FrameZ02,  1,     0) },
+    'motor_time_perm':      { ('0000','zzzz') : data (FrameZ02,  2,     0) },
+    'el_time_perm':         { ('0000','zzzz') : data (FrameZ02,  3,     0) },
+    'ignition_count':       { ('4.99','zzzz') : data (FrameZ03,  8,     0) },
+    'version':              { ('0000','zzzz') : data (FrameZ04,  1,    -1) }, # decimals = -1 means that this is a string, not a number
 
-    'feeder_capacity_min':  param(FrameZ01, 27,  5,     0,       'F00', 400,2000),
-    'feeder_capacity':      param(FrameZ00, 12,  5,     0,       'F01', 400,8000),
-    'feeder_capacity_max':  param(FrameZ01, 29,  5,     0,       'F02', 400,8000),
+#    parameter name           version    type   frame   index  dec    addr   min    max
+    'blower_low':           { ('4.99','zzzz') : param (FrameZ01,  0,    0,    'A00',   4,    50) },
+    'blower_high':          { ('4.99','zzzz') : param (FrameZ01,  1,    0,    'A01',   5,   100) },
+    'blower_mid':           { ('4.99','zzzz') : param (FrameZ03, 14,    0,    'A06',   5,    75) },
+    'blower_cleaning':      { ('4.99','zzzz') : param (FrameZ01,  4,    0,    'A04',  25,   200) },
+    'boiler_temp_set':      { ('0000','zzzz') : param (FrameZ00, 10,    0,    'B01',  40,    85) },
+    'boiler_temp_min':      { ('4.99','zzzz') : param (FrameZ01,  9,    0,    'B03',  10,    70) },
+    'feeder_low':           { ('4.99','zzzz') : param (FrameZ01, 10,    2,    'B04',   0.5,  25) },
+    'feeder_high':          { ('4.99','zzzz') : param (FrameZ01, 11,    1,    'B05',   1,   100) },
+    'feed_per_minute':      { ('4.99','zzzz') : param (FrameZ01, 12,    0,    'B06',   1,     3) },
 
-    'chimney_draught':      param(FrameZ00, 13,  5,     0,       'G00',   0,  10),
-    'chute_temp_max':       param(FrameZ01, 31,  5,     0,       'G01',  50,  90),
-    'regulator_P':          param(FrameZ01, 32,  5,     1,       'G02',   1,  20),
-    'regulator_I':          param(FrameZ01, 33,  5,     2,       'G03',   0,   5),
-    'regulator_D':          param(FrameZ01, 34,  5,     1,       'G04',   1,  50),
-    'blower_corr_low':      param(FrameZ01, 39,  5,     0,       'G05',  50, 150),
-    'blower_corr_high':     param(FrameZ01, 40,  5,     0,       'G06',  50, 150),
-    'cleaning_interval':    param(FrameZ01, 41,  5,     0,       'G07',   1, 120),
-    'cleaning_time':        param(FrameZ01, 42,  5,     0,       'G08',   0,  60),
-    'language':             param(FrameZ04, 0,   5,     0,       'G09',   0,   3),
+    'boiler_temp_diff_up':  { ('4.99','zzzz') : param (FrameZ01, 17,    0,    'C03',   0,    20) },
+    'boiler_temp_diff_down':{ ('4.99','zzzz') : param (FrameZ03, 13,    0,    'C04',   0,    15) },
 
-    'autocalculation':      param(FrameZ03, 10,  5,     0,       'H04',   0,   1),
-    'time_minutes':         param(FrameZ01, 44,  5,     0,       'H07',   0,1439),
+    'light_required':       { ('4.99','zzzz') : param (FrameZ01, 22,    0,    'D03',   0,   100) },
 
-    'oxygen_corr_10':       param(FrameZ03, 1,   5,     0,       'I00',   0, 100),
-    'oxygen_corr_50':       param(FrameZ03, 2,   5,     0,       'I01',   0, 100),
-    'oxygen_corr_100':      param(FrameZ03, 3,   5,     0,       'I02',   0, 100),
-    'oxygen_corr_interval': param(FrameZ03, 4,   5,     0,       'I03',   1,  60),
-    'oxygen_regulation_P':  param(FrameZ03, 5,   5,     2,       'I04',   0,   5),
-    'oxygen_regulation_D':  param(FrameZ03, 6,   5,     0,       'I05',   0, 100),
-    'blower_off_time':      param(FrameZ03, 9,   5,     0,       'I07',   0,  30),
+    'oxygen_regulation':    { ('4.99','zzzz') : param (FrameZ01, 23,    0,    'E00',   0,     2) },
+    'oxygen_low':           { ('4.99','zzzz') : param (FrameZ01, 24,    1,    'E01',  10,    19) },
+    'oxygen_high':          { ('4.99','zzzz') : param (FrameZ01, 25,    1,    'E02',   2,    12) },
+    'oxygen_mid':           { ('6.50','zzzz') : param (FrameZ08, 7,     1,    'E06',   0,    21) },
+    'oxygen_gain':          { ('4.99','zzzz') : param (FrameZ01, 26,    2,    'E03',   0,    99.99) },
 
-    'comp_clean_interval':  param(FrameZ05, 18,  5,     0,       'L00',   0,  21),
-    'comp_clean_time':      param(FrameZ05, 19,  5,     0,       'L01',   0,  10),
-    'comp_clean_blower':    param(FrameZ05, 20,  5,     0,       'L02',   0, 100),
-    'comp_clean_wait':      param(FrameZ05, 29,  5,     0,       'L03',   0, 300),
+    'feeder_capacity_min':  { ('4.99','zzzz') : param (FrameZ01, 27,    0,    'F00', 400,  2000) },
+    'feeder_capacity':      { ('0000','zzzz') : param (FrameZ00, 12,    0,    'F01', 400,  8000) },
+    'feeder_capacity_max':  { ('4.99','zzzz') : param (FrameZ01, 29,    0,    'F02', 400,  8000) },
 
-    'blower_corr_mid':      param(FrameZ05, 22,  5,     0,       'M00',  50, 150),
+#    parameter name           version    type   frame   index  dec    addr   min    max
+    'chimney_draught':      { ('0000','zzzz') : param (FrameZ00, 13,    0,    'G00',   0,    10) },
+    'chute_temp_max':       { ('4.99','zzzz') : param (FrameZ01, 31,    0,    'G01',  50,    90) },
+    'regulator_P':          { ('4.99','zzzz') : param (FrameZ01, 32,    1,    'G02',   1,    20) },
+    'regulator_I':          { ('4.99','zzzz') : param (FrameZ01, 33,    2,    'G03',   0,     5) },
+    'regulator_D':          { ('4.99','zzzz') : param (FrameZ01, 34,    1,    'G04',   1,    50) },
+    'blower_corr_low':      { ('4.99','zzzz') : param (FrameZ01, 39,    0,    'G05',  50,   150) },
+    'blower_corr_high':     { ('4.99','zzzz') : param (FrameZ01, 40,    0,    'G06',  50,   150) },
+    'cleaning_interval':    { ('4.99','zzzz') : param (FrameZ01, 41,    0,    'G07',   1,   120) },
+    'cleaning_time':        { ('4.99','zzzz') : param (FrameZ01, 42,    0,    'G08',   0,    60) },
+    'language':             { ('0000','zzzz') : param (FrameZ04, 0,     0,    'G09',   0,     3) },
 
-    'min_power':            param(FrameZ01, 37,  5,     0,       'H02',  10, 100),
-    'max_power':            param(FrameZ01, 38,  5,     0,       'H03',  10, 100),
-    'burner_off':           command(                             'V00',   0,   0),
-    'burner_on':            command(                             'V01',   0,   0),
-    'reset_alarm':          command(                             'V02',   0,   0)
+    'autocalculation':      { ('4.99','zzzz') : param (FrameZ03, 10,    0,    'H04',   0,     1) },
+    'time_minutes':         { ('4.99','zzzz') : param (FrameZ01, 44,    0,    'H07',   0,  1439) },
+
+    'oxygen_corr_10':       { ('4.99','zzzz') : param (FrameZ03, 1,     0,    'I00',   0,   100) },
+    'oxygen_corr_50':       { ('4.99','zzzz') : param (FrameZ03, 2,     0,    'I01',   0,   100) },
+    'oxygen_corr_100':      { ('4.99','zzzz') : param (FrameZ03, 3,     0,    'I02',   0,   100) },
+    'oxygen_corr_interval': { ('4.99','zzzz') : param (FrameZ03, 4,     0,    'I03',   1,    60) },
+    'oxygen_regulation_P':  { ('4.99','zzzz') : param (FrameZ03, 5,     2,    'I04',   0,     5) },
+    'oxygen_regulation_D':  { ('4.99','zzzz') : param (FrameZ03, 6,     0,    'I05',   0,   100) },
+    'blower_off_time':      { ('4.99','zzzz') : param (FrameZ03, 9,     0,    'I07',   0,    30) },
+
+    'comp_clean_interval':  { ('6.03','zzzz') : param (FrameZ05, 18,    0,    'L00',   0,    21) },
+    'comp_clean_time':      { ('6.03','zzzz') : param (FrameZ05, 19,    0,    'L01',   0,    10) },
+    'comp_clean_blower':    { ('6.03','zzzz') : param (FrameZ05, 20,    0,    'L02',   0,   100) },
+    'comp_clean_wait':      { ('6.12','zzzz') : param (FrameZ05, 29,    0,    'L03',   0,   300) },
+
+    'blower_corr_mid':      { ('4.99','zzzz') : param (FrameZ05, 22,    0,    'M00',  50,   150) },
+
+#    parameter name           version    type   frame   index  dec    addr   min    max
+    'min_power':            { ('4.99','zzzz') : param (FrameZ01, 37,    0,    'H02',  10,   100) },
+    'max_power':            { ('4.99','zzzz') : param (FrameZ01, 38,    0,    'H03',  10,   100) },
+
+    'burner_off':           { ('4.99','zzzz') : command (                     'V00',   0,     0) },
+    'burner_on':            { ('4.99','zzzz') : command (                     'V01',   0,     0) },
+    'reset_alarm':          { ('4.99','zzzz') : command (                     'V02',   0,     0) },
 }   
 
-# Build a command string to create the rrd database
-RrdCreateString="rrdtool create "+db+" --step 10 "
-for item in pollData:
-    RrdCreateString=RrdCreateString+"DS:%s:GAUGE:60:U:U " % item    
-RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1:20000 \
-RRA:AVERAGE:0,999:10:20000 \
-RRA:AVERAGE:0,999:100:20000 \
-RRA:AVERAGE:0,999:1000:20000"
+# Build a dictionary of parameters supported on version_string
+dataBase={}
+for param_name in dataBaseMap:
+    mappings = dataBaseMap[param_name]
+    for supported_versions in mappings: 
+        if version_string >= supported_versions[0] and version_string < supported_versions[1]:
+            dataBase[param_name] = mappings[supported_versions]
 
 # Open serial port
 ser = serial.Serial()
@@ -494,6 +475,7 @@ try:
 except serial.SerialException, e:
     logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
 logger.info('serial port ok')
+
 # DBUS needs the gobject main loop, this way it seems to work...
 gobject.threads_init()
 dbus.mainloop.glib.threads_init()    
