@@ -201,6 +201,8 @@ class Frame:
         data=self.data[index]
         self.mutex.release()
         return data
+        
+pollThread_mutex=Lock()
 
 # Read data/parameter value
 def getItem(param): 
@@ -209,7 +211,7 @@ def getItem(param):
         if hasattr(dataparam, 'frame'):
             ok=True
             # If the frame containing this data hasn't been read recently do it now
-            if time.time()-dataparam.frame.timestamp > 5.0:
+            if time.time()-dataparam.frame.timestamp > 8.0:
                 try:
                     responseQueue = Queue.Queue(3)
                     try:  # Send "read parameter value" message to pollThread
@@ -334,7 +336,7 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.info('loglevel: '+loglevel)
 # message queue, used to send frame polling commands to pollThread
-q = Queue.Queue(3)
+q = Queue.Queue(300)
 
 # Open serial port
 ser = serial.Serial()
