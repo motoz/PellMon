@@ -40,7 +40,7 @@ $(document).ready(function(){
             s=this.name;
             $.post('/setparam/'+s, {data: $("#"+s+"text").val()}, function(data) {
                         // and set the textfield with the result
-                        $("#"+s+"text").val(data['data']);
+                        $("#"+data['param']+"text").val(data['value']);
                    });
             e.preventDefault();
             });
@@ -55,10 +55,24 @@ $(document).ready(function(){
             s=this.name;
             $.get('/getparam/'+s, function(data) {
                         // and set the textfield with the result
-                        $("#"+s+"text").val(data['data']);
+                        $("#"+data['param']+"text").val(data['value']);
                    });
             e.preventDefault();
             });
+});
+</script>
+
+<%param_array='\",\"'.join(params)%>
+
+<script type="text/javascript">
+$(document).ready(function(){
+	var parameters = ["${param_array}"]
+	for (i=0;i<parameters.length;i++)
+	{
+ 	   $.get('/getparam/'+parameters[i], function(data) {
+                $("#"+data['param']+"text").val(data['value']);
+           });       
+	}
 });
 </script>
 

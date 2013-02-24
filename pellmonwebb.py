@@ -148,7 +148,7 @@ class PellMonWebb:
                     result = 'error'
             else: result = 'not found'
             cherrypy.response.headers['Content-Type'] = 'application/json'
-            return simplejson.dumps(dict(data=result))
+            return simplejson.dumps(dict(param=param, value=result))
 
     @cherrypy.expose
     @require() #requires valid login
@@ -162,7 +162,7 @@ class PellMonWebb:
                     result = 'error'
             else: result = 'not found'
             cherrypy.response.headers['Content-Type'] = 'application/json'
-            return simplejson.dumps(dict(data=result))
+            return simplejson.dumps(dict(param=param, value=result))
         
     @cherrypy.expose
     @require() #requires valid login
