@@ -495,6 +495,15 @@ dataBaseMap =  {
     'reset_alarm':          { ('4.99','zzzz') : command (                     'V02',   0,     0) },
 }   
 
+# Build a command string to create the rrd database
+RrdCreateString="rrdtool create "+db+" --step 10 "
+for item in pollData:
+    RrdCreateString=RrdCreateString+"DS:%s:GAUGE:60:U:U " % item    
+RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1:20000 \
+RRA:AVERAGE:0,999:10:20000 \
+RRA:AVERAGE:0,999:100:20000 \
+RRA:AVERAGE:0,999:1000:20000"
+
 # Build a dictionary of parameters supported on version_string
 dataBase={}
 for param_name in dataBaseMap:
