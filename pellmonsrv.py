@@ -193,7 +193,7 @@ class Frame:
             logger.debug('Return True from parser')
             return True
         else:
-            logger.info("Parse: wrong length " +len(s)+', expected '+self.frameLength)
+            logger.info("Parse: wrong length "+str(len(s))+', expected '+str(self.frameLength))
             return False
         
     def get(self, index):
