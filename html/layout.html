@@ -17,10 +17,11 @@
                 <a href="parameters">Parameters</a>
               </li>
 		<li>
+		% if username == None:
 		<a href=auth/login>Login</a>
-		</li>
-		<li>
+		% else: 
 		<a href=auth/logout>Logout</a>
+		% endif
 		</li>
             </ul>
           </div>
