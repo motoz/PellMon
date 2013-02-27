@@ -1,10 +1,92 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<%inherit file="layout.html"/>
+%if autorefresh:
+<body onload="window.setInterval(refreshImage, 10000);">
+%else:
+<body>
+%endif 
 
-<title>Pellet monitor</title>
-</head>
+<%
+from random import random
+rnd=str(random())
+%>
+
+%if not empty: 
+<div style="clear:both;">
+<div style="float:left;position:relative;top:200px">
+<div id="left" style="background;float:left;">
+
+<form id="left" action="left" method="post"> 
+    <input type="hidden" name="left" value="left" checked="yes">
+<input type="submit" value="<">
+</form> 
+</div>
+</div>
+
+<div style="float:left;">
+<img src="image?rand=${rnd}" id="graph" />
+</div>
+
+<div style="float:left;position:relative;top:200px">
+<form id="right" action="right" method="post"> 
+    <input type="hidden" name="right" value="right">
+<input type="submit" value=">">
+</form>
+</div>
+</div>
+
+<div style="clear:both;">
+%else:
+ Select from:  
+%endif
+<div class="span6">
+<p>Graphs to plot:</p>
+<form id="frm1" action="form1" method="post"> 
+
+%for key, val in checkboxes:
+<%
+    if val: 
+        checked = 'checked=\"yes\"'
+    else:
+        checked = ''
+%>
+<label for="${key}-input" class="checkbox">
+	<input type="checkbox" name="${key}" id="${key}-input" value="On" ${checked} />
+	${key}
+</label>
+%endfor
+
+<%
+if autorefresh: 
+    refreshstr = 'checked=\"yes\"'
+else:
+    refreshstr = ''
+%>
+<label class="checkbox" for="autorefresh-input">
+	<input type="checkbox" name="autorefresh" value="On" ${refreshstr}>autorefresh
+</label>
+<input type="submit" class="btn" value="Set">
+</form> 
+</div>
+<div class="span6">
+<form id="frm2" action="form2" method="post"> 
+<p>Time period to plot:</p>
+%for index in range(len(timeChoices)):
+<%
+    key=timeChoices[index]
+    val=timeNames[index]
+    if timeChoice==key:
+        selected='selected'
+    else:
+        selected=''
+%>
+<label class="radio">
+    <input type="radio" name="graphtime" value="${key}" ${selected}>
+	${val}
+</label>
+%endfor
+<input type="submit" class="btn" value="Set">
+</form> 
+</div>
 
 <script type="text/javascript" src="/media/jquery-1.4.2.min.js"></script>
         <script type="text/javascript">
@@ -29,123 +111,30 @@ refreshImage = function()
 }
 </script>
         
-        <script type="text/javascript">
-            $(function() {
-                // When the testform is submitted...
-                $("#left").submit(function(e) {
-                    // post the form values via AJAX...
-                    $.post('/left', {}, function(data) {
-                                refreshImage();
-                           });
-                    refreshImage();
-                    e.preventDefault();
-                    });
-            });
-        </script>        
+<script type="text/javascript">
+    $(function() {
+	// When the testform is submitted...
+	$("#left").submit(function(e) {
+	    // post the form values via AJAX...
+	    $.post('/left', {}, function(data) {
+			refreshImage();
+		   });
+	    refreshImage();
+	    e.preventDefault();
+	    });
+    });
+</script>        
 
-        <script type="text/javascript">
-            $(function() {
-                // When the testform is submitted...
-                $("#right").submit(function(e) {
-                    // post the form values via AJAX...
-                    $.post('/right', {}, function(data) {
-                                refreshImage();
-                           });
-                    refreshImage();
-                    e.preventDefault();
-                    });
-            });
-        </script>        
-
-
-
-
-
-
-
-%if autorefresh:
-<body onload="window.setInterval(refreshImage, 10000);">
-%else:
-<body>
-%endif 
-
-<%
-from random import random
-rnd=str(random())
-%>
-
-<div style="float: right;">
-<a href=auth/login>Login</a>&nbsp;<a href=auth/logout>Logout</a>
-</div>
-
-%if not empty: 
-<div style="clear:both;">
-<div style="float:left;position:relative;top:200px">
-<div id="left" style="background;float:left;">
-
-<form id="left" action="left" method="post"> 
-    <input type="hidden" name="left" value="left" checked="yes">
-<input type="submit" value="<">
-</form> 
-</div>
-</div>
-
-<div style="float:left;">
-<img src="image?rand=${rnd}" " id="graph" />
-</div>
-
-<div style="float:left;position:relative;top:200px">
-<form id="right" action="right" method="post"> 
-    <input type="hidden" name="right" value="right">
-<input type="submit" value=">">
-</form>
-</div>
-</div>
-
-<div style="clear:both;">
-%else:
- Select from:  
-%endif
-
-<form id="frm1" action="form1" method="post"> 
-
-%for key, val in checkboxes:
-<%
-    if val: 
-        checked = 'checked=\"yes\"'
-    else:
-        checked = ''
-%>
-    <input type="checkbox" name="${key}" value="On"" ${checked}>${key}
-%endfor
-
-<%
-if autorefresh: 
-    refreshstr = 'checked=\"yes\"'
-else:
-    refreshstr = ''
-%>
-<input type="checkbox" name="autorefresh" value="On"" ${refreshstr}>autorefresh<br>
-<input type="submit" value="Set">
-</form> 
-
-<form id="frm2" action="form2" method="post"> 
-Time period to plot:<br>
-%for index in range(len(timeChoices)):
-<%
-    key=timeChoices[index]
-    val=timeNames[index]
-    if timeChoice==key:
-        selected='checked'
-    else:
-        selected=''
-%>
-    <input type="radio" name="graphtime" value="${key}" ${selected}>${val}<br>
-%endfor
-<input type="submit" value="Set">
-</form> 
-
-<a href="parameters"> Parameters </a>
-        
-</body>
-</html>
+<script type="text/javascript">
+$(function() {
+// When the testform is submitted...
+$("#right").submit(function(e) {
+    // post the form values via AJAX...
+    $.post('/right', {}, function(data) {
+		refreshImage();
+	   });
+    refreshImage();
+    e.preventDefault();
+    });
+});
+</script>        

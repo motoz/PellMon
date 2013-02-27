@@ -1,19 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Parameters</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="/media/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
-</head>
-<body>
-<div class="container-fluid">
-<div class="span12 offset2">
+<%inherit file="layout.html"/>
+<div class="offset2 span12">
 <h1>Parameters</h1>
-</div>
-<div class="span2">
-<a href="/">Back</a>
-</div>
-<div class="span10">
 
 <%param_array='\",\"'.join(params)%>
 
@@ -30,9 +17,8 @@ val=values[params.index(key)]
 </form> 
 </div>
 %endfor
-</div>
-</div>
 
+</div>
 <script src="http://code.jquery.com/jquery.js"></script>
 <script src="/media/bootstrap/js/bootstrap.min.js"></script>
 <script type="text/javascript">
@@ -82,5 +68,3 @@ for (i=0;i<parameters.length;i++) {
 }
 
 </script>
-</body>
-</html>
