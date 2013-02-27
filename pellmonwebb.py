@@ -204,7 +204,7 @@ class PellMonWebb:
                 checkboxes.append((val,''))
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
         tmpl = lookup.get_template("index.html")
-        return tmpl.render(checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
 
     @cherrypy.expose
     def submit(self, name):
