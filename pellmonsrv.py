@@ -437,6 +437,11 @@ dataBaseMap =  {
     'motor_time_perm':      { ('0000','zzzz') : data (FrameZ02,  2,     0) },
     'el_time_perm':         { ('0000','zzzz') : data (FrameZ02,  3,     0) },
     'ignition_count':       { ('4.99','zzzz') : data (FrameZ03,  8,     0) },
+    'boiler_return_temp':   { ('6.03','zzzz') : data (FrameZ06,  0,     0) },
+    'hotwater_temp':        { ('6.03','zzzz') : data (FrameZ06,  1,     0) },
+    'outside_temp':         { ('6.03','zzzz') : data (FrameZ06,  2,     0) },
+    'indoor_temp':          { ('6.03','zzzz') : data (FrameZ06,  3,     0) },
+    'flow':                 { ('6.03','zzzz') : data (FrameZ06,  4,     0) },
     'version':              { ('0000','zzzz') : data (FrameZ04,  1,    -1) }, # decimals = -1 means that this is a string, not a number
 
 #    parameter name             versions        type   frame    index  dec    addr   min    max
