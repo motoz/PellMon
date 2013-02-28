@@ -283,12 +283,13 @@ class MyDaemon(Daemon):
         # Create 10s periodic signal handler
         signal.signal(signal.SIGALRM, handler)
         logger.info('created signalhandler')
-        signal.setitimer(signal.ITIMER_REAL,2,10)
+        signal.setitimer(signal.ITIMER_REAL, 2, poll_interval)
         logger.info('started timer')
         
         # Create RRD database
         if not os.path.exists(db):
             os.system(RrdCreateString)
+            logger.info('Created rrd database: '+RrdCreateString)
     
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
@@ -307,15 +308,23 @@ parser = ConfigParser.ConfigParser()
 # Load the configuration file
 parser.read('pellmon.conf')
 
-# These are read from the serial bus every 10 second
+# These are read from the serial bus every 'pollinterval' second
 polldata = parser.items("pollvalues")
-pollDataDict = {}
+# Optional rrd data source definitions, default is DS:%s:GAUGE:%u:U:U
+rrd_datasources = parser.items("rrd_datasources")
 pollData = []
+dataSources = {}
+dataSourceConf = {}
+for key, value in rrd_datasources:
+    dataSourceConf[key] = value
 for key, value in polldata:
-    pollDataDict[key] = value
     pollData.append(value)
+    if dataSourceConf.has_key(key):
+        dataSources[value] = dataSourceConf[key]
+    else:
+        dataSources[value] = "DS:%s:GAUGE:%u:U:U"
     
-# The RRD database which is updated every 10 second
+# The RRD database
 db = parser.get('conf', 'database') 
 
 # create logger
@@ -495,14 +504,20 @@ dataBaseMap =  {
     'reset_alarm':          { ('4.99','zzzz') : command (                     'V02',   0,     0) },
 }   
 
+try: 
+    poll_interval = int(parser.get('conf', 'pollinterval'))
+except:
+    poll_interval = 10
+    logger.info('invalid poll interval setting, using 10s')
+
 # Build a command string to create the rrd database
-RrdCreateString="rrdtool create "+db+" --step 10 "
+RrdCreateString="rrdtool create %s --step %u "%(db, poll_interval)
 for item in pollData:
-    RrdCreateString=RrdCreateString+"DS:%s:GAUGE:60:U:U " % item    
-RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1:20000 \
-RRA:AVERAGE:0,999:10:20000 \
-RRA:AVERAGE:0,999:100:20000 \
-RRA:AVERAGE:0,999:1000:20000"
+    RrdCreateString=RrdCreateString + dataSources[item] % (item, poll_interval*4) + ' ' 
+RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1:20000 " 
+RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:10:20000 " 
+RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:100:20000 " 
+RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1000:20000" 
 
 # Build a dictionary of parameters supported on version_string
 dataBase={}
