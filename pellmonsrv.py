@@ -100,33 +100,37 @@ def pollThread():
         if commandqueue[0]==3:
             responsequeue = commandqueue[2]
             frame = commandqueue[1]
-            sendFrame = addCheckSum(frame.pollFrame)+"\r"
-            logger.debug('sendFrame = '+sendFrame)
-            logger.debug('serial write')
-            ser.write(sendFrame+'\r')   
-            logger.debug('serial written')  
-            line=""
-            try:
-                ser.flushInput()
-                line=str(ser.read(frame.getLength())) 
-                logger.debug('serial read'+line)
-            except:
-                logger.debug('Serial read error')
-            if line:    
-                logger.debug('Got answer, parsing') 
-                result=commandqueue[1].parse(line)
+            # This frame could have been read recently by a previous read request, so check again if it's necessary to read
+            if time.time()-frame.timestamp > 8.0:
+                sendFrame = addCheckSum(frame.pollFrame)+"\r"
+                logger.debug('sendFrame = '+sendFrame)
+                logger.debug('serial write')
+                ser.write(sendFrame+'\r')   
+                logger.debug('serial written')  
+                line=""
                 try:
-                    responsequeue.put(result)
+                    ser.flushInput()
+                    line=str(ser.read(frame.getLength())) 
+                    logger.debug('serial read'+line)
                 except:
-                    logger.debug('command response queue put 1 fail')               
+                    logger.debug('Serial read error')
+                if line:    
+                    logger.debug('Got answer, parsing') 
+                    result=commandqueue[1].parse(line)
+                    try:
+                        responsequeue.put(result)
+                    except:
+                        logger.debug('command response queue put 1 fail')               
+                else: 
+                    try:
+                        logger.debug('Try to put False, answer was empty')
+                        responsequeue.put(False)
+                    except:
+                        logger.debug('command response queue put 2 fail')               
+                    logger.info('Empty, no answer')
             else: 
-                try:
-                    logger.debug('Try to put False, answer was empty')
-                    responsequeue.put(False)
-                except:
-                    logger.debug('command response queue put 2 fail')               
-                logger.info('Empty, no answer')
-
+                responsequeue.put(True)
+            
 # Poll data and update the RRD database
 def handlerThread():
         logger.debug('handlerTread started by signal handler')
