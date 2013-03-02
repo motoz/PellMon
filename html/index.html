@@ -1,140 +1,87 @@
 <%inherit file="layout.html"/>
-%if autorefresh:
-<body onload="window.setInterval(refreshImage, 10000);">
-%else:
-<body>
-%endif 
+<%! scripts = ['index.js'] %>
 
 <%
 from random import random
 rnd=str(random())
 %>
 
-%if not empty: 
-<div style="clear:both;">
-<div style="float:left;position:relative;top:200px">
-<div id="left" style="background;float:left;">
+%if not empty:
+	<div style="clear:both;">
+	<div style="float:left;position:relative;top:200px">
+	<div id="left" style="background;float:left;">
 
-<form id="left" action="left" method="post"> 
-    <input type="hidden" name="left" value="left" checked="yes">
-<input type="submit" value="<">
-</form> 
-</div>
-</div>
+	<form id="left" action="left" method="post">
+	<input type="hidden" name="left" value="left" checked="yes">
+	<input type="submit" value="<">
+	</form>
+	</div>
+	</div>
 
-<div style="float:left;">
-<img src="image?rand=${rnd}" id="graph" />
-</div>
+	<div style="float:left;">
+	<img src="image?rand=${rnd}" id="graph" />
+	</div>
 
-<div style="float:left;position:relative;top:200px">
-<form id="right" action="right" method="post"> 
+	<div style="float:left;position:relative;top:200px">
+	<form id="right" action="right" method="post">
 	<input type="hidden" name="right" value="right">
 	<input type="submit" value=">">
-</form>
-</div>
-</div>
+	</form>
+	</div>
+	</div>
 
-<div style="clear:both;">
-%else:
-<div><p><strong>Select which graphs to plot!</strong></p></div> 
-%endif
-<div class="span6">
-<p>Graphs to plot:</p>
-<form id="frm1" action="form1" method="post"> 
+	<div style="clear:both;">
+	%else:
+	<div><p><strong>Select which graphs to plot!</strong></p></div>
+	%endif
+	<div class="span6">
+	<p>Graphs to plot:</p>
+	<form id="frm1" action="form1" method="post">
 
-%for key, val in checkboxes:
-<%
-    if val: 
-        checked = 'checked=\"yes\"'
-    else:
-        checked = ''
-%>
-<label for="${key}-input" class="checkbox">
-	<input type="checkbox" name="${key}" id="${key}-input" value="On" ${checked} />
-	${key}
-</label>
-%endfor
+	%for key, val in checkboxes:
+	<%
+	if val:
+		checked = 'checked=\"yes\"'
+	else:
+		checked = ''
+		%>
+		<label for="${key}-input" class="checkbox">
+			<input type="checkbox" name="${key}" id="${key}-input" value="On" ${checked} />
+			${key}
+		</label>
+		%endfor
 
-<%
-if autorefresh: 
-    refreshstr = 'checked=\"yes\"'
-else:
-    refreshstr = ''
-%>
-<label class="checkbox" for="autorefresh-input">
-	<input type="checkbox" name="autorefresh" value="On" ${refreshstr}>autorefresh
-</label>
-<input type="submit" class="btn" value="Set">
-</form> 
-</div>
-<div class="span6">
-<form id="frm2" action="form2" method="post"> 
-<p>Time period to plot:</p>
-%for index in range(len(timeChoices)):
-<%
-    key=timeChoices[index]
-    val=timeNames[index]
-    if timeChoice==key:
-        selected='selected'
-    else:
-        selected=''
-%>
-<label class="radio">
-    <input type="radio" name="graphtime" value="${key}" ${selected}>
-	${val}
-</label>
-%endfor
-<input type="submit" class="btn" value="Set">
-</form> 
-</div>
+		<%
+		if autorefresh:
+			refreshstr = 'checked=\"yes\"'
+		else:
+			refreshstr = ''
+			%>
+			<label class="checkbox" for="autorefresh-input">
+				<input type="checkbox" name="autorefresh" value="On" ${refreshstr}>autorefresh
+			</label>
+			<input type="submit" class="btn" value="Set">
+		</form>
+	</div>
+	<div class="span6">
+		<form id="frm2" action="form2" method="post">
+			<p>Time period to plot:</p>
+			%for index in range(len(timeChoices)):
+			<%
+			key=timeChoices[index]
+			val=timeNames[index]
+			if timeChoice==key:
+				selected='selected'
+			else:
+				selected=''
+				%>
+				<label class="radio">
+					<input type="radio" name="graphtime" value="${key}" ${selected}>
+					${val}
+				</label>
+				%endfor
+				<input type="submit" class="btn" value="Set">
+			</form>
+		</div>
 
-<script type="text/javascript" src="/media/jquery-1.4.2.min.js"></script>
-        <script type="text/javascript">
-            $(function() {
-                // When the testform is submitted...
-                $("#testform").submit(function() {
-                    // post the form values via AJAX...
-                    $.post('/submit', {name: $("#name").val()}, function(data) {
-                            // and set the title with the result
-                            $("#title").html(data['title']) ;
-                           });
-                    return false ;
-                    });
-            });
-        </script>
-        
-<script type="text/javascript">
-refreshImage = function()
-{
-    img = document.getElementById("graph");
-    img.src="image?rand=" + Math.random();
-}
-</script>
-        
-<script type="text/javascript">
-    $(function() {
-	// When the testform is submitted...
-	$("#left").submit(function(e) {
-	    // post the form values via AJAX...
-	    $.post('/left', {}, function(data) {
-			refreshImage();
-		   });
-	    refreshImage();
-	    e.preventDefault();
-	    });
-    });
-</script>        
 
-<script type="text/javascript">
-$(function() {
-// When the testform is submitted...
-$("#right").submit(function(e) {
-    // post the form values via AJAX...
-    $.post('/right', {}, function(data) {
-		refreshImage();
-	   });
-    refreshImage();
-    e.preventDefault();
-    });
-});
-</script>        

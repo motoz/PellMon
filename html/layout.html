@@ -1,34 +1,66 @@
+<%! scripts = [] %>
+<%! stylesheets = [] %>
 <!DOCTYPE html>
 <html>
 <head>
-<title>Parameters</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="/media/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<title>Parameters</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="/media/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	${self.stylesheetIncludes()}
 </head>
 <body>
-<div class="navbar">
-      <div class="navbar-inner">
-        <div class="container">
-            <ul class="nav">
-              <li class="">
-                <a href="/">Home</a>
-              </li>
-              <li class="">
-                <a href="parameters">Parameters</a>
-              </li>
-		<li>
-		% if username == None:
-		<a href=auth/login>Login</a>
-		% else: 
-		<a href=auth/logout>Logout</a>
-		% endif
-		</li>
-            </ul>
-          </div>
-        </div>
-    </div>
-<div class="container-fluid">
-${self.body()}
-</div>
+	<div class="navbar">
+		<div class="navbar-inner">
+			<div class="container">
+				<ul class="nav">
+					<li class="">
+						<a href="/">Home</a>
+					</li>
+					<li class="">
+						<a href="parameters">Parameters</a>
+					</li>
+					<li>
+						% if username == None:
+						<a href=auth/login>Login</a>
+						% else:
+						<a href=auth/logout>Logout</a>
+						% endif
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		${self.body()}
+	</div>
+	<script src="http://code.jquery.com/jquery.js"></script>
+	<script src="/media/bootstrap/js/bootstrap.min.js"></script>
+	${self.scriptIncludes()}
 </body>
 </html>
+
+<%def name="scriptIncludes()">
+<%
+    all_scripts = []
+    t = self
+    while t:
+      all_scripts = getattr(t.module, 'scripts', []) + all_scripts
+      t = t.inherits
+%>
+% for script in all_scripts:
+    <script src="/media/js/${script}" type="text/javascript"></script>
+% endfor
+</%def>
+
+<%def name="stylesheetIncludes()">
+<%
+    all_stylesheets = []
+    t = self
+    while t:
+      all_stylesheets = getattr(t.module, 'stylesheets', []) + all_stylesheets
+      t = t.inherits
+%>
+% for stylesheet in all_stylesheets:
+	<link href="${stylesheet}" rel="stylesheet" media="screen">
+% endfor
+</%def>
