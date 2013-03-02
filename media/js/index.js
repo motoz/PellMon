@@ -6,7 +6,7 @@ var refreshImage = function() {
 }
 
 var startImageRefresh = function() {
-	refreshTimer = setInterval('refreshImage', 10000);
+	refreshTimer = setInterval(refreshImage, 10000);
 }
 
 $('.btn.left').click(function(e) {
@@ -39,7 +39,7 @@ $('.btn.autorefresh').click(function(e) {
 	}
 });
 
-if($('input[name="autorefresh"]').val() == 1) {
+if($('input[name="autorefresh"]').val() != '') {
 	startImageRefresh();
 }
 
