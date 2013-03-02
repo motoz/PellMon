@@ -5,83 +5,53 @@
 from random import random
 rnd=str(random())
 %>
-
+<div class="offset1 span11">
+	<h1>Graph</h1>
+</div>
 %if not empty:
-	<div style="clear:both;">
-	<div style="float:left;position:relative;top:200px">
-	<div id="left" style="background;float:left;">
-
-	<form id="left" action="left" method="post">
-	<input type="hidden" name="left" value="left" checked="yes">
-	<input type="submit" value="<">
-	</form>
+	<div class="offset1 span11">
+		<p>
+		<img src="image?rand=${rnd}" id="graph" />
+		</p>
 	</div>
-	</div>
-
-	<div style="float:left;">
-	<img src="image?rand=${rnd}" id="graph" />
+	<div class="offset5 span7">
+		<button class="btn left"><<</button>
+		${'<button class="btn autorefresh %s">Autorefresh</button>' % ('active' if autorefresh else '')}
+		<button class="btn right">>></button>
 	</div>
 
-	<div style="float:left;position:relative;top:200px">
-	<form id="right" action="right" method="post">
-	<input type="hidden" name="right" value="right">
-	<input type="submit" value=">">
-	</form>
-	</div>
-	</div>
-
-	<div style="clear:both;">
 	%else:
-	<div><p><strong>Select which graphs to plot!</strong></p></div>
+	<div class="offset1 span11"><p><strong>Please select which lines to plot!</strong></p></div>
 	%endif
-	<div class="span6">
-	<p>Graphs to plot:</p>
+	<div class="span3 offset1">
+	<h4>Lines to plot:</h4>
 	<form id="frm1" action="form1" method="post">
 
 	%for key, val in checkboxes:
-	<%
-	if val:
-		checked = 'checked=\"yes\"'
-	else:
-		checked = ''
-		%>
 		<label for="${key}-input" class="checkbox">
-			<input type="checkbox" name="${key}" id="${key}-input" value="On" ${checked} />
+			${'<input type="checkbox" name="%s" id="%s-input" value="On" %s/>' % (key, key, ('checked="checked"' if val else ''))}
 			${key}
 		</label>
 		%endfor
-
-		<%
-		if autorefresh:
-			refreshstr = 'checked=\"yes\"'
-		else:
-			refreshstr = ''
-			%>
-			<label class="checkbox" for="autorefresh-input">
-				<input type="checkbox" name="autorefresh" value="On" ${refreshstr}>autorefresh
-			</label>
+			${'<input type="hidden" class="autorefresh" name="%s" value="On">' % ('autorefresh' if autorefresh else '_autorefresh')}
 			<input type="submit" class="btn" value="Set">
 		</form>
 	</div>
-	<div class="span6">
+	<div class="span8">
+		<h4>Time period to plot:</h4>
 		<form id="frm2" action="form2" method="post">
-			<p>Time period to plot:</p>
 			%for index in range(len(timeChoices)):
 			<%
 			key=timeChoices[index]
 			val=timeNames[index]
-			if timeChoice==key:
-				selected='selected'
-			else:
-				selected=''
-				%>
-				<label class="radio">
-					<input type="radio" name="graphtime" value="${key}" ${selected}>
-					${val}
-				</label>
-				%endfor
-				<input type="submit" class="btn" value="Set">
-			</form>
-		</div>
-
+			%>
+			<label class="radio">
+				${'<input type="radio" name="graphtime" value="%s" %s>' % (key, 'checked="checked"' if timeChoice == key else '')}
+				${val}
+			</label>
+			%endfor
+			<input type="submit" class="btn" value="Set">
+		</form>
+	</div>
+</div>
 
