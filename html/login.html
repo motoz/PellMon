@@ -1,0 +1,12 @@
+<%inherit file="layout.html"/>
+<div class="offset1 span11">
+	<h1>Login</h1>
+        <body>
+            <form method="post" action="/auth/login">
+            <input type="hidden" name="from_page" value="${from_page}" />
+            ${msg}<br />
+            Username: <input type="text" name="username" value="${username}" /><br />
+            Password: <input type="password" name="password" /><br />
+            <input type="submit" value="Log in" />
+        </body>
+</div>

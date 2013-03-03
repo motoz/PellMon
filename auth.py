@@ -26,10 +26,15 @@
 import cherrypy
 import ConfigParser
 from cgi import escape
+from mako.template import Template
+from mako.lookup import TemplateLookup
+import urllib
 
-parser = ConfigParser.ConfigParser()
+#Look for temlates in this directory
+lookup = TemplateLookup(directories=['html'])
 
 # Load the configuration file
+parser = ConfigParser.ConfigParser()
 parser.read('pellmon.conf')
 
 SESSION_KEY = '_cp_username'
@@ -55,9 +60,11 @@ def check_credentials(username, password):
 
 def check_auth(*args, **kwargs):
     """A tool that looks in config for 'auth.require'. If found and it
-    is not None, a login is required and the entry is evaluated as a list of
+    is not None, a login is required and the entry is evaluated as alist of
     conditions that the user must fulfill"""
     conditions = cherrypy.request.config.get('auth.require', None)
+    # format GET params
+    get_parmas = urllib.quote(cherrypy.request.request_line.split()[1])
     if conditions is not None:
         username = cherrypy.session.get(SESSION_KEY)
         if username:
@@ -65,9 +72,11 @@ def check_auth(*args, **kwargs):
             for condition in conditions:
                 # A condition is just a callable that returns true or false
                 if not condition():
-                    raise cherrypy.HTTPRedirect("/auth/login")
+                    # Send old page as from_page parameter
+                    raise cherrypy.HTTPRedirect("/auth/login?from_page=%s" % get_parmas)
         else:
-            raise cherrypy.HTTPRedirect("/auth/login")
+            # Send old page as from_page parameter
+            raise cherrypy.HTTPRedirect("/auth/login?from_page=%s" %get_parmas) 
     
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 
@@ -136,15 +145,10 @@ class AuthController(object):
     def get_loginform(self, username, msg="Enter login information", from_page="/"):
         from_page = escape(from_page, True)
         username = escape(username, True)
-        return """<html><body>
-            <form method="post" action="/auth/login">
-            <input type="hidden" name="from_page" value="%(from_page)s" />
-            %(msg)s<br />
-            Username: <input type="text" name="username" value="%(username)s" /><br />
-            Password: <input type="password" name="password" /><br />
-            <input type="submit" value="Log in" />
-        </body></html>""" % locals()
-    
+        
+        tmpl = lookup.get_template("login.html")
+        return tmpl.render(username=username, from_page=from_page, msg=msg)
+
     @cherrypy.expose
     def login(self, username=None, password=None, from_page="/"):
         if username is None or password is None:
