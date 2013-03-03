@@ -150,6 +150,7 @@ def handlerThread():
 # Signal handler start handlerThread at regular interval
 def handler(signum, frame):
     ht = threading.Thread(name='poll_thread', target=handlerThread)
+    ht.setDaemon(True)
     ht.start()
     
 class Frame:
@@ -271,26 +272,63 @@ def setItem(param, s):
     else:
         return 'Not a setting value'
 
+def copy_db(direction='store'):
+    if direction=='store':
+        try:
+            os.system('cp %s %s'%(db, nvdb)) 
+        except:
+            logger.info('cp %s %s failed'%(db, nvdb))
+    else:
+        try:
+            os.system('cp %s %s'%(nvdb, db))  
+        except:
+            logger.info('cp %s %s failed'%(nvdb, db))
+    
+def db_copy_thread():
+    copy_db('store')    
+    ht = threading.Timer(db_store_interval, db_copy_thread)
+    ht.setDaemon(True)
+    ht.start()
 
+def sigterm_handler(signum, frame):
+    if nvdb != db:   
+        copy_db('store')
+    sys.exit(0)
+    
 class MyDaemon(Daemon):
     def run(self):
         logger.info('starting pelletMonitor')
+        
+        # Create SIGTERM signal handler
+        signal.signal(signal.SIGTERM, sigterm_handler)
 
         # Create and start poll_thread
         POLLTHREAD = threading.Thread(name='poll_thread', target=pollThread)
+        POLLTHREAD.setDaemon(True)
         POLLTHREAD.start()
 
-        # Create 10s periodic signal handler
+        # Create poll_interval periodic signal handler
         signal.signal(signal.SIGALRM, handler)
         logger.info('created signalhandler')
         signal.setitimer(signal.ITIMER_REAL, 2, poll_interval)
         logger.info('started timer')
         
-        # Create RRD database
-        if not os.path.exists(db):
-            os.system(RrdCreateString)
-            logger.info('Created rrd database: '+RrdCreateString)
-    
+        # Create RRD database, if nvdb defined copy it to db
+        if nvdb != db:
+            if not os.path.exists(nvdb):
+                os.system(RrdCreateString)
+                logger.info('Created rrd database: '+RrdCreateString)
+            copy_db('restore')
+            # Create and start db_copy_thread to store db at regular interval
+            #ht = threading.Thread(name='db_copy_thread', target=db_copy_thread)
+            ht = threading.Timer(db_store_interval, db_copy_thread)
+            ht.setDaemon(True)
+            ht.start()
+        else:
+            if not os.path.exists(db):
+                os.system(RrdCreateString)
+                logger.info('Created rrd database: '+RrdCreateString)
+       
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
         
@@ -326,6 +364,16 @@ for key, value in polldata:
     
 # The RRD database
 db = parser.get('conf', 'database') 
+
+# The persistent RRD database
+try:
+    nvdb = parser.get('conf', 'persistent_db') 
+except:
+    nvdb = db        
+try:
+    db_store_interval = int(parser.get('conf', 'db_store_interval'))
+except:
+    db_store_interval = 3600        
 
 # create logger
 logger = logging.getLogger('pellMon')
@@ -516,7 +564,7 @@ except:
     logger.info('invalid poll interval setting, using 10s')
 
 # Build a command string to create the rrd database
-RrdCreateString="rrdtool create %s --step %u "%(db, poll_interval)
+RrdCreateString="rrdtool create %s --step %u "%(nvdb, poll_interval)
 for item in pollData:
     RrdCreateString=RrdCreateString + dataSources[item] % (item, poll_interval*4) + ' ' 
 RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1:20000 " 
@@ -541,7 +589,7 @@ myservice = MyDBUSService()
 
 if __name__ == "__main__":
 
-
+    
     daemon = MyDaemon('/tmp/pelletMonitor.pid')
     if len(sys.argv) == 2:
         if 'start' == sys.argv[1]:
