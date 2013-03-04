@@ -17,6 +17,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+"""
+from gi.repository import Gio, GLib
+d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
+print notify.GetItem('(s)','power')
+"""
 
 import dbus, readline, os
 import sys
