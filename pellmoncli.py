@@ -17,15 +17,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-"""
-from gi.repository import Gio, GLib
-d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-print notify.GetItem('(s)','power')
-"""
-
-import dbus, readline, os
+import readline, os
 import sys
+from gi.repository import Gio, GLib
 
 # Handles tab completion with input_raw
 def complete(text, state):
@@ -46,15 +40,22 @@ def complete(text, state):
             else:
                 state -= 1
 
+def getItem(itm):
+    return notify.GetItem('(s)',itm)
+
+def setItem(item, value):
+    return notify.SetItem('(ss)',item, value)
+
+def getdb():
+    return notify.GetDB()
+    
 if __name__ == "__main__":
 
     # Connect to pellmonsrv on the dbus system bus
-    bus = dbus.SystemBus()
-    pelletService = bus.get_object('org.pellmon.int', '/org/pellmon/int')
-    getItem = pelletService.get_dbus_method('GetItem', 'org.pellmon.int')
-    setItem = pelletService.get_dbus_method('SetItem', 'org.pellmon.int')
-    getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
-    
+
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
+
     # Get list of data/parameters
     db=getdb()
 
@@ -81,7 +82,7 @@ if __name__ == "__main__":
                         if l[1] in db:
                             try:
                                 print getItem(l[1])
-                            except dbus.exceptions.DBusException as e: 
+                            except:
                                 print "dbus error"
                         else:
                             print l[1]+" is not a data/parameter name "
