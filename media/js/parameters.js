@@ -36,6 +36,26 @@ $(".get").on('click', function(e) {
 	getParam(textfield.attr('name'));
 });
 
-$('.param').each(function(i, param) {
-	getParam($(param).attr('name'));
-});
+function getParams() {
+	var params = $('.param'),
+		count = params.length;
+
+	$.get(
+		'/getparams/',
+		function(data) {
+            for (var param in data) {
+				var textfield = $('#' + param + '-text');
+				if(textfield.length > 0) {
+					textfield.val(data.param);
+					count = count-1;
+				}
+            }
+
+			if (count > 0) {
+				getparams();
+			}
+		}
+	);
+}
+
+getParams();
