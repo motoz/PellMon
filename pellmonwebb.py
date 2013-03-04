@@ -24,7 +24,7 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
-import dbus
+from gi.repository import Gio, GLib
 from auth import AuthController, require, member_of, name_is
 import simplejson
 import threading, Queue
@@ -192,7 +192,7 @@ class PellMonWebb:
                     except:
                         values[parameterlist.index(item)]='error'
         paramQueue = Queue.Queue(300)
-        # Set up a queue and start a thread to read all items to the queue, the parameter page will empty the queue bye calling /getparams/
+        # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
         cherrypy.session['paramReaderQueue'] = paramQueue
         ht = threading.Thread(name='poll_thread', target=parameterReader, args=(paramQueue,))
         ht.start()            
@@ -216,7 +216,7 @@ class PellMonWebb:
                         break
                     params[param]=value
                 except:
-                    # queue is empty, send whats read so far
+                    # queue is empty, send what's read so far
                     break    
             cherrypy.response.headers['Content-Type'] = 'application/json'
             return simplejson.dumps(params)
@@ -247,6 +247,15 @@ def parameterReader(q):
         q.put((item,value))
     q.put(('**end**','**end**'))
 
+def getItem(itm):
+    return notify.GetItem('(s)',itm)
+
+def setItem(item, value):
+    return notify.SetItem('(ss)',item, value)
+
+def getdb():
+    return notify.GetDB()
+    
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
 global_conf = {
@@ -266,11 +275,8 @@ app_conf =  {'/media':
             }              
              
 # Connect to pellmonsrv on the dbus system bus
-bus = dbus.SystemBus()
-pelletService = bus.get_object('org.pellmon.int', '/org/pellmon/int')
-getItem = pelletService.get_dbus_method('GetItem', 'org.pellmon.int')
-setItem = pelletService.get_dbus_method('SetItem', 'org.pellmon.int')
-getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
+d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)                        
