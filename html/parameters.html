@@ -1,99 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Parameters</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="/media/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
-</head>
-<body>
-<div class="container-fluid">
-<div class="span12 offset2">
-<h1>Parameters</h1>
+<%inherit file="layout.html"/>
+<%! scripts = ['parameters.js'] %>
+<div class="offset1 span11">
+	<h1>Parameters</h1>
+
+	%for key in params:
+	<%
+	val=values[params.index(key)]
+	%>
+	<div class="row-fluid">
+		<form id="${key}-form" name="${key}" class="param form-horizontal" action="" method="post">
+			<label for="${key}-text">${key}</label>
+			<input type="text" id="${key}-text" placeholder="${val}" value="${val}" name="${key}" />
+			<input type="submit" value="Get" class="get btn" />
+			<input type="submit" value="Set" class="set btn btn-primary" />
+		</form>
+	</div>
+	%endfor
+
 </div>
-<div class="span2">
-<a href="/">Back</a>
-</div>
-<div class="span10">
-
-<%param_array='\",\"'.join(params)%>
-
-%for key in params:
-<%
-val=values[params.index(key)]
-%>
-<div class="row-fluid">
-<form id="${key}-form" name="${key}" class="form-horizontal" action="" method="post"> 
-<label for="${key}-text">${key}</label>
-<input type="text" id="${key}-text" placeholder="${val}" value="${val}" name="${key}" />
-<input type="submit" value="Get" class="get btn" />
-<input type="submit" value="Set" class="set btn btn-primary" />
-</form> 
-</div>
-%endfor
-</div>
-</div>
-
-<script src="http://code.jquery.com/jquery.js"></script>
-<script src="/media/bootstrap/js/bootstrap.min.js"></script>
-<script type="text/javascript">
-var getParam = function(param) {
-	$.get(
-			'/getparam/' + param,
-			function(data) {
-			$('#' + param + '-text').val(data['value']);
-			}
-	     );       
-};
-
-$(".set").on('click', function(e) {
-		e.preventDefault();
-
-		var me = $(this),
-		form = me.closest('form'),
-		textfield = $('input[type=text]', form);
-
-		$.post(
-			'/setparam/' + textfield.attr('name'), 
-			{
-data: textfield.val()
-}, 
-function(data) {
-textfield.val(data['value']);
-setTimeout(function() {
-	getParam(textfield.attr('name'));
-	}, 2000);	
-});
-		});
-
-$(".get").on('click', function(e) {
-		e.preventDefault();
-
-		var me = $(this),
-		form = me.closest('form'),
-		textfield = $('input[type=text]', form);
-
-		getParam(textfield.attr('name'));
-
-		});
-
-var parameters = ["${param_array}"]
-var len = ${paramCount}
-function getparams() {
-		$.get(
-			'/getparams/',
-			function(data) {
-                for (var param in data)
-                {
-                    if (parameters.indexOf(param) >= 0)
-    			        $('#' + param + '-text').val(data[param]);
-    			    len = len-1
-                }
-                if (len > 0) getparams()
-			}
-	     ); 	     
-}
-getparams();
-
-</script>
-</body>
-</html>
