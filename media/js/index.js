@@ -39,7 +39,7 @@ $('.btn.autorefresh').click(function(e) {
 	}
 });
 
-if($('input[name="autorefresh"]').val() != '') {
+if($('input[name="autorefresh"]').length > 0) {
 	startImageRefresh();
 }
 
