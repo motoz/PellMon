@@ -169,11 +169,11 @@ class PellMonWebb:
     @cherrypy.expose
     @require() #requires valid login
     def parameters(self, **args):
+        parameterlist = getdb()
         paramQueue = Queue.Queue(300)
         ht = threading.Thread(target=parameterReader, args=(paramQueue,))
         ht.start()    
         # Get list of data/parameters 
-        parameterlist=getdb()
         values=['']*len(parameterlist)
         params={}
         for item in parameterlist:
@@ -197,7 +197,7 @@ class PellMonWebb:
         ht = threading.Thread(name='poll_thread', target=parameterReader, args=(paramQueue,))
         ht.start()            
         tmpl = lookup.get_template("parameters.html")
-        return tmpl.render(params=parameterlist, values=values, paramCount = len(parameterlist))
+        return tmpl.render(params=parameterlist, values=values)
 
     # Empty the item/value queue, call several times until all data is retrieved
     @cherrypy.expose
