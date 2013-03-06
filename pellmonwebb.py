@@ -24,9 +24,10 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
-import dbus
+from gi.repository import Gio, GLib
 from auth import AuthController, require, member_of, name_is
 import simplejson
+import threading, Queue
 
 #Look for temlates in this directory
 lookup = TemplateLookup(directories=['html'])
@@ -51,6 +52,7 @@ polldata = parser.items("pollvalues")
 timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
 timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
 timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]    
+
 
 class PellMonWebb:
 
@@ -167,6 +169,9 @@ class PellMonWebb:
     @cherrypy.expose
     @require() #requires valid login
     def parameters(self, **args):
+        paramQueue = Queue.Queue(300)
+        ht = threading.Thread(target=parameterReader, args=(paramQueue,))
+        ht.start()    
         # Get list of data/parameters 
         parameterlist=getdb()
         values=['']*len(parameterlist)
@@ -186,9 +191,35 @@ class PellMonWebb:
                         values[parameterlist.index(item)]=getItem(item)  
                     except:
                         values[parameterlist.index(item)]='error'
+        paramQueue = Queue.Queue(300)
+        # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
+        cherrypy.session['paramReaderQueue'] = paramQueue
+        ht = threading.Thread(name='poll_thread', target=parameterReader, args=(paramQueue,))
+        ht.start()            
         tmpl = lookup.get_template("parameters.html")
-        return tmpl.render(params=parameterlist, values=values)
+        return tmpl.render(params=parameterlist, values=values, paramCount = len(parameterlist))
 
+    # Empty the item/value queue, call several times until all data is retrieved
+    @cherrypy.expose
+    @require() #requires valid login
+    def getparams(self):
+        parameterlist=getdb()
+        paramReaderQueue = cherrypy.session.get('paramReaderQueue')
+        params={}
+        if paramReaderQueue:   
+            while True:
+                try:
+                    param,value = paramReaderQueue.get_nowait()
+                    if param=='**end**':
+                        # remove the queue when all items read
+                        del cherrypy.session['paramReaderQueue']
+                        break
+                    params[param]=value
+                except:
+                    # queue is empty, send what's read so far
+                    break    
+            cherrypy.response.headers['Content-Type'] = 'application/json'
+            return simplejson.dumps(params)
     
     @cherrypy.expose
     def index(self, **args):
@@ -206,11 +237,25 @@ class PellMonWebb:
         tmpl = lookup.get_template("index.html")
         return tmpl.render(username=cherrypy.session.get('_cp_username'), checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))    
 
-    @cherrypy.expose
-    def submit(self, name):
-        cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(title="Hello"))
+def parameterReader(q):
+    parameterlist=getdb()
+    for item in parameterlist:
+        try:
+            value = getItem(item)
+        except: 
+            value='error'
+        q.put((item,value))
+    q.put(('**end**','**end**'))
 
+def getItem(itm):
+    return notify.GetItem('(s)',itm)
+
+def setItem(item, value):
+    return notify.SetItem('(ss)',item, value)
+
+def getdb():
+    return notify.GetDB()
+    
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
 
 global_conf = {
@@ -228,14 +273,10 @@ app_conf =  {'/media':
                 {'tools.staticdir.on': True,
                  'tools.staticdir.dir': MEDIA_DIR}
             }              
-              
+             
 # Connect to pellmonsrv on the dbus system bus
-bus = dbus.SystemBus()
-pelletService = bus.get_object('org.pellmon.int', '/org/pellmon/int')
-getItem = pelletService.get_dbus_method('GetItem', 'org.pellmon.int')
-setItem = pelletService.get_dbus_method('SetItem', 'org.pellmon.int')
-getdb = pelletService.get_dbus_method('GetDB', 'org.pellmon.int')
-
+d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)                        
