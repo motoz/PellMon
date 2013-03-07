@@ -28,6 +28,7 @@ from gi.repository import Gio, GLib
 from auth import AuthController, require, member_of, name_is
 import simplejson
 import threading, Queue
+from logview import LogViewer
 
 #Look for temlates in this directory
 lookup = TemplateLookup(directories=['html'])
@@ -58,6 +59,7 @@ timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
 class PellMonWebb:
 
     auth = AuthController()
+    logview = LogViewer()
     
     @cherrypy.expose
     def form1(self, **args):
