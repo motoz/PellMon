@@ -39,6 +39,7 @@ parser.read('pellmon.conf')
 
 # The RRD database, updated by pellMon
 db = parser.get('conf', 'database') 
+graph_file = os.path.join(os.path.dirname(db), 'graph.png')
 
 # And the colors to use when drawing the graph
 colors = parser.items('graphcolors')
@@ -129,14 +130,14 @@ class PellMonWebb:
         graphTimeStart=str(graphTime + offset)
         graphTimeEnd=str(offset)
         #Build the command string to make a graph from the database         
-        RrdGraphString1="rrdtool graph "+os.getcwd()+"/graph1.png --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
+        RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
         for key,value in polldata:
             if cherrypy.session.get(value)=='yes':
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value) 
         RrdGraphString1=RrdGraphString1+">>/dev/null"   
         os.system(RrdGraphString1)
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_file(os.getcwd()+'/graph1.png', content_type='image/png')
+        return serve_file(graph_file, content_type='image/png')
 
     @cherrypy.expose
     @require() #requires valid login
