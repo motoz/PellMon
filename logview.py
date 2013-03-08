@@ -25,7 +25,7 @@ class LogViewer(object):
     def getlines(self):    
         f = open(logfile, "r")
         #lines = f.readlines()
-        lines = islice(reversed_lines(f), 100):        
+        lines = islice(reversed_lines(f), 100)        
         tmpl = lookup.get_template("loglines.html")
         return tmpl.render(lines=lines)
         
@@ -36,7 +36,7 @@ def reversed_lines(file):
     part = ''
     for block in reversed_blocks(file):
         for c in reversed(block):
-            if c == '\n' and part
+            if c == '\n' and part:
                 yield part[::-1]
                 part = ''
             part += c
