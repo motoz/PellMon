@@ -28,18 +28,42 @@ $('.btn.right').click(function(e) {
 $('.btn.autorefresh').click(function(e) {
 	var me = $(this),
 		input = $('input.autorefresh');
+
+	var setAutorefresh = function(state, callback) {
+		$.post(
+			'autorefresh',
+			{
+				autorefresh: state
+			},
+			function(data) {
+				me.data('processing', false);
+				if(typeof callback === 'function') {
+					callback();
+				}
+			}
+		);
+	};
+
+	if(me.data('processing')) {
+		return;
+	}
+
+	me.data('processing', true);
+
 	if(me.hasClass('active')) {
-		clearInterval(refreshTimer);
 		me.removeClass('active');
-		input.attr('name', '_autorefresh');
+		setAutorefresh('no', function() {
+			clearInterval(refreshTimer);
+		});
 	} else {
-		startImageRefresh();
 		me.addClass('active');
-		input.attr('name', 'autorefresh');
+		setAutorefresh('yes', function() {
+			startImageRefresh();
+		});
 	}
 });
 
-if($('input[name="autorefresh"]').length > 0) {
+if($('.btn.autorefresh').hasClass('active')) {
 	startImageRefresh();
 }
 
