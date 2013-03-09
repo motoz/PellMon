@@ -545,6 +545,16 @@ dataBaseMap =  {
     'oxygen_regulation_D':  { ('4.99','zzzz') : param (FrameZ03, 6,     0,    'I05',   0,   100) },
     'blower_off_time':      { ('4.99','zzzz') : param (FrameZ03, 9,     0,    'I07',   0,    30) },
 
+    'timer_heat_period':    { ('0000','zzzz') : param (FrameZ05, 9, 	0,    'K00',   0,  1440) },
+    'timer_water_period':   { ('0000','zzzz') : param (FrameZ05, 10, 	0,    'K01',   0,  1440) },
+    'timer_heat_start_1':   { ('0000','zzzz') : param (FrameZ05, 11, 	0,    'K02',   0,  1439) },
+    'timer_heat_start_2':   { ('0000','zzzz') : param (FrameZ05, 12, 	0,    'K03',   0,  1439) },
+    'timer_heat_start_3':   { ('0000','zzzz') : param (FrameZ05, 13, 	0,    'K04',   0,  1439) },
+    'timer_heat_start_4':   { ('0000','zzzz') : param (FrameZ05, 14, 	0,    'K05',   0,  1439) },
+    'timer_water_start_1':  { ('0000','zzzz') : param (FrameZ05, 15, 	0,    'K06',   0,  1439) },
+    'timer_water_start_2':  { ('0000','zzzz') : param (FrameZ05, 16, 	0,    'K07',   0,  1439) },
+    'timer_water_start_3':  { ('0000','zzzz') : param (FrameZ05, 17, 	0,    'K08',   0,  1439) },
+
     'comp_clean_interval':  { ('6.03','zzzz') : param (FrameZ05, 18,    0,    'L00',   0,    21) },
     'comp_clean_time':      { ('6.03','zzzz') : param (FrameZ05, 19,    0,    'L01',   0,    10) },
     'comp_clean_blower':    { ('6.03','zzzz') : param (FrameZ05, 20,    0,    'L02',   0,   100) },
