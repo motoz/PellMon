@@ -451,7 +451,7 @@ def create_globals():
 
 
 if __name__ == "__main__":
-    
+
     config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pellmon.conf')
     
     daemon = MyDaemon('/tmp/pelletMonitor.pid')
