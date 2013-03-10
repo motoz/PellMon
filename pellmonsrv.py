@@ -368,7 +368,7 @@ def create_globals():
     parser = ConfigParser.ConfigParser()
 
     # Load the configuration file
-    parser.read('/home/pi/pellmon/pellmon.conf')
+    parser.read(config_file)
 
     # These are read from the serial bus every 'pollinterval' second
     polldata = parser.items("pollvalues")
@@ -645,6 +645,7 @@ def create_globals():
 
 if __name__ == "__main__":
 
+    config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pellmon.conf')
     
     daemon = MyDaemon('/tmp/pelletMonitor.pid')
     if len(sys.argv) == 2:
