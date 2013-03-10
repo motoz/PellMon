@@ -25,13 +25,11 @@ import gobject
 import exceptions
 import logging
 import logging.handlers
-from srv.daemon import Daemon
 import sys
 import ConfigParser
 from threading import Lock
 import serial
-from srv.datamap import dataBaseMap
-from srv.frame import addCheckSum, checkCheckSum, Frame, data
+from srv import *
 
 # Publish an interface over the DBUS system bus
 class MyDBUSService(dbus.service.Object):
@@ -67,10 +65,10 @@ def pollThread():
         if commandqueue[0]==2:
             s=addCheckSum(commandqueue[1])
             logger.debug('serial write'+s)
+            ser.flushInput()
             ser.write(s+'\r')   
             logger.debug('serial written'+s)        
             line=""
-            ser.flushInput()
             try:
                 line=str(ser.read(3))
                 logger.debug('serial read'+line)
@@ -91,12 +89,13 @@ def pollThread():
             if time.time()-frame.timestamp > 8.0:
                 sendFrame = addCheckSum(frame.pollFrame)+"\r"
                 logger.debug('sendFrame = '+sendFrame)
-                logger.debug('serial write')
-                ser.write(sendFrame+'\r')   
-                logger.debug('serial written')  
+
                 line=""
                 try:
                     ser.flushInput()
+                    logger.debug('serial write')
+                    ser.write(sendFrame+'\r')   
+                    logger.debug('serial written')  
                     line=str(ser.read(frame.getLength())) 
                     logger.debug('serial read'+line)
                 except:
@@ -400,10 +399,10 @@ def create_globals():
             v = dataBase['version']
             sendFrame = addCheckSum(v.frame.pollFrame)+"\r"
             logger.debug('sendFrame: %s'%sendFrame)
+            ser.flushInput()
             ser.write(sendFrame+'\r')   
             line=""
             try:
-                ser.flushInput()
                 line=str(ser.read(v.frame.getLength())) 
                 logger.debug('response: %s'%line)
             except:

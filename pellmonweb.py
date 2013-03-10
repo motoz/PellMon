@@ -25,10 +25,9 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
 from gi.repository import Gio, GLib
-from web.auth import AuthController, require, member_of, name_is
 import simplejson
 import threading, Queue
-from web.logview import LogViewer
+from web import *
 
 #Look for temlates in this directory
 lookup = TemplateLookup(directories=['web/html'])
