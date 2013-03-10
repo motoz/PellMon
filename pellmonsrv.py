@@ -25,13 +25,13 @@ import gobject
 import exceptions
 import logging
 import logging.handlers
-from daemon import Daemon
+from srv.daemon import Daemon
 import sys
 import ConfigParser
 from threading import Lock
 import serial
-from datamap import dataBaseMap
-from frame import addCheckSum, checkCheckSum, Frame, data
+from srv.datamap import dataBaseMap
+from srv.frame import addCheckSum, checkCheckSum, Frame, data
 
 # Publish an interface over the DBUS system bus
 class MyDBUSService(dbus.service.Object):
@@ -65,7 +65,7 @@ def pollThread():
 
         # Write parameter/command       
         if commandqueue[0]==2:
-            s=Frame.addCheckSum(commandqueue[1])
+            s=addCheckSum(commandqueue[1])
             logger.debug('serial write'+s)
             ser.write(s+'\r')   
             logger.debug('serial written'+s)        
@@ -188,28 +188,31 @@ def setItem(param, s):
     dataparam=dataBase[param]
     if hasattr(dataparam, 'address'):
         try:
-            value=float(s)
-        except:
-            return "not a number"
-        if hasattr(dataparam, 'frame'):
-            # Indicate that this frame has old data now
-            dataparam.frame.timestamp = 0.0
-        if hasattr(dataparam, 'decimals'):
-            decimals = dataparam.decimals
-        else:
-            decimals = 0
+            try:
+                value=float(s)
+            except:
+                return "not a number"
+            if hasattr(dataparam, 'frame'):
+                # Indicate that this frame has old data now
+                dataparam.frame.timestamp = 0.0
+            if hasattr(dataparam, 'decimals'):
+                decimals = dataparam.decimals
+            else:
+                decimals = 0
 
-        if value >= dataparam.min and value <= dataparam.max:
-            s=("{:0>4.0f}".format(value * pow(10, decimals)))
-            # Send "write parameter value" message to pollThread
-            responseQueue = Queue.Queue() 
-            q.put((2,dataparam.address + s, responseQueue))
-            response = responseQueue.get()
-            if response == addCheckSum('OK'):
-                logger.info('Parameter %s = %s'%(param,s))
-            return response
-        else:
-            return "Expected value "+str(dataparam.min)+".."+str(dataparam.max)
+            if value >= dataparam.min and value <= dataparam.max:
+                s=("{:0>4.0f}".format(value * pow(10, decimals)))
+                # Send "write parameter value" message to pollThread
+                responseQueue = Queue.Queue() 
+                q.put((2,dataparam.address + s, responseQueue))
+                response = responseQueue.get()
+                if response == addCheckSum('OK'):
+                    logger.info('Parameter %s = %s'%(param,s))
+                return response
+            else:
+                return "Expected value "+str(dataparam.min)+".."+str(dataparam.max)
+        except Exception, e:
+            return e
     else:
         return 'Not a setting value'
 

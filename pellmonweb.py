@@ -25,13 +25,13 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
 from gi.repository import Gio, GLib
-from auth import AuthController, require, member_of, name_is
+from web.auth import AuthController, require, member_of, name_is
 import simplejson
 import threading, Queue
-from logview import LogViewer
+from web.logview import LogViewer
 
 #Look for temlates in this directory
-lookup = TemplateLookup(directories=['html'])
+lookup = TemplateLookup(directories=['web/html'])
 
 parser = ConfigParser.ConfigParser()
 
@@ -269,7 +269,7 @@ def setItem(item, value):
 def getdb():
     return notify.GetDB()
 
-MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
+MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
 
 global_conf = {
        'global':    { 'server.environment': 'debug',

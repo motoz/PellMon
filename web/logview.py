@@ -25,7 +25,7 @@ from mako.lookup import TemplateLookup
 from itertools import islice
 
 #Look for temlates in this directory
-lookup = TemplateLookup(directories=['html'])
+lookup = TemplateLookup(directories=['web/html'])
 
 # Load the configuration file
 parser = ConfigParser.ConfigParser()
