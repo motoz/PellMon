@@ -14,7 +14,7 @@ $('.btn.left').click(function(e) {
 	$.post('/left', {}, function(data) {
 		refreshImage();
 	});
-	refreshImage();
+	//refreshImage();
 });
 
 $('.btn.right').click(function(e) {
@@ -22,7 +22,7 @@ $('.btn.right').click(function(e) {
 	$.post('/right', {}, function(data) {
 		refreshImage();
 	});
-	refreshImage();
+	//refreshImage();
 });
 
 $('.btn.autorefresh').click(function(e) {
@@ -60,6 +60,7 @@ $('.btn.autorefresh').click(function(e) {
 		setAutorefresh('yes', function() {
 			startImageRefresh();
 		});
+		refreshImage();
 	}
 });
 

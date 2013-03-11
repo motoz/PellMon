@@ -104,42 +104,38 @@ class PellMonWebb:
     @cherrypy.expose
     def left(self, **args):
         if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = '0'
+            cherrypy.session['time'] = 0
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice'] = 'time1h'
         if cherrypy.request.method == "POST":
             seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            cherrypy.session['time']=str(int(cherrypy.session['time'])+seconds)
+            cherrypy.session['time']=cherrypy.session['time']+seconds
         cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(title="Hello"))
-        # redirect back after setting selection in session
-        #raise cherrypy.HTTPRedirect('/')
+        return simplejson.dumps(dict(offset=cherrypy.session['time']))
 
     @cherrypy.expose
     def right(self, **args):
         if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = '0'
+            cherrypy.session['time'] = 0
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice'] = 'time1h'
         if cherrypy.request.method == "POST":
             seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            time=int(cherrypy.session['time'])-seconds
+            time=cherrypy.session['time']-seconds
             if time<0:
                 time=0
-            cherrypy.session['time']=str(time)
+            cherrypy.session['time']=time
         cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(title="Hello, %s" % name))
-        # redirect back after setting selection in session
-        #raise cherrypy.HTTPRedirect('/')
+        return simplejson.dumps(dict(offset=cherrypy.session['time']))
 
     @cherrypy.expose
     def image(self, **args):
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice'] = 'time1h'
         if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = '0'
+            cherrypy.session['time'] = 0
         graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
-        offset = int(cherrypy.session['time'])
+        offset = cherrypy.session['time']
         graphTimeStart=str(graphTime + offset)
         graphTimeEnd=str(offset)
         #Build the command string to make a graph from the database         
