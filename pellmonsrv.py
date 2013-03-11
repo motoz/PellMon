@@ -57,66 +57,6 @@ class MyDBUSService(dbus.service.Object):
         else:
             return l
 
-def pollThread():
-    while True:  
-        commandqueue = q.get() 
-
-        # Write parameter/command       
-        if commandqueue[0]==2:
-            s=addCheckSum(commandqueue[1])
-            logger.debug('serial write'+s)
-            ser.flushInput()
-            ser.write(s+'\r')   
-            logger.debug('serial written'+s)        
-            line=""
-            try:
-                line=str(ser.read(3))
-                logger.debug('serial read'+line)
-            except: 
-                logger.debug('Serial read error')
-            if line:
-                # Send back the response
-                commandqueue[2].put(line)
-            else:
-                commandqueue[2].put("No answer")
-                logger.info('No answer')
-        
-        # Get frame command
-        if commandqueue[0]==3:
-            responsequeue = commandqueue[2]
-            frame = commandqueue[1]
-            # This frame could have been read recently by a previous read request, so check again if it's necessary to read
-            if time.time()-frame.timestamp > 8.0:
-                sendFrame = addCheckSum(frame.pollFrame)+"\r"
-                logger.debug('sendFrame = '+sendFrame)
-
-                line=""
-                try:
-                    ser.flushInput()
-                    logger.debug('serial write')
-                    ser.write(sendFrame+'\r')   
-                    logger.debug('serial written')  
-                    line=str(ser.read(frame.getLength())) 
-                    logger.debug('serial read'+line)
-                except:
-                    logger.debug('Serial read error')
-                if line:    
-                    logger.debug('Got answer, parsing') 
-                    result=commandqueue[1].parse(line)
-                    try:
-                        responsequeue.put(result)
-                    except:
-                        logger.debug('command response queue put 1 fail')               
-                else: 
-                    try:
-                        logger.debug('Try to put False, answer was empty')
-                        responsequeue.put(False)
-                    except:
-                        logger.debug('command response queue put 2 fail')               
-                    logger.info('Empty, no answer')
-            else: 
-                responsequeue.put(True)
-            
 # Poll data and update the RRD database
 def handlerThread():
         logger.debug('handlerTread started by signal handler')
@@ -142,78 +82,6 @@ def handler(signum, frame):
     ht = threading.Thread(name='poll_thread', target=handlerThread)
     ht.setDaemon(True)
     ht.start()
-
-
-
-# Read data/parameter value
-def getItem(param): 
-        logger.debug('getitem')
-        dataparam=dataBase[param]
-        if hasattr(dataparam, 'frame'):
-            ok=True
-            # If the frame containing this data hasn't been read recently do it now
-            if time.time()-dataparam.frame.timestamp > 8.0:
-                try:
-                    responseQueue = Queue.Queue(3)
-                    try:  # Send "read parameter value" message to pollThread
-                        q.put((3,dataparam.frame,responseQueue))
-                        try:  # and wait for a response                 
-                            ok=responseQueue.get(True, 5)
-                        except:
-                            ok=False
-                            logger.info('GetItem: Response timeout')
-                    except:
-                        ok=False
-                        logger.info('Getitem: MessageQueue full')
-                except:
-                    logger.info('Getitem: Create responsequeue failed') 
-                    ok=False
-            if (ok):
-                if dataparam.decimals == -1: # not a number, return as is
-                    return dataparam.frame.get(dataparam.index)
-                else:
-                    try:
-                        formatStr="{:0."+str(dataparam.decimals)+"f}"
-                        return  formatStr.format( float(dataparam.frame.get(dataparam.index)) / pow(10, dataparam.decimals)  )
-                    except:
-                        raise IOError(0, "Getitem result is not a number")
-            else:
-                raise IOError(0, "GetItem failed")
-        else: 
-            raise IOError(0, "A command can't be read") 
-
-# Write a parameter/command  
-def setItem(param, s):
-    dataparam=dataBase[param]
-    if hasattr(dataparam, 'address'):
-        try:
-            try:
-                value=float(s)
-            except:
-                return "not a number"
-            if hasattr(dataparam, 'frame'):
-                # Indicate that this frame has old data now
-                dataparam.frame.timestamp = 0.0
-            if hasattr(dataparam, 'decimals'):
-                decimals = dataparam.decimals
-            else:
-                decimals = 0
-
-            if value >= dataparam.min and value <= dataparam.max:
-                s=("{:0>4.0f}".format(value * pow(10, decimals)))
-                # Send "write parameter value" message to pollThread
-                responseQueue = Queue.Queue() 
-                q.put((2,dataparam.address + s, responseQueue))
-                response = responseQueue.get()
-                if response == addCheckSum('OK'):
-                    logger.info('Parameter %s = %s'%(param,s))
-                return response
-            else:
-                return "Expected value "+str(dataparam.min)+".."+str(dataparam.max)
-        except Exception, e:
-            return e
-    else:
-        return 'Not a setting value'
 
 copy_in_progress = False
 
@@ -265,15 +133,12 @@ class MyDaemon(Daemon):
         DBusGMainLoop(set_as_default=True)
         myservice = MyDBUSService()
         
+        initProtocol(ser)
+        
         logger.info('starting pelletMonitor')
         
         # Create SIGTERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
-
-        # Create and start poll_thread
-        POLLTHREAD = threading.Thread(name='poll_thread', target=pollThread)
-        POLLTHREAD.setDaemon(True)
-        POLLTHREAD.start()
 
         # Create poll_interval periodic signal handler
         signal.signal(signal.SIGALRM, handler)
@@ -365,9 +230,6 @@ def create_globals():
     # add the handlers to the logger
     logger.addHandler(fh)
     logger.info('loglevel: '+loglevel)
-    # message queue, used to send frame polling commands to pollThread
-    global q
-    q = Queue.Queue(300)
 
     # Open serial port
     global ser
@@ -440,13 +302,7 @@ def create_globals():
     RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1000:20000" 
 
     # Build a dictionary of parameters supported on version_string
-    dataBase={}
-    for param_name in dataBaseMap:
-        mappings = dataBaseMap[param_name]
-        for supported_versions in mappings: 
-            if version_string >= supported_versions[0] and version_string < supported_versions[1]:
-                dataBase[param_name] = mappings[supported_versions]
-
+    dataBase=createDataBase(version_string)
 
 #########################################################################################
 
