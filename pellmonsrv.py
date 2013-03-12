@@ -49,6 +49,7 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         l=[]
+        dataBase = getDataBase()
         for item in dataBase:
             l.append(item)
         l.sort()
@@ -66,9 +67,9 @@ def handlerThread():
                 items.append(getItem(data))
             s=':'.join(items)
             os.system("/usr/bin/rrdtool update "+db+" N:"+s)
-            logger.setLevel(logging.INFO)
+            #logger.setLevel(logging.INFO)
         except IOError as e:
-            logger.setLevel(logging.DEBUG)
+            #logger.setLevel(logging.DEBUG)
             logger.info('IOError: '+e.strerror)
             logger.info('   Trying Z01...')
             try:
@@ -133,7 +134,7 @@ class MyDaemon(Daemon):
         DBusGMainLoop(set_as_default=True)
         myservice = MyDBUSService()
         
-        initProtocol(ser)
+        initProtocol(ser, version_string)
         
         logger.info('starting pelletMonitor')
         
@@ -249,36 +250,6 @@ def create_globals():
     global version_string
     version_string = parser.get('conf', 'chipversion')
 
-    if version_string == 'auto':
-        # This frame had better be the same in all chip versions
-        global FrameZ04
-        FrameZ04  = Frame([5,5],'Z040000')
-        global dataBase
-        dataBase = {'version': data (FrameZ04,  1,    -1) }
-        # PollThread not running yet so it's work is done here for version reading
-        try:
-            logger.debug('Version detection')
-            v = dataBase['version']
-            sendFrame = addCheckSum(v.frame.pollFrame)+"\r"
-            logger.debug('sendFrame: %s'%sendFrame)
-            ser.flushInput()
-            ser.write(sendFrame+'\r')   
-            line=""
-            try:
-                line=str(ser.read(v.frame.getLength())) 
-                logger.debug('response: %s'%line)
-            except:
-                logger.debug('Serial read error')
-            if line:    
-                v.frame.parse(line)
-                version_string = v.frame.get(v.index).lstrip()
-            else: 
-                version_string=None
-        except Exception,e:
-            logger.info('Chip version detection failed') 
-            logger.debug('Exception: %s'%str(e))
-            version_string = None        
-
     if version_string == None:
         version_string = '0.0'
 
@@ -300,9 +271,6 @@ def create_globals():
     RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:10:20000 " 
     RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:100:20000 " 
     RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1000:20000" 
-
-    # Build a dictionary of parameters supported on version_string
-    dataBase=createDataBase(version_string)
 
 #########################################################################################
 

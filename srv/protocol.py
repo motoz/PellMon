@@ -28,6 +28,7 @@ import serial
 from datamap import dataBaseMap
 
 logger = getLogger('pellMon')
+dataBase = {}
 
 # 'param' type is for setting values that can be read and written
 # 'data' type is for read-only measurement values
@@ -36,16 +37,29 @@ param   = namedtuple('param',   'frame index decimals address min max')
 data    = namedtuple('data',    'frame index decimals') 
 command = namedtuple('command', 'address min max')
 
-def initProtocol(s):        
+def initProtocol(s, version_string):        
     # message queue, used to send frame polling commands to pollThread
     global q
     global ser
+    global dataBase
+    
     ser=s
     q = Queue.Queue(300)
+    dataBase = createDataBase('0000')
+    
     # Create and start poll_thread
     POLLTHREAD = threading.Thread(name='poll_thread', target=pollThread)
     POLLTHREAD.setDaemon(True)
     POLLTHREAD.start()
+
+    if version_string == 'auto':
+        try:
+            version_string = getItem('version').lstrip()
+            logger.info('chip version: %s'%version_string)
+        except:
+            version_string = '0.0'
+            logger.info('version detection failed')
+    dataBase = createDataBase(version_string)
         
 def addCheckSum(s):
     x=0;
@@ -110,7 +124,10 @@ class Frame:
         data=self.data[index]
         self.mutex.release()
         return data
-        
+
+def getDataBase():
+    return dataBase  
+            
 # Read data/parameter value
 def getItem(param): 
         logger.debug('getitem')
@@ -183,15 +200,14 @@ def setItem(param, s):
         
 def createDataBase(version_string):
     """return a dictionary of parameters supported on version_string"""
-    global dataBase
-    dataBase={}
+    db={}
     for param_name in dataBaseMap:
         mappings = dataBaseMap[param_name]
         for supported_versions in mappings: 
             if version_string >= supported_versions[0] and version_string < supported_versions[1]:
-                dataBase[param_name] = mappings[supported_versions]
-    return dataBase   
-    
+                db[param_name] = mappings[supported_versions]
+    return db   
+
 def pollThread():
     while True:  
         commandqueue = q.get() 
@@ -243,11 +259,31 @@ def pollThread():
                     except:
                         logger.debug('command response queue put 1 fail')               
                 else: 
+                    logger.info('Timeout, retrying')
                     try:
-                        logger.debug('Try to put False, answer was empty')
-                        responsequeue.put(False)
+                        ser.flushInput()
+                        logger.debug('serial write')
+                        ser.write(sendFrame+'\r')
+                        logger.debug('serial written')
+                        line=str(ser.read(frame.getLength()))
+                        logger.debug('answer: '+line)
                     except:
-                        logger.debug('command response queue put 2 fail')               
-                    logger.info('Empty, no answer')
+                        logger.debug('Serial read error')
+                    if line:
+                        logger.info('Got answer, parsing')
+                        result=commandqueue[1].parse(line)
+                        try:
+                            responsequeue.put(result)
+                        except:
+                            logger.debug('command response queue put 1 fail')
+                    else:   
+                        try:
+                            logger.debug('Try to put False, answer was empty')
+                            responsequeue.put(False)
+                        except:
+                            logger.debug('command response queue put 2 fail')
+                        logger.info('Timeout again, give up and return fail')
+
             else: 
                 responsequeue.put(True)         
+              
