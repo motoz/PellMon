@@ -63,10 +63,10 @@ def handlerThread():
         logger.debug('handlerTread started by signal handler')
         items=[]
         try:
-            for data in pollData:
+            for data in conf.pollData:
                 items.append(getItem(data))
             s=':'.join(items)
-            os.system("/usr/bin/rrdtool update "+db+" N:"+s)
+            os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
             #logger.setLevel(logging.INFO)
         except IOError as e:
             #logger.setLevel(logging.DEBUG)
@@ -92,21 +92,21 @@ def copy_db(direction='store'):
         if direction=='store':
             try:
                 copy_in_progress = True     
-                os.system('cp %s %s'%(db, nvdb)) 
-                logger.info('copied %s to %s'%(db, nvdb))
+                os.system('cp %s %s'%(conf.db, conf.nvdb)) 
+                logger.info('copied %s to %s'%(conf.db, conf.nvdb))
             except Exception, e:
                 logger.info(str(e))
-                logger.info('copy %s to %s failed'%(db, nvdb))
+                logger.info('copy %s to %s failed'%(conf.db, conf.nvdb))
             finally:
                 copy_in_progress = False
         else:
             try:
                 copy_in_progress = True     
-                os.system('cp %s %s'%(nvdb, db))  
-                logger.info('copied %s to %s'%(nvdb, db))
+                os.system('cp %s %s'%(conf.nvdb, conf.db))  
+                logger.info('copied %s to %s'%(conf.nvdb, conf.db))
             except Exception, e:
                 logger.info(str(e))
-                logger.info('copy %s to %s failed'%(nvdb, db))
+                logger.info('copy %s to %s failed'%(conf.nvdb, conf.db))
             finally:
                 copy_in_progress = False
     
@@ -125,7 +125,31 @@ def sigterm_handler(signum, frame):
     
 class MyDaemon(Daemon):
     def run(self):
-        create_globals()
+    
+        global conf
+        conf = config()
+
+        global logger
+        logger = logging.getLogger('pellMon')
+
+        logger.info('starting pelletMonitor')
+
+        # Open serial port
+        ser = serial.Serial()
+        ser.port     = conf.serial_port
+        ser.baudrate = 9600
+        ser.parity   = 'N'
+        ser.rtscts   = False
+        ser.xonxoff  = False
+        ser.timeout  = 1        
+        try:
+            ser.open()
+        except serial.SerialException, e:
+            logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
+        logger.info('serial port ok')
+        
+        # Initialize protocol and setup the database according to version_string
+        initProtocol(ser, conf.version_string)
         
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
@@ -134,204 +158,112 @@ class MyDaemon(Daemon):
         DBusGMainLoop(set_as_default=True)
         myservice = MyDBUSService()
         
-        initProtocol(ser, version_string)
-        
-        logger.info('starting pelletMonitor')
-        
         # Create SIGTERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
 
         # Create poll_interval periodic signal handler
         signal.signal(signal.SIGALRM, handler)
         logger.info('created signalhandler')
-        signal.setitimer(signal.ITIMER_REAL, 2, poll_interval)
+        signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
         logger.info('started timer')
         
         # Create RRD database, if nvdb defined copy it to db
-        if nvdb != db:
-            if not os.path.exists(nvdb):
-                os.system(RrdCreateString)
-                logger.info('Created rrd database: '+RrdCreateString)
+        if conf.nvdb != conf.db:
+            if not os.path.exists(conf.nvdb):
+                os.system(conf.RrdCreateString)
+                logger.info('Created rrd database: '+conf.RrdCreateString)
             copy_db('restore')
             # Create and start db_copy_thread to store db at regular interval
-            #ht = threading.Thread(name='db_copy_thread', target=db_copy_thread)
-            ht = threading.Timer(db_store_interval, db_copy_thread)
+            ht = threading.Timer(conf.db_store_interval, db_copy_thread)
             ht.setDaemon(True)
             ht.start()
         else:
             if not os.path.exists(db):
-                os.system(RrdCreateString)
-                logger.info('Created rrd database: '+RrdCreateString)
+                os.system(conf.RrdCreateString)
+                logger.info('Created rrd database: '+conf.RrdCreateString)
        
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
         
-        # glib main loop has quit
-        logger.info("end")
+        # glib main loop has quit, this should not happen
+        logger.info("ending, what??")
         
 class config:
-    def init:
-        parser = ConfigParser.ConfigParser()
-    
+    def __init__(self):
         # Load the configuration file
+        parser = ConfigParser.ConfigParser()
         parser.read(config_file)
     
         # These are read from the serial bus every 'pollinterval' second
-        config.polldata = parser.items("pollvalues"
+        polldata = parser.items("pollvalues")
 
         # Optional rrd data source definitions, default is DS:%s:GAUGE:%u:U:U
-        config.rrd_datasources = parser.items("rrd_datasources")
+        rrd_datasources = parser.items("rrd_datasources")
         
-        config.pollData = []
-        config.dataSources = {}
+        self.pollData = []
+        self.dataSources = {}
         dataSourceConf = {}
         for key, value in rrd_datasources:
             dataSourceConf[key] = value
         for key, value in polldata:
-            config.pollData.append(value)
+            self.pollData.append(value)
             if dataSourceConf.has_key(key):
-                config.dataSources[value] = dataSourceConf[key]
+                self.dataSources[value] = dataSourceConf[key]
             else:
-                config.dataSources[value] = "DS:%s:GAUGE:%u:U:U"
+                self.dataSources[value] = "DS:%s:GAUGE:%u:U:U"
         # The RRD database
-        config.db = parser.get('conf', 'database')
+        self.db = parser.get('conf', 'database')
 
         # The persistent RRD database
         try:
-            config.nvdb = parser.get('conf', 'persistent_db') 
+            self.nvdb = parser.get('conf', 'persistent_db') 
         except:
-            config.nvdb = db        
+            self.nvdb = db        
         try:
-            config.db_store_interval = int(parser.get('conf', 'db_store_interval'))
+            self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
         except:
-            config.db_store_interval = 3600
+            self.db_store_interval = 3600
         try:
-            config.serial_port = parser.get('conf', 'serialport') 
+            self.serial_port = parser.get('conf', 'serialport') 
         except:
-            config.serial_port = None
+            self.serial_port = None
         try:
-            version_string = parser.get('conf', 'chipversion')
+            self.version_string = parser.get('conf', 'chipversion')
         except:
             logger.info('chipversion not specified, using 0.0')
-            version_string = '0.0'
+            self.version_string = '0.0'
         try: 
-            config.poll_interval = int(parser.get('conf', 'pollinterval'))
+            self.poll_interval = int(parser.get('conf', 'pollinterval'))
         except:
             logger.info('Invalid poll_interval setting, using 10s')
-            config.poll_interval = 10
+            self.poll_interval = 10
 
         # Build a command string to create the rrd database
-        config.RrdCreateString="rrdtool create %s --step %u "%(nvdb, poll_interval)
-        for item in pollData:
-            config.RrdCreateString += dataSources[item] % (item, poll_interval*4) + ' ' 
-        config.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
-        config.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
-        config.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
-        config.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+        self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
+        for item in self.pollData:
+            self.RrdCreateString += self.dataSources[item] % (item, self.poll_interval*4) + ' ' 
+        self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
+        self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
+        self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
+        self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
 
-            
-# Create global stuff
-def create_globals():
-    global parser
-    parser = ConfigParser.ConfigParser()
-
-    # Load the configuration file
-    parser.read(config_file)
-
-    # These are read from the serial bus every 'pollinterval' second
-    polldata = parser.items("pollvalues")
-
-    # Optional rrd data source definitions, default is DS:%s:GAUGE:%u:U:U
-    rrd_datasources = parser.items("rrd_datasources")
-
-    global pollData
-    pollData = []
-    global dataSources
-    dataSources = {}
-    dataSourceConf = {}
-    for key, value in rrd_datasources:
-        dataSourceConf[key] = value
-    for key, value in polldata:
-        pollData.append(value)
-        if dataSourceConf.has_key(key):
-            dataSources[value] = dataSourceConf[key]
-        else:
-            dataSources[value] = "DS:%s:GAUGE:%u:U:U"
-
-    global db    
-    # The RRD database
-    db = parser.get('conf', 'database') 
-
-    # The persistent RRD database
-    try:
-        global nvdb
-        nvdb = parser.get('conf', 'persistent_db') 
-    except:
-        nvdb = db        
-    try:
-        global db_store_interval
-        db_store_interval = int(parser.get('conf', 'db_store_interval'))
-    except:
-        db_store_interval = 3600        
-
-    # create logger
-    global logger
-    logger = logging.getLogger('pellMon')
-    loglevel = parser.get('conf', 'loglevel')
-    loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
-    try:
-        logger.setLevel(loglevels[loglevel])
-    except:
-        logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages
-    fh = logging.handlers.WatchedFileHandler(parser.get('conf', 'logfile'))
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.info('loglevel: '+loglevel)
-
-    # Open serial port
-    global ser
-    ser = serial.Serial()
-    ser.port     = parser.get('conf', 'serialport') 
-    ser.baudrate = 9600
-    ser.parity   = 'N'
-    ser.rtscts   = False
-    ser.xonxoff  = False
-    ser.timeout  = 1        
-    try:
-        ser.open()
-    except serial.SerialException, e:
-        logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
-    logger.info('serial port ok')
-
-    global version_string
-    version_string = parser.get('conf', 'chipversion')
-
-    if version_string == None:
-        version_string = '0.0'
-
-    logger.info('Chip version: %s'%version_string)    
-
-    try: 
-        global poll_interval
-        poll_interval = int(parser.get('conf', 'pollinterval'))
-    except:
-        poll_interval = 10
-        logger.info('invalid poll interval setting, using 10s')
-
-    # Build a command string to create the rrd database
-    global RrdCreateString
-    RrdCreateString="rrdtool create %s --step %u "%(nvdb, poll_interval)
-    for item in pollData:
-        RrdCreateString=RrdCreateString + dataSources[item] % (item, poll_interval*4) + ' ' 
-    RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1:20000 " 
-    RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:10:20000 " 
-    RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:100:20000 " 
-    RrdCreateString=RrdCreateString+"RRA:AVERAGE:0,999:1000:20000" 
+        # create logger
+        logger = logging.getLogger('pellMon')
+        loglevel = parser.get('conf', 'loglevel')
+        loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
+        try:
+            logger.setLevel(loglevels[loglevel])
+        except:
+            logger.setLevel(logging.DEBUG)
+        # create file handler for logger
+        fh = logging.handlers.WatchedFileHandler(parser.get('conf', 'logfile'))
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        # add the handlers to the logger
+        logger.addHandler(fh)
+        
+        self.serial_port = parser.get('conf', 'serialport') 
 
 #########################################################################################
 
