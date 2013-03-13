@@ -251,15 +251,19 @@ def pollThread():
                     logger.debug('serial read'+line)
                 except:
                     logger.debug('Serial read error')
+                result = False
                 if line:    
                     logger.debug('Got answer, parsing') 
                     result=commandqueue[1].parse(line)
-                    try:
-                        responsequeue.put(result)
-                    except:
-                        logger.debug('command response queue put 1 fail')               
-                else: 
-                    logger.info('Timeout, retrying')
+                    if result:
+                        try:
+                            responsequeue.put(result)
+                        except:
+                            logger.debug('command response queue put 1 fail')    
+                else:
+                    logger.info('Timeout')
+                if not result:           
+                    logger.info('Retrying')
                     try:
                         ser.flushInput()
                         logger.debug('serial write')
