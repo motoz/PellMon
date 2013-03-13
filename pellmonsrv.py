@@ -168,7 +168,68 @@ class MyDaemon(Daemon):
         
         # glib main loop has quit
         logger.info("end")
+        
+class config:
+    def init:
+        parser = ConfigParser.ConfigParser()
+    
+        # Load the configuration file
+        parser.read(config_file)
+    
+        # These are read from the serial bus every 'pollinterval' second
+        config.polldata = parser.items("pollvalues"
 
+        # Optional rrd data source definitions, default is DS:%s:GAUGE:%u:U:U
+        config.rrd_datasources = parser.items("rrd_datasources")
+        
+        config.pollData = []
+        config.dataSources = {}
+        dataSourceConf = {}
+        for key, value in rrd_datasources:
+            dataSourceConf[key] = value
+        for key, value in polldata:
+            config.pollData.append(value)
+            if dataSourceConf.has_key(key):
+                config.dataSources[value] = dataSourceConf[key]
+            else:
+                config.dataSources[value] = "DS:%s:GAUGE:%u:U:U"
+        # The RRD database
+        config.db = parser.get('conf', 'database')
+
+        # The persistent RRD database
+        try:
+            config.nvdb = parser.get('conf', 'persistent_db') 
+        except:
+            config.nvdb = db        
+        try:
+            config.db_store_interval = int(parser.get('conf', 'db_store_interval'))
+        except:
+            config.db_store_interval = 3600
+        try:
+            config.serial_port = parser.get('conf', 'serialport') 
+        except:
+            config.serial_port = None
+        try:
+            version_string = parser.get('conf', 'chipversion')
+        except:
+            logger.info('chipversion not specified, using 0.0')
+            version_string = '0.0'
+        try: 
+            config.poll_interval = int(parser.get('conf', 'pollinterval'))
+        except:
+            logger.info('Invalid poll_interval setting, using 10s')
+            config.poll_interval = 10
+
+        # Build a command string to create the rrd database
+        config.RrdCreateString="rrdtool create %s --step %u "%(nvdb, poll_interval)
+        for item in pollData:
+            config.RrdCreateString += dataSources[item] % (item, poll_interval*4) + ' ' 
+        config.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
+        config.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
+        config.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
+        config.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+
+            
 # Create global stuff
 def create_globals():
     global parser
