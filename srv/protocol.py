@@ -37,13 +37,28 @@ param   = namedtuple('param',   'frame index decimals address min max')
 data    = namedtuple('data',    'frame index decimals') 
 command = namedtuple('command', 'address min max')
 
-def initProtocol(s, version_string):        
+def initProtocol(dev, version_string):   
+    """Initialize the protocol and database according to given version"""    
+         
     # message queue, used to send frame polling commands to pollThread
     global q
     global ser
     global dataBase
-    
-    ser=s
+
+    # Open serial port
+    ser = serial.Serial()
+    ser.port     = dev
+    ser.baudrate = 9600
+    ser.parity   = 'N'
+    ser.rtscts   = False
+    ser.xonxoff  = False
+    ser.timeout  = 1        
+    try:
+        ser.open()
+    except serial.SerialException, e:
+        logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
+    logger.info('serial port ok')
+        
     q = Queue.Queue(300)
     dataBase = createDataBase('0000')
     
@@ -128,45 +143,45 @@ class Frame:
 def getDataBase():
     return dataBase  
             
-# Read data/parameter value
 def getItem(param): 
-        logger.debug('getitem')
-        dataparam=dataBase[param]
-        if hasattr(dataparam, 'frame'):
-            ok=True
-            # If the frame containing this data hasn't been read recently do it now
-            if time.time()-dataparam.frame.timestamp > 8.0:
-                try:
-                    responseQueue = Queue.Queue(3)
-                    try:  # Send "read parameter value" message to pollThread
-                        q.put((3,dataparam.frame,responseQueue))
-                        try:  # and wait for a response                 
-                            ok=responseQueue.get(True, 5)
-                        except:
-                            ok=False
-                            logger.info('GetItem: Response timeout')
+    """Read data/parameter value"""
+    logger.debug('getitem')
+    dataparam=dataBase[param]
+    if hasattr(dataparam, 'frame'):
+        ok=True
+        # If the frame containing this data hasn't been read recently do it now
+        if time.time()-dataparam.frame.timestamp > 8.0:
+            try:
+                responseQueue = Queue.Queue(3)
+                try:  # Send "read parameter value" message to pollThread
+                    q.put((3,dataparam.frame,responseQueue))
+                    try:  # and wait for a response                 
+                        ok=responseQueue.get(True, 5)
                     except:
                         ok=False
-                        logger.info('Getitem: MessageQueue full')
+                        logger.info('GetItem: Response timeout')
                 except:
-                    logger.info('Getitem: Create responsequeue failed') 
                     ok=False
-            if (ok):
-                if dataparam.decimals == -1: # not a number, return as is
-                    return dataparam.frame.get(dataparam.index)
-                else:
-                    try:
-                        formatStr="{:0."+str(dataparam.decimals)+"f}"
-                        return  formatStr.format( float(dataparam.frame.get(dataparam.index)) / pow(10, dataparam.decimals)  )
-                    except:
-                        raise IOError(0, "Getitem result is not a number")
+                    logger.info('Getitem: MessageQueue full')
+            except:
+                logger.info('Getitem: Create responsequeue failed') 
+                ok=False
+        if (ok):
+            if dataparam.decimals == -1: # not a number, return as is
+                return dataparam.frame.get(dataparam.index)
             else:
-                raise IOError(0, "GetItem failed")
-        else: 
-            raise IOError(0, "A command can't be read") 
+                try:
+                    formatStr="{:0."+str(dataparam.decimals)+"f}"
+                    return  formatStr.format( float(dataparam.frame.get(dataparam.index)) / pow(10, dataparam.decimals)  )
+                except:
+                    raise IOError(0, "Getitem result is not a number")
+        else:
+            raise IOError(0, "GetItem failed")
+    else: 
+        raise IOError(0, "A command can't be read") 
 
-# Write a parameter/command  
 def setItem(param, s):
+    """Write a parameter/command"""
     dataparam=dataBase[param]
     if hasattr(dataparam, 'address'):
         try:
@@ -209,6 +224,8 @@ def createDataBase(version_string):
     return db   
 
 def pollThread():
+    """Waits on global queue 'q' for frame read / parameter write commands, responds in an 
+    other queue received with the command"""
     while True:  
         commandqueue = q.get() 
 

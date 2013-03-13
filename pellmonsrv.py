@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import signal, os, time, Queue, serial, socket, threading, glib
+import signal, os, time, Queue, socket, threading, glib
 from datetime import datetime
 import dbus, dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
@@ -31,8 +31,8 @@ from threading import Lock
 import serial
 from srv import *
 
-# Publish an interface over the DBUS system bus
 class MyDBUSService(dbus.service.Object):
+    """Publish an interface over the DBUS system bus"""
     def __init__(self):
         bus=dbus.SystemBus()
         bus_name = dbus.service.BusName('org.pellmon.int', bus)
@@ -40,14 +40,17 @@ class MyDBUSService(dbus.service.Object):
 
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
+        """Get the value for a data/parameter item"""
         return getItem(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
+        """Get the value for a parameter/command item"""
         return setItem(param, value)
 
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
+        """Get list of all data/parameter/command items"""
         l=[]
         dataBase = getDataBase()
         for item in dataBase:
@@ -58,36 +61,37 @@ class MyDBUSService(dbus.service.Object):
         else:
             return l
 
-# Poll data and update the RRD database
 def handlerThread():
-        logger.debug('handlerTread started by signal handler')
-        items=[]
+    """Poll data defined in conf.pollData and update the RRD database with the responses"""
+    logger.debug('handlerTread started by signal handler')
+    items=[]
+    try:
+        for data in conf.pollData:
+            items.append(getItem(data))
+        s=':'.join(items)
+        os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
+        #logger.setLevel(logging.INFO)
+    except IOError as e:
+        #logger.setLevel(logging.DEBUG)
+        logger.info('IOError: '+e.strerror)
+        logger.info('   Trying Z01...')
         try:
-            for data in conf.pollData:
-                items.append(getItem(data))
-            s=':'.join(items)
-            os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
-            #logger.setLevel(logging.INFO)
+            # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
+            getItem('oxygen_regulation')
         except IOError as e:
-            #logger.setLevel(logging.DEBUG)
-            logger.info('IOError: '+e.strerror)
-            logger.info('   Trying Z01...')
-            try:
-                # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-                getItem('oxygen_regulation')
-            except IOError as e:
-                logger.info('      failed '+e.strerror)
+            logger.info('      failed '+e.strerror)
 
-# Signal handler start handlerThread at regular interval
 def handler(signum, frame):
+    """Periodic signal handler. Start handlerThread to do the work"""
     ht = threading.Thread(name='poll_thread', target=handlerThread)
     ht.setDaemon(True)
     ht.start()
 
-copy_in_progress = False
-
 def copy_db(direction='store'):
+    """Copy db to nvdb or nvdb to db depending on direction"""
     global copy_in_progress
+    if not 'copy_in_progress' in globals():
+        copy_in_progress = False        
     if not copy_in_progress:
         if direction=='store':
             try:
@@ -111,45 +115,35 @@ def copy_db(direction='store'):
                 copy_in_progress = False
     
 def db_copy_thread():
+    """Run periodically at db_store_interval to call copy_db""" 
     copy_db('store')    
     ht = threading.Timer(db_store_interval, db_copy_thread)
     ht.setDaemon(True)
     ht.start()
 
 def sigterm_handler(signum, frame):
-    if nvdb != db:   
+    """Handles SIGTERM, waits for the database copy on shutdown if it is in a ramdisk"""
+    if conf.nvdb != conf.db:   
         copy_db('store')
     if not copy_in_progress:
         logger.info('exiting')
         sys.exit(0)
     
 class MyDaemon(Daemon):
+    """ Run after double fork with start, or directly with debug argument"""
     def run(self):
     
+        # Init global configuration from the conf file
         global conf
-        conf = config()
+        conf = config(config_file)
 
         global logger
         logger = logging.getLogger('pellMon')
 
         logger.info('starting pelletMonitor')
 
-        # Open serial port
-        ser = serial.Serial()
-        ser.port     = conf.serial_port
-        ser.baudrate = 9600
-        ser.parity   = 'N'
-        ser.rtscts   = False
-        ser.xonxoff  = False
-        ser.timeout  = 1        
-        try:
-            ser.open()
-        except serial.SerialException, e:
-            logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
-        logger.info('serial port ok')
-        
         # Initialize protocol and setup the database according to version_string
-        initProtocol(ser, conf.version_string)
+        initProtocol(conf.serial_device, conf.version_string)
         
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
@@ -189,10 +183,11 @@ class MyDaemon(Daemon):
         logger.info("ending, what??")
         
 class config:
-    def __init__(self):
+    """Contains global configuration, parsed from the .conf file"""
+    def __init__(self, filename):
         # Load the configuration file
         parser = ConfigParser.ConfigParser()
-        parser.read(config_file)
+        parser.read(filename)
     
         # These are read from the serial bus every 'pollinterval' second
         polldata = parser.items("pollvalues")
@@ -224,9 +219,9 @@ class config:
         except:
             self.db_store_interval = 3600
         try:
-            self.serial_port = parser.get('conf', 'serialport') 
+            self.serial_device = parser.get('conf', 'serialport') 
         except:
-            self.serial_port = None
+            self.serial_device = None
         try:
             self.version_string = parser.get('conf', 'chipversion')
         except:
@@ -263,14 +258,14 @@ class config:
         # add the handlers to the logger
         logger.addHandler(fh)
         
-        self.serial_port = parser.get('conf', 'serialport') 
+        self.serial_device = parser.get('conf', 'serialport') 
 
 #########################################################################################
 
 
 
 if __name__ == "__main__":
-
+  
     config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pellmon.conf')
     
     daemon = MyDaemon('/tmp/pelletMonitor.pid')
