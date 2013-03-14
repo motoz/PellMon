@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from frame import Frame,data,param,command
+from protocol import Frame,data,param,command
 
 # 'FrameXXX' defines the serial bus response frame format
 # [list of character count per value], 'string with the frame address'

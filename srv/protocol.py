@@ -25,8 +25,6 @@ import Queue
 import threading
 import serial
 
-from datamap import dataBaseMap
-
 logger = getLogger('pellMon')
 dataBase = {}
 
@@ -215,6 +213,7 @@ def setItem(param, s):
         
 def createDataBase(version_string):
     """return a dictionary of parameters supported on version_string"""
+    from datamap import dataBaseMap
     db={}
     for param_name in dataBaseMap:
         mappings = dataBaseMap[param_name]
