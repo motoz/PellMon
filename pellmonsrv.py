@@ -38,18 +38,18 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
-        return getItem(param)
+        return protocol.getItem(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return setItem(param, value)
+        return protocol.setItem(param, value)
 
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
         l=[]
-        dataBase = getDataBase()
+        dataBase = protocol.getDataBase()
         for item in dataBase:
             l.append(item)
         l.sort()
@@ -140,7 +140,8 @@ class MyDaemon(Daemon):
         logger.info('starting pelletMonitor')
 
         # Initialize protocol and setup the database according to version_string
-        initProtocol(conf.serial_device, conf.version_string)
+        global protocol 
+        protocol = Protocol(conf.serial_device, conf.version_string)
         
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()

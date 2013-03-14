@@ -17,19 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from protocol import Frame,data,param,command
+from frames import *
 
-# 'FrameXXX' defines the serial bus response frame format
-# [list of character count per value], 'string with the frame address'
-FrameZ00  = Frame([5,5,5,5,5,5,5,10,10,5,5,5,5,5,5,5,5,5],'Z000000')
-FrameZ01  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5], 'Z010000')
-FrameZ02  = Frame([10,10,10,10],'Z020000')
-FrameZ03  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z030000')
-FrameZ04  = Frame([5,5],'Z040000')
-FrameZ05  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z050000')
-FrameZ06  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z060000')
-FrameZ07  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z070000')    
-FrameZ08  = Frame([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],'Z080000')    
+# 'param' type is for setting values that can be read and written
+# 'data' type is for read-only measurement values
+# 'command' type is for write-only data
+param   = namedtuple('param',   'frame index decimals address min max') 
+data    = namedtuple('data',    'frame index decimals') 
+command = namedtuple('command', 'address min max')
 
 # dataBaseMap is a dictionary of parameter names and their protocol mappings.
 # The protocol mapping is itself a dictionary with "supported from" and "support ends with" version strings 
