@@ -17,18 +17,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import signal, os, time, Queue, socket, threading, glib
-from datetime import datetime
+import signal, os, Queue, threading, glib
 import dbus, dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
-import exceptions
 import logging
 import logging.handlers
 import sys
 import ConfigParser
-from threading import Lock
-import serial
+
 from srv import *
 
 class MyDBUSService(dbus.service.Object):
