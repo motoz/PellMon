@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 """
     Copyright (C) 2013  Anders Nylund
 
@@ -26,7 +26,7 @@ import logging.handlers
 import sys
 import ConfigParser
 
-from srv import *
+from srv import Protocol, Daemon
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -58,13 +58,13 @@ class MyDBUSService(dbus.service.Object):
         else:
             return l
 
-def handlerThread():
+def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
     items=[]
     try:
         for data in conf.pollData:
-            items.append(getItem(data))
+            items.append(protocol.getItem(data))
         s=':'.join(items)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
         #logger.setLevel(logging.INFO)
@@ -74,13 +74,13 @@ def handlerThread():
         logger.info('   Trying Z01...')
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            getItem('oxygen_regulation')
+            protocol.getItem('oxygen_regulation')
         except IOError as e:
             logger.info('      failed '+e.strerror)
 
-def handler(signum, frame):
-    """Periodic signal handler. Start handlerThread to do the work"""
-    ht = threading.Thread(name='poll_thread', target=handlerThread)
+def periodic_signal_handler(signum, frame):
+    """Periodic signal handler. Start pollThread to do the work"""
+    ht = threading.Thread(name='pollThread', target=pollThread)
     ht.setDaemon(True)
     ht.start()
 
@@ -154,7 +154,7 @@ class MyDaemon(Daemon):
         signal.signal(signal.SIGTERM, sigterm_handler)
 
         # Create poll_interval periodic signal handler
-        signal.signal(signal.SIGALRM, handler)
+        signal.signal(signal.SIGALRM, periodic_signal_handler)
         logger.info('created signalhandler')
         signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
         logger.info('started timer')

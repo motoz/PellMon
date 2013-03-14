@@ -1,5 +1,4 @@
-#! /usr/bin/python
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 """
     Copyright (C) 2013  Anders Nylund
 
@@ -20,17 +19,18 @@
 from threading import Lock
 from logging import getLogger 
 import time
-from collections import namedtuple
 import Queue
 import threading
 import serial
-from datamap import dataBaseMap
     
 logger = getLogger('pellMon')
 
-class Protocol:
+class Protocol(threading.Thread):
+    """Provides read/write functions for parameters/measurement data 
+    for a bio comfort pellet burner connected through rs232"""
+    
     def __init__(self, device, version_string):   
-        """Initialize the protocol and database according to given version"""    
+        """Initialize the protocol and database according to given version"""
              
         # Open serial port
         s = serial.Serial()
@@ -41,7 +41,7 @@ class Protocol:
         s.xonxoff  = False
         s.timeout  = 1        
         try:
-            ser.open()
+            s.open()
         except serial.SerialException, e:
             logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
         logger.info('serial port ok')
@@ -49,26 +49,26 @@ class Protocol:
             
         # message queue, used to send frame polling commands to pollThread
         self.q = Queue.Queue(300)
-        self.dataBase = createDataBase('0000')
+        self.dataBase = self.createDataBase('0000')
         
         # Create and start poll_thread
-        POLLTHREAD = threading.Thread(name='poll_thread', target=self.pollThread)
-        POLLTHREAD.setDaemon(True)
-        POLLTHREAD.start()
-
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+        self.start()
+   
         if version_string == 'auto':
             try:
-                version_string = getItem('version').lstrip()
+                version_string = self.getItem('version').lstrip()
                 logger.info('chip version: %s'%version_string)
             except:
                 version_string = '0.0'
                 logger.info('version detection failed')
         self.dataBase = self.createDataBase(version_string)
         
-    def getDataBase():
+    def getDataBase(self):
         return self.dataBase  
                 
-    def getItem(param): 
+    def getItem(self, param): 
         """Read data/parameter value"""
         logger.debug('getitem')
         dataparam=self.dataBase[param]
@@ -105,7 +105,7 @@ class Protocol:
         else: 
             raise IOError(0, "A command can't be read") 
 
-    def setItem(param, s):
+    def setItem(self, param, s):
         """Write a parameter/command"""
         dataparam=self.dataBase[param]
         if hasattr(dataparam, 'address'):
@@ -138,8 +138,9 @@ class Protocol:
         else:
             return 'Not a setting value'        
             
-    def createDataBase(version_string):
+    def createDataBase(self, version_string):
         """return a dictionary of parameters supported on version_string"""
+        from datamap import dataBaseMap 
         db={}
         for param_name in dataBaseMap:
             mappings = dataBaseMap[param_name]
@@ -148,12 +149,13 @@ class Protocol:
                     db[param_name] = mappings[supported_versions]
         return db   
 
-    def pollThread():
-        """Waits on global queue 'q' for frame read / parameter write commands, responds in an 
+    def run(self):
+        """Run as thread. Waits on queue self.q for frame read / parameter write commands, responds in an 
         other queue received with the command"""
+        logger.debug('thred run')
         while True:  
             commandqueue = self.q.get() 
-
+            logger.debug('got command')
             # Write parameter/command       
             if commandqueue[0]==2:
                 s=addCheckSum(commandqueue[1])
@@ -248,6 +250,9 @@ def checkCheckSum(s):
     return x
 
 class Frame:
+    """Handle parsing of response strings to the different frame formats, and 
+    provide thread safe get data function"""
+    
     def __init__(self, dd, frame):
         self.mutex=Lock()
         self.dataDef=dd 

@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- encoding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 """
     Copyright (C) 2013  Anders Nylund
 

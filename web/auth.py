@@ -1,4 +1,4 @@
-# -*- encoding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Form based authentication for CherryPy. Requires the
 # Session tool to be loaded.
