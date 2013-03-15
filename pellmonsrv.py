@@ -159,20 +159,18 @@ class MyDaemon(Daemon):
         signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
         logger.info('started timer')
         
-        # Create RRD database, if nvdb defined copy it to db
+        # Create RRD database if does not exist
+        if not os.path.exists(conf.nvdb):
+            os.system(conf.RrdCreateString)
+            logger.info('Created rrd database: '+conf.RrdCreateString)
+
+        # If nvdb is different from db, copy nvdb to db
         if conf.nvdb != conf.db:
-            if not os.path.exists(conf.nvdb):
-                os.system(conf.RrdCreateString)
-                logger.info('Created rrd database: '+conf.RrdCreateString)
             copy_db('restore')
             # Create and start db_copy_thread to store db at regular interval
             ht = threading.Timer(conf.db_store_interval, db_copy_thread)
             ht.setDaemon(True)
             ht.start()
-        else:
-            if not os.path.exists(db):
-                os.system(conf.RrdCreateString)
-                logger.info('Created rrd database: '+conf.RrdCreateString)
        
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
