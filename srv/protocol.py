@@ -126,7 +126,7 @@ class Protocol(threading.Thread):
                     s=("{:0>4.0f}".format(value * pow(10, decimals)))
                     # Send "write parameter value" message to pollThread
                     responseQueue = Queue.Queue() 
-                    q.put((2,dataparam.address + s, responseQueue))
+                    self.q.put((2,dataparam.address + s, responseQueue))
                     response = responseQueue.get()
                     if response == addCheckSum('OK'):
                         logger.info('Parameter %s = %s'%(param,s))
