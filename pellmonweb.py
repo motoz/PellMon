@@ -141,7 +141,7 @@ class PellMonWebb:
         #Build the command string to make a graph from the database         
         RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
         for key,value in polldata:
-            if cherrypy.session.get(value)=='yes':
+            if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
         RrdGraphString1=RrdGraphString1+">>/dev/null"
         os.system(RrdGraphString1)
@@ -236,11 +236,12 @@ class PellMonWebb:
         checkboxes=[]
         empty=True
         for key, val in polldata:
-            if cherrypy.session.get(val)=='yes':
-                checkboxes.append((val,True))
-                empty=False
-            else:
-                checkboxes.append((val,''))
+            if colorsDict.has_key(key):
+                if cherrypy.session.get(val)=='yes':
+                    checkboxes.append((val,True))
+                    empty=False
+                else:
+                    checkboxes.append((val,''))
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
         tmpl = lookup.get_template("index.html")
         return tmpl.render(username=cherrypy.session.get('_cp_username'), checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
