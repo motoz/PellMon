@@ -1,5 +1,5 @@
 <%inherit file="layout.html"/>
-<%! scripts = ['index.js'] %>
+<%! scripts = ['spin.js','index.js'] %>
 
 <%
 from random import random
@@ -14,7 +14,7 @@ rnd=str(random())
 	<h1>Graph</h1>
 </div>
 %if not empty:
-	<div class="offset1 span11">
+	<div id="spin" class="offset1 span11">
 		<p>
 		<img src="image?rand=${rnd}" id="graph" />
 		</p>

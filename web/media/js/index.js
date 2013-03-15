@@ -9,12 +9,15 @@ var startImageRefresh = function() {
 	refreshTimer = setInterval(refreshImage, 10000);
 }
 
+var target = document.getElementById('spin');
+var spinner = new Spinner().spin();
+
 $('.btn.left').click(function(e) {
 	e.preventDefault();
 	$.post('/left', {}, function(data) {
 		refreshImage();
 	});
-	//refreshImage();
+    spinner.spin(target);
 });
 
 $('.btn.right').click(function(e) {
@@ -22,7 +25,11 @@ $('.btn.right').click(function(e) {
 	$.post('/right', {}, function(data) {
 		refreshImage();
 	});
-	//refreshImage();
+    spinner.spin(target);
+});
+
+$("#graph").bind('load', function() {
+    spinner.spin(false)
 });
 
 $('.btn.autorefresh').click(function(e) {
