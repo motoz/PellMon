@@ -59,10 +59,12 @@ class Protocol(threading.Thread):
         if version_string == 'auto':
             try:
                 version_string = self.getItem('version').lstrip()
-                logger.info('chip version: %s'%version_string)
+                logger.info('chip version detected as: %s'%version_string)
             except:
                 version_string = '0.0'
                 logger.info('version detection failed')
+        else:
+            logger.info('chip version from config: %s'%version_string)
         self.dataBase = self.createDataBase(version_string)
         
     def getDataBase(self):
@@ -84,7 +86,7 @@ class Protocol(threading.Thread):
                             ok=responseQueue.get(True, 5)
                         except:
                             ok=False
-                            logger.info('GetItem: Response timeout')
+                            logger.debug('GetItem: Response timeout')
                     except:
                         ok=False
                         logger.info('Getitem: MessageQueue full')
@@ -205,9 +207,9 @@ class Protocol(threading.Thread):
                             except:
                                 logger.debug('command response queue put 1 fail')    
                     else:
-                        logger.info('Timeout')
+                        logger.debug('Timeout')
                     if not result:           
-                        logger.info('Retrying')
+                        logger.debug('Retrying')
                         try:
                             self.ser.flushInput()
                             logger.debug('serial write')
@@ -218,7 +220,7 @@ class Protocol(threading.Thread):
                         except:
                             logger.debug('Serial read error')
                         if line:
-                            logger.info('Got answer, parsing')
+                            logger.debug('Got answer, parsing')
                             result=commandqueue[1].parse(line)
                             try:
                                 responsequeue.put(result)

@@ -67,16 +67,14 @@ def pollThread():
             items.append(protocol.getItem(data))
         s=':'.join(items)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
-        #logger.setLevel(logging.INFO)
     except IOError as e:
-        #logger.setLevel(logging.DEBUG)
-        logger.info('IOError: '+e.strerror)
-        logger.info('   Trying Z01...')
+        logger.debug('IOError: '+e.strerror)
+        logger.debug('   Trying Z01...')
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
             protocol.getItem('oxygen_regulation')
         except IOError as e:
-            logger.info('      failed '+e.strerror)
+            logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
 
 def periodic_signal_handler(signum, frame):
     """Periodic signal handler. Start pollThread to do the work"""
@@ -155,9 +153,9 @@ class MyDaemon(Daemon):
 
         # Create poll_interval periodic signal handler
         signal.signal(signal.SIGALRM, periodic_signal_handler)
-        logger.info('created signalhandler')
+        logger.debug('created signalhandler')
         signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
-        logger.info('started timer')
+        logger.debug('started timer')
         
         # Create RRD database if does not exist
         if not os.path.exists(conf.nvdb):
