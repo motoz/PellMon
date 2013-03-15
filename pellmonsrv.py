@@ -211,7 +211,7 @@ class config:
         try:
             self.nvdb = parser.get('conf', 'persistent_db') 
         except:
-            self.nvdb = db        
+            self.nvdb = self.db        
         try:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
         except:

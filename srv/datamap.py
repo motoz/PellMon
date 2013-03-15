@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from collections import namedtuple
 from frames import *
 
 # 'param' type is for setting values that can be read and written
