@@ -272,14 +272,14 @@ class Frame:
     def parse(self, s):
         logger.debug('Check checksum in parse '+s)
         if checkCheckSum(s):
-            logger.info('Parse: checksum error on response message: ' + s)
+            logger.debug('Parse: checksum error on response message: ' + s)
             return False
         logger.debug('Checksum OK')
         if s==addCheckSum('E1'):
-            logger.info('Parse: response message = E1, data does not exist')    
+            logger.debug('Parse: response message = E1, data does not exist')    
             return False
         if s==addCheckSum('E0'):
-            logger.info('Parse: response message = E0, checksum fail')  
+            logger.debug('Parse: response message = E0, checksum fail')  
             return False                        
         index=0
         self.data=[]    
@@ -295,7 +295,7 @@ class Frame:
             logger.debug('Return True from parser')
             return True
         else:
-            logger.info("Parse: wrong length "+str(len(s))+', expected '+str(self.frameLength))
+            logger.debug("Parse: wrong length "+str(len(s))+', expected '+str(self.frameLength))
             return False
         
     def get(self, index):
