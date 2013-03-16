@@ -76,12 +76,21 @@ class Protocol(threading.Thread):
         dataparam=self.dataBase[param]
         if hasattr(dataparam, 'frame'):
             ok=True
-            # If the frame containing this data hasn't been read recently do it now
-            if time.time()-dataparam.frame.timestamp > 8.0:
+            # If the frame containing this data hasn't been read recently
+            # or if the specific index has been written after the frame was last read
+            # or if the specific index has just been written (might still give old value when read
+            # so a retry should do a new poll)
+            # then re-read
+            writeTime = dataparam.frame.indexWriteTime[dataparam.index]
+            readTime = dataparam.frame.readtime
+            if time.time()-readTime > 8.0 or writeTime>readTime or time.time()-writeTime < 4.0:
                 try:
                     responseQueue = Queue.Queue(3)
                     try:  # Send "read parameter value" message to pollThread
-                        self.q.put((3,dataparam.frame,responseQueue))
+                        if writeTime>readTime or time.time()-writeTime < 4.0:
+                            self.q.put(("FORCE_GET", dataparam.frame,responseQueue))
+                        else:
+                            self.q.put(("GET", dataparam.frame,responseQueue))
                         try:  # and wait for a response                 
                             ok=responseQueue.get(True, 5)
                         except:
@@ -117,8 +126,8 @@ class Protocol(threading.Thread):
                 except:
                     return "not a number"
                 if hasattr(dataparam, 'frame'):
-                    # Indicate that this frame has old data now
-                    dataparam.frame.timestamp = 0.0
+                    # Save time when this index was written
+                    dataparam.frame.indexWriteTime[dataparam.index] = time.time()
                 if hasattr(dataparam, 'decimals'):
                     decimals = dataparam.decimals
                 else:
@@ -128,7 +137,7 @@ class Protocol(threading.Thread):
                     s=("{:0>4.0f}".format(value * pow(10, decimals)))
                     # Send "write parameter value" message to pollThread
                     responseQueue = Queue.Queue() 
-                    self.q.put((2,dataparam.address + s, responseQueue))
+                    self.q.put(("PUT", dataparam.address + s, responseQueue))
                     response = responseQueue.get()
                     if response == addCheckSum('OK'):
                         logger.info('Parameter %s = %s'%(param,s))
@@ -159,7 +168,7 @@ class Protocol(threading.Thread):
             commandqueue = self.q.get() 
             logger.debug('got command')
             # Write parameter/command       
-            if commandqueue[0]==2:
+            if commandqueue[0]=="PUT":
                 s=addCheckSum(commandqueue[1])
                 logger.debug('serial write'+s)
                 self.ser.flushInput()
@@ -179,14 +188,13 @@ class Protocol(threading.Thread):
                     logger.info('No answer')
             
             # Get frame command
-            if commandqueue[0]==3:
+            if commandqueue[0]=="GET" or commandqueue[0]=="FORCE_GET":
                 responsequeue = commandqueue[2]
                 frame = commandqueue[1]
-                # This frame could have been read recently by a previous read request, so check again if it's necessary to read
-                if time.time()-frame.timestamp > 8.0:
+                # This frame could have been read recently by a previous queued read request, so check again if it's necessary to read
+                if time.time()-frame.readtime > 8.0 or commandqueue[0]=="FORCE_GET":
                     sendFrame = addCheckSum(frame.pollFrame)+"\r"
                     logger.debug('sendFrame = '+sendFrame)
-
                     line=""
                     try:
                         self.ser.flushInput()
@@ -259,7 +267,8 @@ class Frame:
         self.mutex=Lock()
         self.dataDef=dd 
         self.pollFrame=frame
-        self.timestamp=0.0
+        self.readtime=0.0
+        self.indexWriteTime = [0.0]*len(self.dataDef)
         self.frameLength=0
         for i in self.dataDef:
             self.frameLength += i
@@ -286,7 +295,8 @@ class Frame:
         if self.frameLength == len(s):
             logger.debug('Correct length')
             self.mutex.acquire()
-            self.timestamp=time.time()
+            self.readtime=time.time()
+            logger.debug("reset readtime")
             for i in self.dataDef:
                 index2=index+i
                 self.data.append(s[index:index2])
@@ -303,4 +313,5 @@ class Frame:
         data=self.data[index]
         self.mutex.release()
         return data
+    
 
