@@ -112,7 +112,7 @@ def copy_db(direction='store'):
 def db_copy_thread():
     """Run periodically at db_store_interval to call copy_db""" 
     copy_db('store')    
-    ht = threading.Timer(db_store_interval, db_copy_thread)
+    ht = threading.Timer(conf.db_store_interval, db_copy_thread)
     ht.setDaemon(True)
     ht.start()
 
