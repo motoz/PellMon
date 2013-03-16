@@ -178,9 +178,10 @@ class PellMonWebb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def parameters(self, **args):
+    def parameters(self, t1='', t2='', t3='', t4=''):
         # Get list of data/parameters 
-        parameterlist = getdb()
+        #parameterlist = getdb()
+        parameterlist = getDBwithTags([t1,t2,t3,t4])
         # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
         paramQueue = Queue.Queue(300)
         # Store the queue in the session
@@ -191,19 +192,6 @@ class PellMonWebb:
         params={}
         for item in parameterlist:
             params[item] = ' '
-            if args.has_key(item):
-                if cherrypy.request.method == "POST":
-                    # set parameter
-                    try:
-                        values[parameterlist.index(item)]=setItem(item, args[item][1])
-                    except:
-                        values[parameterlist.index(item)]='error'
-                else:
-                    # get parameter
-                    try:
-                        values[parameterlist.index(item)]=getItem(item)
-                    except:
-                        values[parameterlist.index(item)]='error'
         tmpl = lookup.get_template("parameters.html")
         return tmpl.render(params=parameterlist, values=values)
 
@@ -265,6 +253,9 @@ def setItem(item, value):
 def getdb():
     return notify.GetDB()
 
+def getDBwithTags(tags):
+    return notify.GetDBwithTags('(as)',tags)
+    
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
 
 global_conf = {

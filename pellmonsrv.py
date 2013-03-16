@@ -26,7 +26,7 @@ import logging.handlers
 import sys
 import ConfigParser
 
-from srv import Protocol, Daemon
+from srv import Protocol, Daemon, getDbWithTags
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -57,7 +57,19 @@ class MyDBUSService(dbus.service.Object):
             return ['unsupported_version']
         else:
             return l
-
+    
+    @dbus.service.method('org.pellmon.int')
+    def GetDBwithTags(self, tags):
+        """Get the menutags for param"""
+        allparameters = protocol.getDataBase()
+        filteredParams = getDbWithTags(tags)            
+        params = []
+        for param in filteredParams:
+            if param in allparameters:
+                params.append(param)
+        params.sort()
+        return params            
+        
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
