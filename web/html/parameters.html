@@ -9,11 +9,18 @@
 	%for key in params:
 	<%
 	val=values[params.index(key)]
+	name=key['name']
+	if key['type'] == 'W':
+	    range=' - command'
+	if key['type'] == 'R':
+	    range=''
+	if key['type'] == 'R/W':
+	    range='  (%u..%u)'%(key['min'], key['max'])
 	%>
 	<div class="row-fluid">
-		<form id="${key}-form" name="${key}" class="param form-horizontal" action="" method="post">
-			<label for="${key}-text">${key}</label>
-			<input type="text" id="${key}-text" placeholder="${val}" value="${val}" name="${key}" />
+		<form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+			<label for="${name}-text">${name}   ${range}</label>
+			<input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 			<input type="submit" value="Get" class="get btn" />
 			<input type="submit" value="Set" class="set btn btn-primary" />
 		</form>

@@ -178,10 +178,9 @@ class PellMonWebb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def parameters(self, t1='', t2='', t3='', t4=''):
+    def parameters(self, t1='', t2='', t3='', t4='', **args):
         # Get list of data/parameters 
-        #parameterlist = getdb()
-        parameterlist = getDBwithTags([t1,t2,t3,t4])
+        parameterlist = getFullDB([t1,t2,t3,t4])
         # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
         paramQueue = Queue.Queue(300)
         # Store the queue in the session
@@ -191,7 +190,20 @@ class PellMonWebb:
         values=['']*len(parameterlist)
         params={}
         for item in parameterlist:
-            params[item] = ' '
+            params[item['name']] = ' '
+            if args.has_key(item['name']):
+                if cherrypy.request.method == "POST":
+                    # set parameter
+                    try:
+                        values[parameterlist.index(item['name'])]=setItem(item['name'], args[item['name']][1])
+                    except:
+                        values[parameterlist.index(item['name'])]='error'
+                else:
+                    # get parameter
+                    try:
+                        values[parameterlist.index(item['name'])]=getItem(item['name'])
+                    except:
+                        values[parameterlist.index(item['name'])]='error'
         tmpl = lookup.get_template("parameters.html")
         return tmpl.render(params=parameterlist, values=values)
 
@@ -255,7 +267,12 @@ def getdb():
 
 def getDBwithTags(tags):
     return notify.GetDBwithTags('(as)',tags)
-    
+
+def getFullDB(tags):
+    db = notify.GetFullDB('(as)', tags)
+    #print str(db)
+    return db
+        
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
 
 global_conf = {

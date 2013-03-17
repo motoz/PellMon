@@ -57,7 +57,38 @@ class MyDBUSService(dbus.service.Object):
             return ['unsupported_version']
         else:
             return l
-    
+
+    @dbus.service.method(dbus_interface='org.pellmon.int', in_signature='as', out_signature='aa{sv}')
+    def GetFullDB(self, tags):
+        """Get list of all data/parameter/command items"""
+        l=[]
+        allparameters = protocol.getDataBase()
+        filteredParams = getDbWithTags(tags)
+        params = []
+        for param in filteredParams:
+            if param in allparameters:
+                params.append(param)
+        params.sort()
+        for item in params:
+            data={}
+            data['name']=item
+            if hasattr(allparameters[item], 'max'): 
+                data['max']=(allparameters[item].max)
+            if hasattr(allparameters[item], 'min'): 
+                data['min']=(allparameters[item].min)
+            if hasattr(allparameters[item], 'frame'): 
+                if hasattr(allparameters[item], 'address'): 
+                    data['type']=('R/W')
+                else:
+                    data['type']=('R')
+            else:
+                data['type']=('W')
+            l.append(data)
+        if l==[]:
+            return ['unsupported_version']
+        else:
+            return l
+                
     @dbus.service.method('org.pellmon.int')
     def GetDBwithTags(self, tags):
         """Get the menutags for param"""
