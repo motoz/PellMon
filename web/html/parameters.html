@@ -1,18 +1,14 @@
 <%inherit file="layout.html"/>
 <%! scripts = ['parameters.js'] %>
 <%def name="title()">
-       	Parameters 
+       	${heading} 
 </%def>
-
 	<div class="navbar">
 		<div class="navbar-inner">
 			<div class="container">
 				<ul class="nav">
 					<li class="">
-						<a href="/parameters/Settings/Basic">Basic settings</a>
-					</li>
-					<li class="">
-						<a href="/parameters/Settings/Advanced">Advanced settings</a>
+						<a href="/parameters/Settings">Settings</a>
 					</li>
 					<li class="">
 						<a href="/parameters/Measurements">Measurements</a>
@@ -24,10 +20,13 @@
 						<a href="/parameters/Feeder">Feeder</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Feeder/Measurements">Feeder Meas.</a>
+						<a href="/parameters/Cleaning">Cleaning</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Feeder/Settings">Feeder Set.</a>
+						<a href="/parameters/Overview">Overview</a>
+					</li>
+					<li class="">
+						<a href="/parameters/Ignition">Ignition</a>
 					</li>
 					<li class="">
 						<a href="/parameters/Oxygen">Oxygen</a>
@@ -36,13 +35,75 @@
 			</div>
 		</div>
 	</div>
+    <ul class="nav">  
+      <li class="dropdown">  
+        <a href="#"  
+              class="dropdown-toggle"  
+              data-toggle="dropdown">  
+              ${level}  
+              <b class="caret"></b>  
+        </a>  
+        <ul class="dropdown-menu">  
+         <li><a href="/setlevel/Basic">Basic</a></li>  
+         <li><a href="/setlevel/Advanced">Advanced</a></li>  
+        </ul>  
+      </li>  
+    </ul>  
 
 <div class="offset1 span11">
-	<h1>Parameters</h1>
+	<h1>${heading}</h1>
+    %if len(commands)>0:
+    <h3>Control</h3>
+    %endif
+	%for key in commands:
+	<%
+	val=' '
+	name=key['name']
+	if key['type'] == 'W':
+	    range=' - command'
+	if key['type'] == 'R':
+	    range=''
+	if key['type'] == 'R/W':
+	    range='  (%u..%u)'%(key['min'], key['max'])
+	%>
+	<div class="row-fluid">
+		<form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+			<label for="${name}-text">${name}   ${range}</label>
+			<input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
+			<input type="submit" value="Set" class="command btn btn-primary" />
+		</form>
+	</div>
+	%endfor
 
+    %if len(data)>0:
+    <h3>Data</h3>
+    %endif
+	%for key in data:
+	<%
+	val=' '
+	name=key['name']
+	if key['type'] == 'W':
+	    range=' - command'
+	if key['type'] == 'R':
+	    range=''
+	if key['type'] == 'R/W':
+	    range='  (%u..%u)'%(key['min'], key['max'])
+	%>
+	<div class="row-fluid">
+		<form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+			<label for="${name}-text">${name}   ${range}</label>
+			<input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
+			<input type="submit" value="Get" class="get btn" />
+		</form>
+	</div>
+	%endfor
+	
+    %if len(params)>0:
+    <h3>Settings</h3>
+    %endif
 	%for key in params:
 	<%
-	val=values[params.index(key)]
+	val=' '
 	name=key['name']
 	if key['type'] == 'W':
 	    range=' - command'

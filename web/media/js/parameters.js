@@ -36,6 +36,26 @@ $(".get").on('click', function(e) {
 	getParam(textfield.attr('name'));
 });
 
+$(".command").on('click', function(e) {
+	e.preventDefault();
+
+	var me = $(this),
+	form = me.closest('form'),
+	textfield = $('input[type=hidden]', form);
+
+	$.post(
+		'/setparam/' + textfield.attr('name'),
+		{
+			data: '0'
+		},
+		function(data) {
+			textfield.val(data.value);
+			setTimeout(function() {
+				getParam(textfield.attr('name'));
+			}, 2000);
+		});
+});
+
 var params = $('.param'),
 	count = params.length;
 

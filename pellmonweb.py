@@ -180,7 +180,12 @@ class PellMonWebb:
     @require() #requires valid login
     def parameters(self, t1='', t2='', t3='', t4='', **args):
         # Get list of data/parameters 
-        parameterlist = getFullDB([t1,t2,t3,t4])
+        try:
+            level=cherrypy.session['level']
+        except:
+            cherrypy.session['level'] = 'Basic'
+        level=cherrypy.session['level']
+        parameterlist = getFullDB([level,t1,t2,t3,t4])
         # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
         paramQueue = Queue.Queue(300)
         # Store the queue in the session
@@ -189,7 +194,17 @@ class PellMonWebb:
         ht.start()    
         values=['']*len(parameterlist)
         params={}
+        paramlist=[]
+        datalist=[]
+        commandlist=[]
         for item in parameterlist:
+            if item['type'] == 'R':
+                datalist.append(item)
+            if item['type'] == 'R/W':
+                paramlist.append(item)
+            if item['type'] == 'W':
+                commandlist.append(item)
+                
             params[item['name']] = ' '
             if args.has_key(item['name']):
                 if cherrypy.request.method == "POST":
@@ -205,7 +220,7 @@ class PellMonWebb:
                     except:
                         values[parameterlist.index(item['name'])]='error'
         tmpl = lookup.get_template("parameters.html")
-        return tmpl.render(params=parameterlist, values=values)
+        return tmpl.render(data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
 
     # Empty the item/value queue, call several times until all data is retrieved
     @cherrypy.expose
@@ -229,6 +244,13 @@ class PellMonWebb:
             cherrypy.response.headers['Content-Type'] = 'application/json'
             return simplejson.dumps(params)
 
+    @cherrypy.expose
+    @require() #requires valid login
+    def setlevel(self, level='Basic'):
+        cherrypy.session['level']=level
+        # redirect back after setting selection in session
+        raise cherrypy.HTTPRedirect(cherrypy.request.headers['Referer'])
+            
     @cherrypy.expose
     def index(self, **args):
         if not cherrypy.session.get('timeChoice'):
