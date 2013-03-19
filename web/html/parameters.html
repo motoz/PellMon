@@ -3,21 +3,21 @@
 <%def name="title()">
        	${heading} 
 </%def>
-	<div class="navbar">
-		<div class="navbar-inner">
-			<div class="container">
-				<ul class="nav">
-					<li class="">
-						<a href="/parameters/Settings">Settings</a>
+
+<div class="row">
+    <div class="span2">
+    <ul class="nav">
+					<li class="active">
+						<a href="/parameters/Settings" >Settings</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Measurements">Measurements</a>
+						<a href="/parameters/Measurements" >Measurements</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Blower">Blower</a>
+						<a href="/parameters/Blower" >Blower</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Feeder">Feeder</a>
+						<a href="/parameters/Feeder" >Feeder</a>
 					</li>
 					<li class="">
 						<a href="/parameters/Cleaning">Cleaning</a>
@@ -26,15 +26,13 @@
 						<a href="/parameters/Overview">Overview</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Ignition">Ignition</a>
+						<a href="/parameters/Ignition" >Ignition</a>
 					</li>
 					<li class="">
-						<a href="/parameters/Oxygen">Oxygen</a>
+						<a href="/parameters/Oxygen" >Oxygen</a>
 					</li>
-				</ul>
-			</div>
-		</div>
-	</div>
+    </ul>
+
     <ul class="nav">  
       <li class="dropdown">  
         <a href="#"  
@@ -50,76 +48,78 @@
       </li>  
     </ul>  
 
-<div class="offset1 span11">
-	<h1>${heading}</h1>
-    %if len(commands)>0:
-    <h3>Control</h3>
-    %endif
-	%for key in commands:
-	<%
-	val=' '
-	name=key['name']
-	if key['type'] == 'W':
-	    range=' - command'
-	if key['type'] == 'R':
-	    range=''
-	if key['type'] == 'R/W':
-	    range='  (%u..%u)'%(key['min'], key['max'])
-	%>
-	<div class="row-fluid">
-		<form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-			<label for="${name}-text">${name}   ${range}</label>
-			<input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
-			<input type="submit" value="Set" class="command btn btn-primary" />
-		</form>
-	</div>
-	%endfor
+    </div>
 
-    %if len(data)>0:
-    <h3>Data</h3>
-    %endif
-	%for key in data:
-	<%
-	val=' '
-	name=key['name']
-	if key['type'] == 'W':
-	    range=' - command'
-	if key['type'] == 'R':
-	    range=''
-	if key['type'] == 'R/W':
-	    range='  (%u..%u)'%(key['min'], key['max'])
-	%>
-	<div class="row-fluid">
-		<form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-			<label for="${name}-text">${name}   ${range}</label>
-			<input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
-			<input type="submit" value="Get" class="get btn" />
-		</form>
-	</div>
-	%endfor
+    <div class="span4">
+	    <h1>${heading}</h1>
+        %if len(commands)>0:
+        <h3>Control</h3>
+        %endif
+	    %for key in commands:
+	    <%
+	    val=' '
+	    name=key['name']
+	    if key['type'] == 'W':
+	        range=' - command'
+	    if key['type'] == 'R':
+	        range=''
+	    if key['type'] == 'R/W':
+	        range='  (%u..%u)'%(key['min'], key['max'])
+	    %>
+	    <div class="row-fluid">
+		    <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+			    <label for="${name}-text">${name}   ${range}</label>
+			    <input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
+			    <input type="submit" value="Set" class="command btn btn-primary" />
+		    </form>
+	    </div>
+	    %endfor
+
+        %if len(data)>0:
+        <h3>Data</h3>
+        %endif
+	    %for key in data:
+	    <%
+	    val=' '
+	    name=key['name']
+	    if key['type'] == 'W':
+	        range=' - command'
+	    if key['type'] == 'R':
+	        range=''
+	    if key['type'] == 'R/W':
+	        range='  (%u..%u)'%(key['min'], key['max'])
+	    %>
+	    <div class="row-fluid">
+		    <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+			    <label for="${name}-text">${name}   ${range}</label>
+			    <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
+			    <input type="submit" value="Get" class="get btn" />
+		    </form>
+	    </div>
+	    %endfor
 	
-    %if len(params)>0:
-    <h3>Settings</h3>
-    %endif
-	%for key in params:
-	<%
-	val=' '
-	name=key['name']
-	if key['type'] == 'W':
-	    range=' - command'
-	if key['type'] == 'R':
-	    range=''
-	if key['type'] == 'R/W':
-	    range='  (%u..%u)'%(key['min'], key['max'])
-	%>
-	<div class="row-fluid">
-		<form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-			<label for="${name}-text">${name}   ${range}</label>
-			<input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
-			<input type="submit" value="Get" class="get btn" />
-			<input type="submit" value="Set" class="set btn btn-primary" />
-		</form>
-	</div>
-	%endfor
-
+        %if len(params)>0:
+        <h3>Settings</h3>
+        %endif
+	    %for key in params:
+	    <%
+	    val=' '
+	    name=key['name']
+	    if key['type'] == 'W':
+	        range=' - command'
+	    if key['type'] == 'R':
+	        range=''
+	    if key['type'] == 'R/W':
+	        range='  (%u..%u)'%(key['min'], key['max'])
+	    %>
+	    <div class="row-fluid">
+		    <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+			    <label for="${name}-text">${name}   ${range}</label>
+			    <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
+			    <input type="submit" value="Get" class="get btn" />
+			    <input type="submit" value="Set" class="set btn btn-primary" />
+		    </form>
+	    </div>
+	    %endfor
+    </div>
 </div>
