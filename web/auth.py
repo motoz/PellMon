@@ -1,4 +1,4 @@
-# -*- encoding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 # Form based authentication for CherryPy. Requires the
 # Session tool to be loaded.
@@ -31,7 +31,7 @@ from mako.lookup import TemplateLookup
 import urllib
 
 #Look for temlates in this directory
-lookup = TemplateLookup(directories=['html'])
+lookup = TemplateLookup(directories=['web/html'])
 
 # Load the configuration file
 parser = ConfigParser.ConfigParser()

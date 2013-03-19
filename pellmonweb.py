@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- encoding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 """
     Copyright (C) 2013  Anders Nylund
 
@@ -25,13 +25,12 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
 from gi.repository import Gio, GLib
-from auth import AuthController, require, member_of, name_is
 import simplejson
 import threading, Queue
-from logview import LogViewer
+from web import *
 
 #Look for temlates in this directory
-lookup = TemplateLookup(directories=['html'])
+lookup = TemplateLookup(directories=['web/html'])
 
 parser = ConfigParser.ConfigParser()
 
@@ -142,7 +141,7 @@ class PellMonWebb:
         #Build the command string to make a graph from the database         
         RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 700 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
         for key,value in polldata:
-            if cherrypy.session.get(value)=='yes':
+            if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
         RrdGraphString1=RrdGraphString1+">>/dev/null"
         os.system(RrdGraphString1)
@@ -237,11 +236,12 @@ class PellMonWebb:
         checkboxes=[]
         empty=True
         for key, val in polldata:
-            if cherrypy.session.get(val)=='yes':
-                checkboxes.append((val,True))
-                empty=False
-            else:
-                checkboxes.append((val,''))
+            if colorsDict.has_key(key):
+                if cherrypy.session.get(val)=='yes':
+                    checkboxes.append((val,True))
+                    empty=False
+                else:
+                    checkboxes.append((val,''))
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
         tmpl = lookup.get_template("index.html")
         return tmpl.render(username=cherrypy.session.get('_cp_username'), checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
@@ -265,7 +265,7 @@ def setItem(item, value):
 def getdb():
     return notify.GetDB()
 
-MEDIA_DIR = os.path.join(os.path.abspath("."), u"media")
+MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
 
 global_conf = {
        'global':    { 'server.environment': 'debug',
