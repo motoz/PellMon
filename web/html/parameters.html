@@ -65,6 +65,7 @@
             <%
             val=' '
             name=key['name']
+            longname=key['longname']
             if key['type'] == 'W':
                 range=' - command'
             if key['type'] == 'R':
@@ -75,7 +76,7 @@
             <div class="row-fluid">
 	            <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
 		            <input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
-		            <input type="submit" value="${name}" class="command btn btn-primary" />
+		            <input type="submit" value="${longname}" class="command btn btn-primary" />
 	            </form>
             </div>
             %endfor
@@ -90,6 +91,7 @@
                 <%
                 val=' '
                 name=key['name']
+                longname=key['longname']
                 if key['type'] == 'W':
                     range=' - command'
                 if key['type'] == 'R':
@@ -99,7 +101,7 @@
                 %>
                 <div class="row-fluid">
 	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-		                <label for="${name}-text">${name}   ${range}</label>
+		                <label for="${name}-text">${longname}   ${range}</label>
 		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 		                <input type="submit" value="Get" class="get btn" />
 	                </form>
@@ -115,6 +117,7 @@
                 <%
                 val=' '
                 name=key['name']
+                longname=key['longname']
                 if key['type'] == 'W':
                     range=' - command'
                 if key['type'] == 'R':
@@ -123,7 +126,7 @@
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
 	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-		                <label for="${name}-text">${name}   ${range}</label>
+		                <label for="${name}-text">${longname}   ${range}</label>
 		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 		                <input type="submit" value="Get" class="get btn" />
 		                <input type="submit" value="Set" class="set btn btn-primary" />

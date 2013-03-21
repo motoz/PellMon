@@ -26,7 +26,7 @@ import logging.handlers
 import sys
 import ConfigParser
 
-from srv import Protocol, Daemon, getDbWithTags
+from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -83,6 +83,9 @@ class MyDBUSService(dbus.service.Object):
                     data['type']=('R')
             else:
                 data['type']=('W')
+            data['longname'] = dataDescriptions[item][0]
+            data['unit'] = dataDescriptions[item][1]
+            data['description'] = dataDescriptions[item][2]
             l.append(data)
         if l==[]:
             return ['unsupported_version']
