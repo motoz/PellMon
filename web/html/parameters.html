@@ -16,12 +16,6 @@
         <div class="navbar-inner">
             <ul class="nav">
 		        <li class="">
-			        <a href="/parameters/Settings" >Settings</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Measurements">Data</a>
-		        </li>
-		        <li class="">
 			        <a href="/parameters/Blower" >Blower</a>
 		        </li>
 		        <li class="">
@@ -39,6 +33,9 @@
 		        <li class="">
 			        <a href="/parameters/Oxygen" >Oxygen</a>
 		        </li>
+		        <li class="">
+			        <a href="/parameters/Temps" >Temperature</a>
+		        </li>
             </ul>
         </div>
         </div>
@@ -47,12 +44,12 @@
         <div class="navbar-inner">
             <ul class="nav">  
                   <% 
-                     if level=='Advanced':
+                     if level=='All':
                         switch='Less..'
                         link='Basic'
                      else:
                         switch='More..'
-                        link='Advanced'
+                        link='All'
                    %>
                   
                 <li><a href="/setlevel/${link}">${switch}</a></li>  
@@ -62,7 +59,7 @@
         </div>
 
         %if len(commands)>0:
-        <div class="span5">
+        <div class="span3">
             <h3>Control</h3>
             %for key in commands:
             <%
@@ -77,9 +74,8 @@
             %>
             <div class="row-fluid">
 	            <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-		            <label for="${name}-text">${name}   ${range}</label>
 		            <input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
-		            <input type="submit" value="Set" class="command btn btn-primary" />
+		            <input type="submit" value="${name}" class="command btn btn-primary" />
 	            </form>
             </div>
             %endfor

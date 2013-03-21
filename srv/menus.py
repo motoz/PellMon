@@ -18,7 +18,7 @@
 """
 from datamenu import dataBaseTags
 
-Menutags = ('Basic', 'Advanced', 'Settings', 'Measurements', 'Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Cleaning')
+Menutags = ('Basic', 'All', 'Settings', 'Measurements', 'Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Cleaning', 'Temps')
 
 def getDbWithTags(wantedtags):
     params=[]
