@@ -75,8 +75,8 @@ dataBaseMap =  {
     'feeder_high':          { ('4.99','zzzz') : param (FrameZ01, 11,    1,    'B05',   1,   100) },
     'feed_per_minute':      { ('4.99','zzzz') : param (FrameZ01, 12,    0,    'B06',   1,     3) },
 
-    'boiler_temp_diff_up':  { ('4.99','zzzz') : param (FrameZ01, 17,    0,    'C03',   0,    20) },
-    'boiler_temp_diff_down':{ ('4.99','zzzz') : param (FrameZ03, 13,    0,    'C04',   0,    15) },
+    'boiler_temp_diff_down':{ ('4.99','zzzz') : param (FrameZ01, 17,    0,    'C03',   0,    20) },
+    'boiler_temp_diff_up':  { ('4.99','zzzz') : param (FrameZ03, 13,    0,    'C04',   0,    15) },
 
     'light_required':       { ('4.99','zzzz') : param (FrameZ01, 22,    0,    'D03',   0,   100) },
 
