@@ -58,6 +58,9 @@
         </div>
         </div>
 
+        <div class="span1">
+        </div>
+
         %if len(commands)>0:
         <div class="span3">
             <h3>Control</h3>
@@ -101,7 +104,7 @@
                 %>
                 <div class="row-fluid">
 	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-		                <label for="${name}-text">${longname}   ${range}</label>
+		                <label for="${name}-text">${longname}, ${key['unit'].decode('utf-8')}</label>
 		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 		                <input type="submit" value="Get" class="get btn" />
 	                </form>
@@ -126,7 +129,7 @@
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
 	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-		                <label for="${name}-text">${longname}   ${range}</label>
+		                <label for="${name}-text">${longname}   ${range} ${key['unit'].decode('utf-8')}</label>
 		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 		                <input type="submit" value="Get" class="get btn" />
 		                <input type="submit" value="Set" class="set btn btn-primary" />
