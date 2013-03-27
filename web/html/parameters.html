@@ -57,10 +57,10 @@
         </div>
         </div>
         </div>
-
+        
         <div class="span1">
         </div>
-
+        
         %if len(commands)>0:
         <div class="span2">
             <h3>Control</h3>
@@ -105,11 +105,11 @@
                 <div class="row-fluid">
 	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
                         %if key['description']:
-		                    <a data-toggle="collapse" data-target="#viewdetails-${name}">${longname}, ${key['unit'].decode('utf-8')}</a>
+                        <h5 data-toggle="collapse" data-target="#viewdetails-${name}" href="#" for="${name}-text"> ${longname} <i class="icon-info-sign"> </i></h5>
                         %else:
-                            <label for="${name}-text">${longname}, ${key['unit'].decode('utf-8')}</label>
+                        <h5 for="${name}-text"> ${longname}</h5>
                         %endif
-                        <div class="collapse" id="viewdetails-${name}"> ${key['description'].decode('utf-8')} </div>
+                        <div class="collapse" class="text-info" id="viewdetails-${name}"> ${key['description'].decode('utf-8')}<br>(${key['unit'].decode('utf-8')})</div>
 		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 		                <input type="submit" value="Get" class="get btn" />
 	                </form>
@@ -136,8 +136,14 @@
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
 	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
-                        <a data-toggle="collapse" data-target="#viewdetails2-${name}">${longname} ${key['unit'].decode('utf-8')}</a>
-                        <div class="collapse" id="viewdetails2-${name}"> ${key['description'].decode('utf-8')}<br>Setting range is from ${key['min']} to ${key['max']} </div>
+
+                        %if key['description']:
+                        <h5 data-toggle="collapse" data-target="#viewdetails2-${name}" href="#" for="${name}-text"> ${longname} <i class="icon-info-sign"> </i></h5>
+                        %else:
+                        <h5 for="${name}-text"> ${longname}</h5>
+                        %endif
+                                                
+                        <div class="collapse" class="text-info" id="viewdetails2-${name}"> ${key['description'].decode('utf-8')}<br>Setting range is from ${key['min']} to ${key['max']}<br>(${key['unit'].decode('utf-8')}) </div>
 		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
 		                <input type="submit" value="Get" class="get btn" />
 		                <input type="submit" value="Set" class="set btn btn-primary" />
