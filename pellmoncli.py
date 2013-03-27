@@ -19,6 +19,7 @@
 """
 import readline, os
 import sys
+import argparse
 from gi.repository import Gio, GLib
 
 # Handles tab completion with input_raw
@@ -48,6 +49,16 @@ def setItem(item, value):
 
 def getdb():
     return notify.GetDB()
+
+def getItemCli(args):
+    print getItem(args.item)
+
+def setItemCli(args):
+    print setItem(args.item, args.value)
+
+def getdbCli(args):
+    l = notify.GetDB()
+    print l
     
 if __name__ == "__main__":
 
@@ -66,38 +77,62 @@ if __name__ == "__main__":
     readline.parse_and_bind("tab: complete")
     readline.set_completer(complete)
 
-    while run:
-        try:
-            a=raw_input(">")
-            l=a.split()
-            if len(l)==2:
-                if l[0] in ['get', 'g']:
-                    if l[1] == "all":
-                        for item in db:
-                            try:
-                                print item, getItem(item)           
-                            except:
-                                pass
-                    else:
-                        if l[1] in db:
-                            try:
-                                print getItem(l[1])
-                            except:
-                                print "dbus error"
+    # create the top-level parser
+    parser = argparse.ArgumentParser(prog='PROG')
+
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    # create the parser for the "get" command
+    parser_a = subparsers.add_parser('get', help='read item value')
+    parser_a.add_argument('item', help='name of the item to read')
+    parser_a.set_defaults(func=getItemCli)
+
+    # create the parser for the "set" command
+    parser_b = subparsers.add_parser('set', help='write item value')
+    parser_b.add_argument('item', help='name of the item to write')
+    parser_b.add_argument('value', help='value to write')
+    parser_b.set_defaults(func=setItemCli)
+
+    # create the parser for the "list" command
+    parser_c = subparsers.add_parser('list', help='list all items')
+    parser_c.set_defaults(func=getdbCli)
+
+    if (len(sys.argv) > 1):
+        args = parser.parse_args()
+        args.func(args)
+    else:
+        while run:
+            try:
+                a=raw_input(">")
+                l=a.split()
+                if len(l)==2:
+                    if l[0] in ['get', 'g']:
+                        if l[1] == "all":
+                            for item in db:
+                                try:
+                                    print item, getItem(item)           
+                                except:
+                                    pass
                         else:
-                            print l[1]+" is not a data/parameter name "
+                            if l[1] in db:
+                                try:
+                                    print getItem(l[1])
+                                except:
+                                    print "dbus error"
+                            else:
+                                print l[1]+" is not a data/parameter name "
 
-            elif len(l)==3:
-                if l[0] in ['set', 's']:
-                    if l[1] in db:
-                        print setItem(l[1], l[2])
-                    else:
-                        print l[1]+" is not a parameter/command name"
+                elif len(l)==3:
+                    if l[0] in ['set', 's']:
+                        if l[1] in db:
+                            print setItem(l[1], l[2])
+                        else:
+                            print l[1]+" is not a parameter/command name"
 
-            elif len(l)==1:
-                if l[0] in ['quit','q']:
-                    run=False
-                    
-        except KeyboardInterrupt:
-            run=False
-
+                elif len(l)==1:
+                    if l[0] in ['quit','q']:
+                        run=False
+                        
+            except KeyboardInterrupt:
+                run=False
+        
