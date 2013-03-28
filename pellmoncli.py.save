@@ -42,19 +42,16 @@ def complete(text, state):
                 state -= 1
 
 def getItem(itm):
-    try:
-    	return notify.GetItem('(s)',itm)
-    except:
-        return "error"
+    return notify.GetItem('(s)',itm)
 
 def setItem(item, value):
-    try:
-        return notify.SetItem('(ss)',item, value)
-    except:
-        return "error"
-    
+    return notify.SetItem('(ss)',item, value)
+
 def getdb():
-    return notify.GetDB()
+    try:
+    	return notify.GetDB()
+    except exception as e:
+	return 
 
 def getItemCli(args):
     for item in args.item:
@@ -65,60 +62,27 @@ def setItemCli(args):
 
 def getdbCli(args):
     l = notify.GetDB()
-    print "\n".join(l)
+    print l
+    
+if __name__ == "__main__":
 
-def cli(args):
+    # Connect to pellmonsrv on the dbus system bus
+
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
+
     # Get list of data/parameters
-    global db
     db=getdb()
-    global COMMANDS
+
+    run=True
     COMMANDS = ['get', 'set', 'quit']
     completerTexts=COMMANDS
     # Sets up readline for tab completion
     readline.parse_and_bind("tab: complete")
     readline.set_completer(complete)
 
-    run=True
-    while run:
-        try:
-            a=raw_input(">")
-            l=a.split()
-            if len(l)==2:
-                if l[0] in ['get', 'g']:
-                    if l[1] == "all":
-                        for item in db:
-                            try:
-                                print item, getItem(item)
-                            except:
-                                pass
-                    else:
-                        if l[1] in db:
-                            try:
-                                print getItem(l[1])
-                            except:
-                                print "dbus error"
-                        else:
-                            print l[1]+" is not a data/parameter name "
-            elif len(l)==3:
-                if l[0] in ['set', 's']:
-                    if l[1] in db:
-                        print setItem(l[1], l[2])
-                    else:
-                        print l[1]+" is not a parameter/command name"
-            elif len(l)==1:
-                if l[0] in ['quit','q']:
-                    run=False
-        except KeyboardInterrupt:
-            run=False
-    
-if __name__ == "__main__":
-
-    # Connect to pellmonsrv on the dbus system bus
-    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-
     # create the top-level parser
-    parser = argparse.ArgumentParser(prog='pellmoncli')
+    parser = argparse.ArgumentParser(prog='PROG')
 
     subparsers = parser.add_subparsers(help='sub-command help')
 
@@ -137,12 +101,42 @@ if __name__ == "__main__":
     parser_c = subparsers.add_parser('list', help='list all items')
     parser_c.set_defaults(func=getdbCli)
 
-    # create the parser for the "interactive" option
-    parser_d = subparsers.add_parser('i', help='enter interactive mode')
-    parser_d.set_defaults(func=cli)
+    if (len(sys.argv) > 1):
+        args = parser.parse_args()
+        args.func(args)
+    else:
+        while run:
+            try:
+                a=raw_input(">")
+                l=a.split()
+                if len(l)==2:
+                    if l[0] in ['get', 'g']:
+                        if l[1] == "all":
+                            for item in db:
+                                try:
+                                    print item, getItem(item)           
+                                except:
+                                    pass
+                        else:
+                            if l[1] in db:
+                                try:
+                                    print getItem(l[1])
+                                except:
+                                    print "dbus error"
+                            else:
+                                print l[1]+" is not a data/parameter name "
 
-    # parse arguments and run function according to command 
-    args = parser.parse_args()
-    args.func(args)
+                elif len(l)==3:
+                    if l[0] in ['set', 's']:
+                        if l[1] in db:
+                            print setItem(l[1], l[2])
+                        else:
+                            print l[1]+" is not a parameter/command name"
 
-
+                elif len(l)==1:
+                    if l[0] in ['quit','q']:
+                        run=False
+                        
+            except KeyboardInterrupt:
+                run=False
+        
