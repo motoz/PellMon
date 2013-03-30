@@ -31,7 +31,6 @@ def getDbWithTags(wantedtags):
         for tag in wantedtags:
             if tag=='':
                 break;
-            print tag
             if not tag in paramtags:
                 accepted=False
         if accepted: 

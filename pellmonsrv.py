@@ -138,7 +138,7 @@ def copy_db(direction='store'):
             try:
                 copy_in_progress = True     
                 os.system('cp %s %s'%(conf.db, conf.nvdb)) 
-                logger.info('copied %s to %s'%(conf.db, conf.nvdb))
+                logger.debug('copied %s to %s'%(conf.db, conf.nvdb))
             except Exception, e:
                 logger.info(str(e))
                 logger.info('copy %s to %s failed'%(conf.db, conf.nvdb))
@@ -169,6 +169,39 @@ def sigterm_handler(signum, frame):
     if not copy_in_progress:
         logger.info('exiting')
         sys.exit(0)
+    
+def settings_pollthread(settings):
+    """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
+    global conf
+    allparameters = protocol.getDataBase()    
+    for item in settings:
+        if item in allparameters:
+            param = allparameters[item]
+            if hasattr(param, 'max') and hasattr(param, 'min') and hasattr(param, 'frame'):
+                paramrange = param.max - param.min
+                try:
+                    value = protocol.getItem(item)
+                    if item in conf.dbvalues:
+                        try:
+                            change = abs(float(value) - float(conf.dbvalues[item]))
+                            if not value==conf.dbvalues[item]:
+                                if item in ('feeder_capacity', 'feeder_low', 'feeder_high', 'time_minutes') and paramrange>0:
+                                    # These items change by themselves, log change only if bigger than 0.2% of range
+                                    if change * 100.0 / paramrange > 0.2: 
+                                        logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                else:
+                                    logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                conf.dbvalues[item]=value
+                        except:
+                            logger.info('trouble with parameter change detection, item:%s'%item)
+                    else:
+                        conf.dbvalues[item]=value        
+                except:
+                    pass
+    # run this thread again after 60 seconds        
+    ht = threading.Timer(60, settings_pollthread, args=(settings,))
+    ht.setDaemon(True)
+    ht.start()
     
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
@@ -215,6 +248,12 @@ class MyDaemon(Daemon):
             ht = threading.Timer(conf.db_store_interval, db_copy_thread)
             ht.setDaemon(True)
             ht.start()
+
+        # Create and start settings_pollthread to log settings changed locally
+        settings = getDbWithTags(('Settings',))        
+        ht = threading.Timer(4, settings_pollthread, args=(settings,))
+        ht.setDaemon(True)
+        ht.start()
        
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
@@ -298,7 +337,10 @@ class config:
         # add the handlers to the logger
         logger.addHandler(fh)
         
-        self.serial_device = parser.get('conf', 'serialport') 
+        self.serial_device = parser.get('conf', 'serialport')
+        
+        # dict to hold known recent values of db items
+        self.dbvalues = {} 
 
 #########################################################################################
 
