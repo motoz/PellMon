@@ -22,7 +22,7 @@ import time
 import Queue
 import threading
 import serial
-    
+from enumerations import dataEnumerations
 logger = getLogger('pellMon')
 
 class Protocol(threading.Thread):
@@ -106,11 +106,15 @@ class Protocol(threading.Thread):
                 if dataparam.decimals == -1: # not a number, return as is
                     return dataparam.frame.get(dataparam.index)
                 else:
+                    value = dataparam.frame.get(dataparam.index)
                     try:
-                        formatStr="{:0."+str(dataparam.decimals)+"f}"
-                        return  formatStr.format( float(dataparam.frame.get(dataparam.index)) / pow(10, dataparam.decimals)  )
-                    except:
-                        raise IOError(0, "Getitem result is not a number")
+                        return dataEnumerations[param][int(value)]
+                    except:                        
+                        try:
+                            formatStr="{:0."+str(dataparam.decimals)+"f}"
+                            return  formatStr.format( float(value) / pow(10, dataparam.decimals)  )
+                        except:
+                            raise IOError(0, "Getitem result is not a number")
             else:
                 raise IOError(0, "GetItem failed")
         else: 
