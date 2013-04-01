@@ -183,13 +183,19 @@ def settings_pollthread(settings):
                     value = protocol.getItem(item)
                     if item in conf.dbvalues:
                         try:
-                            change = abs(float(value) - float(conf.dbvalues[item]))
                             if not value==conf.dbvalues[item]:
-                                if item in ('feeder_capacity', 'feeder_low', 'feeder_high', 'time_minutes') and paramrange>0:
-                                    # These items change by themselves, log change only if bigger than 0.2% of range
-                                    if change * 100.0 / paramrange > 0.2: 
-                                        logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
-                                else:
+                                # These are settings but their values are changed by the firmware also, 
+                                # so small changes are suppressed from the log
+                                selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2}
+                                try:
+                                    change = abs(float(value) - float(conf.dbvalues[item]))
+                                    squelch = selfmodifying_params[item]
+                                    # These items change by themselves, log change only if bigger than 0.3% of range
+                                    if change > squelch:
+                                        # Don't log clock turn around
+                                        if not (item == 'time_minutes' and change == 1439): 
+                                            logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                except:
                                     logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
                                 conf.dbvalues[item]=value
                         except:
