@@ -108,11 +108,19 @@ def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
     items=[]
+    global conf
     try:
         for data in conf.pollData:
             items.append(protocol.getItem(data))
         s=':'.join(items)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
+        # Log changes to 'mode' and 'alarm' here, their data frame is already read here anyway
+        for param in ('mode', 'alarm'):
+            value = protocol.getItem(param)
+            if param in conf.dbvalues:
+                if not value==conf.dbvalues[param]:
+                    logger.info('%s changed from %s to %s'%(param, conf.dbvalues[param], value))
+            conf.dbvalues[param] = value
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
@@ -121,6 +129,7 @@ def pollThread():
             protocol.getItem('oxygen_regulation')
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
+    
 
 def periodic_signal_handler(signum, frame):
     """Periodic signal handler. Start pollThread to do the work"""
@@ -204,8 +213,8 @@ def settings_pollthread(settings):
                         conf.dbvalues[item]=value        
                 except:
                     pass
-    # run this thread again after 60 seconds        
-    ht = threading.Timer(60, settings_pollthread, args=(settings,))
+    # run this thread again after 30 seconds        
+    ht = threading.Timer(30, settings_pollthread, args=(settings,))
     ht.setDaemon(True)
     ht.start()
     
