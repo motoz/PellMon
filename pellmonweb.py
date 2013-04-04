@@ -28,6 +28,7 @@ from gi.repository import Gio, GLib
 import simplejson
 import threading, Queue
 from web import *
+from time import time
 
 #Look for temlates in this directory
 lookup = TemplateLookup(directories=['web/html'])
@@ -55,6 +56,18 @@ timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
 timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
 timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
 
+ft=False
+fc=False
+for a,b in polldata:
+    print a,b
+    if b=='feeder_capacity':
+        fc=True
+    if b=='feeder_time':
+        ft=True
+if fc and ft:
+    consumption_graph=True
+else:
+    consumption_graph=False
 
 class PellMonWebb:
 
@@ -147,6 +160,25 @@ class PellMonWebb:
         os.system(RrdGraphString1)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return serve_file(graph_file, content_type='image/png')
+
+    @cherrypy.expose
+    def consumption(self, **args):
+        if consumption_graph:
+            #Build the command string to make a graph from the database         
+            now=int(time())/3600*3600
+            
+            RrdGraphString1="rrdtool graph "+"/home/pi/pellmon/consumption.png"+" --right-axis 1:0 --right-axis-format %%1.1lf --width 760 --height 400 --end %u --start %u-86400s "%(now,now)
+            RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
+            for h in range(0,24):
+                start=(now-h*3600-3600)
+                end=(now-h*3600)
+                RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
+
+            RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"24h consumption %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
+            RrdGraphString1=RrdGraphString1+" >>/dev/null"
+            os.system(RrdGraphString1)
+            cherrypy.response.headers['Pragma'] = 'no-cache'
+            return serve_file("/home/pi/pellmon/consumption.png", content_type='image/png')
 
     @cherrypy.expose
     @require() #requires valid login
