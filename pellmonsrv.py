@@ -26,7 +26,7 @@ import logging.handlers
 import sys
 import ConfigParser
 
-from srv import Protocol, Daemon
+from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -58,15 +58,69 @@ class MyDBUSService(dbus.service.Object):
         else:
             return l
 
+    @dbus.service.method(dbus_interface='org.pellmon.int', in_signature='as', out_signature='aa{sv}')
+    def GetFullDB(self, tags):
+        """Get list of all data/parameter/command items"""
+        l=[]
+        allparameters = protocol.getDataBase()
+        filteredParams = getDbWithTags(tags)
+        params = []
+        for param in filteredParams:
+            if param in allparameters:
+                params.append(param)
+        params.sort()
+        for item in params:
+            data={}
+            data['name']=item
+            if hasattr(allparameters[item], 'max'): 
+                data['max']=(allparameters[item].max)
+            if hasattr(allparameters[item], 'min'): 
+                data['min']=(allparameters[item].min)
+            if hasattr(allparameters[item], 'frame'): 
+                if hasattr(allparameters[item], 'address'): 
+                    data['type']=('R/W')
+                else:
+                    data['type']=('R')
+            else:
+                data['type']=('W')
+            data['longname'] = dataDescriptions[item][0]
+            data['unit'] = dataDescriptions[item][1]
+            data['description'] = dataDescriptions[item][2]
+            l.append(data)
+        if l==[]:
+            return ['unsupported_version']
+        else:
+            return l
+                
+    @dbus.service.method('org.pellmon.int')
+    def GetDBwithTags(self, tags):
+        """Get the menutags for param"""
+        allparameters = protocol.getDataBase()
+        filteredParams = getDbWithTags(tags)            
+        params = []
+        for param in filteredParams:
+            if param in allparameters:
+                params.append(param)
+        params.sort()
+        return params            
+        
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
     items=[]
+    global conf
     try:
         for data in conf.pollData:
             items.append(protocol.getItem(data))
         s=':'.join(items)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
+        # Log changes to 'mode' and 'alarm' here, their data frame is already read here anyway
+        for param in ('mode', 'alarm'):
+            value = protocol.getItem(param)
+            if param in conf.dbvalues:
+                if not value==conf.dbvalues[param]:
+                    logger.info('%s changed from %s to %s'%(param, conf.dbvalues[param], value))
+            conf.dbvalues[param] = value
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
@@ -75,6 +129,7 @@ def pollThread():
             protocol.getItem('oxygen_regulation')
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
+    
 
 def periodic_signal_handler(signum, frame):
     """Periodic signal handler. Start pollThread to do the work"""
@@ -92,7 +147,7 @@ def copy_db(direction='store'):
             try:
                 copy_in_progress = True     
                 os.system('cp %s %s'%(conf.db, conf.nvdb)) 
-                logger.info('copied %s to %s'%(conf.db, conf.nvdb))
+                logger.debug('copied %s to %s'%(conf.db, conf.nvdb))
             except Exception, e:
                 logger.info(str(e))
                 logger.info('copy %s to %s failed'%(conf.db, conf.nvdb))
@@ -123,6 +178,45 @@ def sigterm_handler(signum, frame):
     if not copy_in_progress:
         logger.info('exiting')
         sys.exit(0)
+    
+def settings_pollthread(settings):
+    """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
+    global conf
+    allparameters = protocol.getDataBase()    
+    for item in settings:
+        if item in allparameters:
+            param = allparameters[item]
+            if hasattr(param, 'max') and hasattr(param, 'min') and hasattr(param, 'frame'):
+                paramrange = param.max - param.min
+                try:
+                    value = protocol.getItem(item)
+                    if item in conf.dbvalues:
+                        try:
+                            if not value==conf.dbvalues[item]:
+                                # These are settings but their values are changed by the firmware also, 
+                                # so small changes are suppressed from the log
+                                selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2}
+                                try:
+                                    change = abs(float(value) - float(conf.dbvalues[item]))
+                                    squelch = selfmodifying_params[item]
+                                    # These items change by themselves, log change only if bigger than 0.3% of range
+                                    if change > squelch:
+                                        # Don't log clock turn around
+                                        if not (item == 'time_minutes' and change == 1439): 
+                                            logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                except:
+                                    logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                conf.dbvalues[item]=value
+                        except:
+                            logger.info('trouble with parameter change detection, item:%s'%item)
+                    else:
+                        conf.dbvalues[item]=value        
+                except:
+                    pass
+    # run this thread again after 30 seconds        
+    ht = threading.Timer(30, settings_pollthread, args=(settings,))
+    ht.setDaemon(True)
+    ht.start()
     
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
@@ -169,6 +263,12 @@ class MyDaemon(Daemon):
             ht = threading.Timer(conf.db_store_interval, db_copy_thread)
             ht.setDaemon(True)
             ht.start()
+
+        # Create and start settings_pollthread to log settings changed locally
+        settings = getDbWithTags(('Settings',))        
+        ht = threading.Timer(4, settings_pollthread, args=(settings,))
+        ht.setDaemon(True)
+        ht.start()
        
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
@@ -252,7 +352,10 @@ class config:
         # add the handlers to the logger
         logger.addHandler(fh)
         
-        self.serial_device = parser.get('conf', 'serialport') 
+        self.serial_device = parser.get('conf', 'serialport')
+        
+        # dict to hold known recent values of db items
+        self.dbvalues = {} 
 
 #########################################################################################
 

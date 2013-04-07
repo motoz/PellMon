@@ -10,52 +10,66 @@ rnd=str(random())
 	Graph
 </%def>
 
-<div class="offset1 span11">
-	<h1>Graph</h1>
+
+<div class="row-fluid">
+    <div class="span1" style="min-width:20px">
+    </div>
+    %if not empty:
+    <div id="spin" class="span11" style="min-width:300px">
+	    <h1>Graph</h1>
+        <p>
+        <img src="image?rand=${rnd}" id="graph" />
+        </p>
+        <p>
+        <img src="consumption?rand=${rnd}" id="graph" />
+        </p>
+    </div>
+    <div class="offset4 span7">
+        <button class="btn left"><<</button>
+        ${'<button class="btn autorefresh %s">Autorefresh</button>' % ('active' if autorefresh else '')}
+        <button class="btn right">>></button>
+    </div>
+
+    %else:
+    <div class="span11"><p><strong>Please select which lines to plot!</strong></p></div>
+    %endif
+    </div>
 </div>
-%if not empty:
-	<div id="spin" class="offset1 span11">
-		<p>
-		<img src="image?rand=${rnd}" id="graph" />
-		</p>
-	</div>
-	<div class="offset5 span7">
-		<button class="btn left"><<</button>
-		${'<button class="btn autorefresh %s">Autorefresh</button>' % ('active' if autorefresh else '')}
-		<button class="btn right">>></button>
-	</div>
 
-	%else:
-	<div class="offset1 span11"><p><strong>Please select which lines to plot!</strong></p></div>
-	%endif
-	<div class="span3 offset1">
-	<h4>Lines to plot:</h4>
-	<form id="frm1" action="form1" method="post">
-
-	%for key, val in checkboxes:
-		<label for="${key}-input" class="checkbox">
-			${'<input type="checkbox" name="%s" id="%s-input" value="On" %s/>' % (key, key, ('checked="checked"' if val else ''))}
-			${key}
-		</label>
-		%endfor
-			<input type="submit" class="btn" value="Set">
-		</form>
-	</div>
-	<div class="span8">
-		<h4>Time period to plot:</h4>
-		<form id="frm2" action="form2" method="post">
-			%for index in range(len(timeChoices)):
-			<%
-			key=timeChoices[index]
-			val=timeNames[index]
-			%>
-			<label class="radio">
-				${'<input type="radio" name="graphtime" value="%s" %s>' % (key, 'checked="checked"' if timeChoice == key else '')}
-				${val}
-			</label>
-			%endfor
-			<input type="submit" class="btn" value="Set">
-		</form>
-	</div>
+<div class="container-fluid">
+    <div class="row">
+                <div class="span1">
+                </div>
+                <div class="span3">
+                    <h4>Lines to plot:</h4>
+                    <form id="frm1" action="form1" method="post">
+                        %for key, val in checkboxes:
+	                    <label for="${key}-input" class="checkbox">
+		                    ${'<input type="checkbox" name="%s" id="%s-input" value="On" %s/>' % (key, key, ('checked="checked"' if val else ''))}
+		                    ${key}
+	                    </label>
+	                    %endfor
+		                <input type="submit" class="btn" value="Set">
+	                </form>
+                </div>
+                <div class="span3">
+	                <h4>Time period to plot:</h4>
+	                <form id="frm2" action="form2" method="post">
+		                %for index in range(len(timeChoices)):
+		                <%
+		                key=timeChoices[index]
+		                val=timeNames[index]
+		                %>
+		                <label class="radio">
+			                ${'<input type="radio" name="graphtime" value="%s" %s>' % (key, 'checked="checked"' if timeChoice == key else '')}
+			                ${val}
+		                </label>
+		                %endfor
+		                <input type="submit" class="btn" value="Set">
+	                </form>
+                </div>
+                <div class="span5">
+                </div>
+    </div>
 </div>
 
