@@ -40,12 +40,16 @@ class LogViewer(object):
         return tmpl.render()
     
     @cherrypy.expose
-    def getlines(self):    
+    def getlines(self, linenum=100):    
         f = open(logfile, "r")
         #lines = f.readlines()
-        lines = islice(reversed_lines(f), 100)        
-        tmpl = lookup.get_template("loglines.html")
-        return tmpl.render(lines=lines)
+        try:
+            ln=int(linenum)
+            lines = islice(reversed_lines(f), ln)        
+            tmpl = lookup.get_template("loglines.html")
+            return tmpl.render(lines=lines)
+        except:
+            pass
         
 parser = ConfigParser.ConfigParser()
 

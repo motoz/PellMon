@@ -1,13 +1,17 @@
 <%inherit file="layout.html"/>
 <%! scripts = ['logview.js'] %>
 <%def name="title()">
-       	Log 
+Log 
 </%def>
 <div class="container-fluid">
     <div class="span1">
     </div>
     <div class="span11">
 	    <h1>Log</h1>
-            <div id='lines'></div>
+            <div id='lines'>
+               <script>
+               linecount='150' 
+               </script>
+	    </div>
     </div>
 </div>

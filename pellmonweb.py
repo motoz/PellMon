@@ -86,11 +86,6 @@ class PellMonWebb:
                     cherrypy.session[val] = 'yes'
                 else:
                     cherrypy.session[val] = 'no'
-
-            if args.has_key('autorefresh'):
-                cherrypy.session['autorefresh']='yes'
-            else:
-                cherrypy.session['autorefresh']='no'
         # redirect back after setting selection in session
         raise cherrypy.HTTPRedirect('/')
 
@@ -282,9 +277,9 @@ class PellMonWebb:
         cherrypy.session['level']=level
         # redirect back after setting selection in session
         raise cherrypy.HTTPRedirect(cherrypy.request.headers['Referer'])
-            
+
     @cherrypy.expose
-    def index(self, **args):
+    def graphconf(self):
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice']=timeChoices[0]
         checkboxes=[]
@@ -296,9 +291,19 @@ class PellMonWebb:
                     empty=False
                 else:
                     checkboxes.append((val,''))
+        tmpl = lookup.get_template("graphconf.html")
+        return tmpl.render(checkboxes=checkboxes, empty=empty, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
+            
+    @cherrypy.expose
+    def index(self, **args):
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
+        empty=True
+        for key, val in polldata:
+            if colorsDict.has_key(key):
+                if cherrypy.session.get(val)=='yes':
+                    empty=False
         tmpl = lookup.get_template("index.html")
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), checkboxes=checkboxes, empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=empty, autorefresh=autorefresh )
 
 def parameterReader(q):
     parameterlist=getdb()
