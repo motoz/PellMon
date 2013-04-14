@@ -25,6 +25,7 @@ import logging
 import logging.handlers
 import sys
 import ConfigParser
+import time
 
 from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
@@ -111,16 +112,26 @@ def pollThread():
     global conf
     try:
         for data in conf.pollData:
-            items.append(protocol.getItem(data))
-        s=':'.join(items)
-        os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
+            if data[0]=='_':
+                if data=='_logtick':
+                    items.append(str(conf.tickcounter))
+                else:
+                    items.append('U')
+            else:
+                items.append(protocol.getItem(data))
         # Log changes to 'mode' and 'alarm' here, their data frame is already read here anyway
         for param in ('mode', 'alarm'):
             value = protocol.getItem(param)
             if param in conf.dbvalues:
                 if not value==conf.dbvalues[param]:
                     logger.info('%s changed from %s to %s'%(param, conf.dbvalues[param], value))
+                    conf.tickcounter=int(time.time())
+                    for data in conf.pollData:
+                        if data=='_logtick':
+                            items.append(str(conf.tickcounter))
             conf.dbvalues[param] = value
+        s=':'.join(items)
+        os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
@@ -204,8 +215,10 @@ def settings_pollthread(settings):
                                         # Don't log clock turn around
                                         if not (item == 'time_minutes' and change == 1439): 
                                             logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                            conf.tickcounter=int(time.time())
                                 except:
                                     logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                    conf.tickcounter=int(time.time())
                                 conf.dbvalues[item]=value
                         except:
                             logger.info('trouble with parameter change detection, item:%s'%item)
@@ -288,7 +301,7 @@ class config:
 
         # Optional rrd data source definitions, default is DS:%s:GAUGE:%u:U:U
         rrd_datasources = parser.items("rrd_datasources")
-        
+
         self.pollData = []
         self.dataSources = {}
         dataSourceConf = {}
@@ -357,6 +370,8 @@ class config:
         # dict to hold known recent values of db items
         self.dbvalues = {} 
 
+        # count every parameter and mode change so rrd can draw a tick mark when that happens
+        self.tickcounter = int(time.time())
 #########################################################################################
 
 

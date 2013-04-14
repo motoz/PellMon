@@ -148,6 +148,7 @@ class PellMonWebb:
         graphTimeEnd=str(offset)
         #Build the command string to make a graph from the database         
         RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 760 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
+        RrdGraphString1=RrdGraphString1+"DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
