@@ -26,6 +26,8 @@ import logging.handlers
 import sys
 import ConfigParser
 import time
+from smtplib import SMTP as smtp
+from email.mime.text import MIMEText as mimetext
 
 from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
@@ -112,6 +114,7 @@ def pollThread():
     global conf
     try:
         for data in conf.pollData:
+            # 'special cases' handled here, name starting with underscore are not polled from the protocol 
             if data[0]=='_':
                 if data=='_logtick':
                     items.append(str(conf.tickcounter))
@@ -124,8 +127,11 @@ def pollThread():
             value = protocol.getItem(param)
             if param in conf.dbvalues:
                 if not value==conf.dbvalues[param]:
-                    logger.info('%s changed from %s to %s'%(param, conf.dbvalues[param], value))
+                    logline='%s changed from %s to %s'%(param, conf.dbvalues[param], value)
+                    logger.info(logline)
                     conf.tickcounter=int(time.time())
+                    if conf.email and param in conf.emailconditions:
+                        sendmail(logline)
                     for data in conf.pollData:
                         if data=='_logtick':
                             items.append(str(conf.tickcounter))
@@ -203,6 +209,7 @@ def settings_pollthread(settings):
                     value = protocol.getItem(item)
                     if item in conf.dbvalues:
                         try:
+                            logline=''
                             if not value==conf.dbvalues[item]:
                                 # These are settings but their values are changed by the firmware also, 
                                 # so small changes are suppressed from the log
@@ -214,12 +221,16 @@ def settings_pollthread(settings):
                                     if change > squelch:
                                         # Don't log clock turn around
                                         if not (item == 'time_minutes' and change == 1439): 
-                                            logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                            logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
+                                            logger.info(logline)
                                             conf.tickcounter=int(time.time())
                                 except:
-                                    logger.info('Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value))
+                                    logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
+                                    logger.info(logline)
                                     conf.tickcounter=int(time.time())
                                 conf.dbvalues[item]=value
+                                if logline and conf.email and 'parameter' in conf.emailconditions:
+                                    sendmail(logline)
                         except:
                             logger.info('trouble with parameter change detection, item:%s'%item)
                     else:
@@ -230,6 +241,28 @@ def settings_pollthread(settings):
     ht = threading.Timer(30, settings_pollthread, args=(settings,))
     ht.setDaemon(True)
     ht.start()
+
+def sendmail(msg):
+    ht = threading.Timer(2, sendmail_thread, args=(msg,))
+    ht.start()
+
+def sendmail_thread(msg):
+    try:
+        username = conf.emailusername 
+        password = conf.emailpassword
+        
+        mail = mimetext(msg)
+        mail['Subject'] = conf.emailsubject
+        mail['From'] = conf.emailfromaddress
+        mail['To'] = conf.emailtoaddress
+
+        mailserver = smtp(conf.emailserver)
+        mailserver.starttls() 
+        mailserver.login(conf.emailusername, conf.emailpassword)  
+        mailserver.sendmail(mail['From'], mail['To'], mail.as_string())      
+        mailserver.quit()  
+    except:
+        logger.info('error trying to send email')
     
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
@@ -372,6 +405,19 @@ class config:
 
         # count every parameter and mode change so rrd can draw a tick mark when that happens
         self.tickcounter = int(time.time())
+        
+        try:
+            self.emailusername = parser.get('email', 'username')
+            self.emailpassword = parser.get('email', 'password')
+            self.emailfromaddress = parser.get('email', 'from')
+            self.emailtoaddress = parser.get('email', 'to')
+            self.emailsubject = parser.get('email', 'subject')
+            self.emailserver = parser.get('email', 'server')
+            self.emailconditions = parser.get('email', 'conditions')
+            self.email=True
+        except:
+            self.email=False
+            
 #########################################################################################
 
 
