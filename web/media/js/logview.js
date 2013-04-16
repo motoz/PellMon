@@ -2,7 +2,8 @@
 
 function getLog() {
 	$.get(
-		'/logview/getlines',
+		
+		'/logview/getlines?linenum='+linecount,
 		function(data) {
             $("#lines").html(data)
 		}

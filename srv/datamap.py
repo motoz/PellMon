@@ -128,7 +128,7 @@ dataBaseMap =  {
     'comp_clean_blower':    { ('6.03','zzzz') : param (FrameZ05, 20,    0,    'L02',   0,   100) },
     'comp_clean_wait':      { ('6.12','zzzz') : param (FrameZ05, 29,    0,    'L03',   0,   300) },
 
-    'blower_corr_mid':      { ('4.99','zzzz') : param (FrameZ05, 22,    0,    'M00',  50,   150) },
+    'blower_corr_mid':      { ('4.99','zzzz') : param (FrameZ05, 21,    0,    'M00',  50,   150) },
 
 #    parameter name             versions        type   frame    index  dec    addr   min    max
     'min_power':            { ('4.99','zzzz') : param (FrameZ01, 37,    0,    'H02',  10,   100) },
