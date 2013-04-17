@@ -73,6 +73,7 @@ class PellMonWebb:
 
     auth = AuthController()
     logview = LogViewer()
+    consumptionview = Consumption()
 
     @cherrypy.expose
     def form1(self, **args):
