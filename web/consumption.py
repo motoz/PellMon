@@ -23,7 +23,7 @@ from cherrypy.lib.static import serve_file
 import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
-from time import time
+from time import time,localtime
 
 #Look for temlates in this directory
 lookup = TemplateLookup(directories=['web/html'])
@@ -63,7 +63,8 @@ class Consumption(object):
     def consumption7d(self):    
         graph_file = os.path.join(os.path.dirname(db), 'consumption7d.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        now=int(time())/86400*86400
+        t=time()
+        now=int(time())/86400*86400-(localtime(t).tm_hour-int(t)%86400/3600)*3600
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-604800s "%(now,now)
         RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
@@ -81,7 +82,8 @@ class Consumption(object):
     def consumption1m(self):    
         graph_file = os.path.join(os.path.dirname(db), 'consumption1m.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        now=int(time())/(86400*30)*(86400*30)
+        t=time()
+        now=int(time())/(86400*7)*(86400*7)-(localtime(t).tm_hour-int(t)%86400/3600)*3600-4*86400
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-4838400s "%(now,now)
         RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
@@ -100,9 +102,10 @@ class Consumption(object):
         graph_file = os.path.join(os.path.dirname(db), 'consumption1y.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        now=int(time())/(86400*30)*(86400*30)
+        t=time()
+        now=int(time())/int(31556952/12)*int(31556952/12)-(localtime(t).tm_hour-int(t)%86400/3600)*3600
         
-        RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-31536000s "%(now,now)
+        RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-31556952s "%(now,now)
         RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
         for h in range(0,12):
             start=(now-h*(86400*30)-(86400*30))
@@ -114,3 +117,4 @@ class Consumption(object):
         os.system(RrdGraphString1)        
         return serve_file(graph_file, content_type='image/png')
     
+
