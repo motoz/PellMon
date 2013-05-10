@@ -83,7 +83,7 @@ class Consumption(object):
         graph_file = os.path.join(os.path.dirname(db), 'consumption1m.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         t=time()
-        now=int(time())/(86400*7)*(86400*7)-(localtime(t).tm_hour-int(t)%86400/3600)*3600-4*86400
+        now=int(time()+4*86400)/(86400*7)*(86400*7)-(localtime(t).tm_hour-int(t)%86400/3600)*3600 -4*86400
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-4838400s "%(now,now)
         RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
