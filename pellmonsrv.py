@@ -112,6 +112,8 @@ def pollThread():
     logger.debug('handlerTread started by signal handler')
     items=[]
     global conf
+    if not conf.polling:
+        return
     try:
         for data in conf.pollData:
             # 'special cases' handled here, name starting with underscore are not polled from the protocol 
@@ -190,9 +192,13 @@ def db_copy_thread():
 
 def sigterm_handler(signum, frame):
     """Handles SIGTERM, waits for the database copy on shutdown if it is in a ramdisk"""
-    if conf.nvdb != conf.db:   
-        copy_db('store')
-    if not copy_in_progress:
+    if conf.polling: 
+        if conf.nvdb != conf.db:   
+            copy_db('store')
+        if not copy_in_progress:
+            logger.info('exiting')
+            sys.exit(0)
+    else:
         logger.info('exiting')
         sys.exit(0)
     
@@ -298,17 +304,18 @@ class MyDaemon(Daemon):
         logger.debug('started timer')
         
         # Create RRD database if does not exist
-        if not os.path.exists(conf.nvdb):
-            os.system(conf.RrdCreateString)
-            logger.info('Created rrd database: '+conf.RrdCreateString)
+        if conf.polling:
+            if not os.path.exists(conf.nvdb):
+                os.system(conf.RrdCreateString)
+                logger.info('Created rrd database: '+conf.RrdCreateString)
 
-        # If nvdb is different from db, copy nvdb to db
-        if conf.nvdb != conf.db:
-            copy_db('restore')
-            # Create and start db_copy_thread to store db at regular interval
-            ht = threading.Timer(conf.db_store_interval, db_copy_thread)
-            ht.setDaemon(True)
-            ht.start()
+            # If nvdb is different from db, copy nvdb to db
+            if conf.nvdb != conf.db:
+                copy_db('restore')
+                # Create and start db_copy_thread to store db at regular interval
+                ht = threading.Timer(conf.db_store_interval, db_copy_thread)
+                ht.setDaemon(True)
+                ht.start()
 
         # Create and start settings_pollthread to log settings changed locally
         settings = getDbWithTags(('Settings',))        
@@ -347,40 +354,46 @@ class config:
             else:
                 self.dataSources[value] = "DS:%s:GAUGE:%u:U:U"
         # The RRD database
-        self.db = parser.get('conf', 'database')
+        try:
+            self.polling=True
+            self.db = parser.get('conf', 'database')
+        except ConfigParser.NoOptionError:
+            self.polling=False
 
         # The persistent RRD database
         try:
             self.nvdb = parser.get('conf', 'persistent_db') 
-        except:
-            self.nvdb = self.db        
+        except ConfigParser.NoOptionError:
+            if self.polling:
+                self.nvdb = self.db        
         try:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
-        except:
+        except ConfigParser.NoOptionError:
             self.db_store_interval = 3600
         try:
             self.serial_device = parser.get('conf', 'serialport') 
-        except:
+        except ConfigParser.NoOptionError:
             self.serial_device = None
         try:
             self.version_string = parser.get('conf', 'chipversion')
-        except:
+        except ConfigParser.NoOptionError:
             logger.info('chipversion not specified, using 0.0')
             self.version_string = '0.0'
         try: 
             self.poll_interval = int(parser.get('conf', 'pollinterval'))
-        except:
+        except ConfigParser.NoOptionError:
             logger.info('Invalid poll_interval setting, using 10s')
             self.poll_interval = 10
 
-        # Build a command string to create the rrd database
-        self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
-        for item in self.pollData:
-            self.RrdCreateString += self.dataSources[item] % (item, self.poll_interval*4) + ' ' 
-        self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
-        self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
-        self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
-        self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+        if self.polling:
+            # Build a command string to create the rrd database
+            self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
+            for item in self.pollData:
+                self.RrdCreateString += self.dataSources[item] % (item, self.poll_interval*4) + ' ' 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
 
         # create logger
         logger = logging.getLogger('pellMon')
@@ -398,8 +411,6 @@ class config:
         # add the handlers to the logger
         logger.addHandler(fh)
         
-        self.serial_device = parser.get('conf', 'serialport')
-        
         # dict to hold known recent values of db items
         self.dbvalues = {} 
 
@@ -415,7 +426,7 @@ class config:
             self.emailserver = parser.get('email', 'server')
             self.emailconditions = parser.get('email', 'conditions')
             self.email=True
-        except:
+        except ConfigParser.NoOptionError:
             self.email=False
             
 #########################################################################################

@@ -31,7 +31,11 @@ class Protocol(threading.Thread):
     
     def __init__(self, device, version_string):   
         """Initialize the protocol and database according to given version"""
-             
+        self.dummyDevice=False
+        if device == None:
+            self.dummyDevice=True
+            self.dataBase = self.createDataBase('6.99')
+            return     
         # Open serial port
         s = serial.Serial()
         s.port     = device
@@ -71,6 +75,8 @@ class Protocol(threading.Thread):
         return self.dataBase  
                 
     def getItem(self, param): 
+        if self.dummyDevice:
+            return '1234'
         """Read data/parameter value"""
         logger.debug('getitem')
         dataparam=self.dataBase[param]
@@ -121,6 +127,8 @@ class Protocol(threading.Thread):
             raise IOError(0, "A command can't be read") 
 
     def setItem(self, param, s):
+        if self.dummyDevice:
+            return 'OK'
         """Write a parameter/command"""
         dataparam=self.dataBase[param]
         if hasattr(dataparam, 'address'):

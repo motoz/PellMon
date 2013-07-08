@@ -32,9 +32,13 @@ lookup = TemplateLookup(directories=['web/html'])
 parser = ConfigParser.ConfigParser()
 parser.read('pellmon.conf')        
 
-db = parser.get('conf', 'database') 
-graph_file_base = os.path.dirname(db)
-
+try:
+    polling=True
+    db = parser.get('conf', 'database') 
+    graph_file_base = os.path.dirname(db)
+except ConfigParser.NoOptionError:
+    polling=False
+    
 class Consumption(object):    
     @cherrypy.expose
     def consumption(self):
@@ -43,6 +47,8 @@ class Consumption(object):
     
     @cherrypy.expose
     def consumption24h(self):    
+        if not polling:
+             return None
         graph_file = os.path.join(os.path.dirname(db), 'consumption24h.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         now=int(time())/3600*3600
@@ -61,6 +67,8 @@ class Consumption(object):
 
     @cherrypy.expose
     def consumption7d(self):    
+        if not polling:
+             return None
         graph_file = os.path.join(os.path.dirname(db), 'consumption7d.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         t=time()
@@ -80,6 +88,8 @@ class Consumption(object):
 
     @cherrypy.expose
     def consumption1m(self):    
+        if not polling:
+             return None
         graph_file = os.path.join(os.path.dirname(db), 'consumption1m.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         t=time()
@@ -99,6 +109,8 @@ class Consumption(object):
         
     @cherrypy.expose
     def consumption1y(self):    
+        if not polling:
+             return None
         graph_file = os.path.join(os.path.dirname(db), 'consumption1y.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Pragma'] = 'no-cache'

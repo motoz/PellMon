@@ -39,10 +39,13 @@ parser = ConfigParser.ConfigParser()
 parser.read('pellmon.conf')
 
 # The RRD database, updated by pellMon
-
-db = parser.get('conf', 'database') 
-graph_file = os.path.join(os.path.dirname(db), 'graph.png')
-
+try:
+    polling=True
+    db = parser.get('conf', 'database') 
+    graph_file = os.path.join(os.path.dirname(db), 'graph.png')
+except ConfigParser.NoOptionError:
+    polling=False
+    
 # And the colors to use when drawing the graph
 colors = parser.items('graphcolors')
 colorsDict = {}
@@ -139,6 +142,8 @@ class PellMonWebb:
 
     @cherrypy.expose
     def image(self, **args):
+        if not polling:
+             return None
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice'] = 'time1h'
         if not cherrypy.session.get('time'):
@@ -160,6 +165,8 @@ class PellMonWebb:
 
     @cherrypy.expose
     def consumption(self, **args):
+        if not polling:
+             return None
         if consumption_graph:
             #Build the command string to make a graph from the database         
             now=int(time())/3600*3600
