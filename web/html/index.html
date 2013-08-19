@@ -10,49 +10,39 @@ rnd=str(random())
 	Graph
 </%def>
 
-
-<div class="row-fluid">
-    <div class="span1" style="min-width:20px">
-    </div>
+<div class="container">
+<div class="row">
     %if not empty:
-    <div id="spin" class="span11" style="min-width:300px">
+    <div id="spin">
 	    <h3>Graph</h3>
         <p>
-        <img src="image?rand=${rnd}" id="graph" />
+            <img class="img-responsive" src="image?rand=${rnd}" id="graph" />
         </p>
         <p>
-        <img src="consumption?rand=${rnd}" id="graph" />
+            <img class="img-responsive" src="consumption?rand=${rnd}" id="graph" />
         </p>
     </div>
-
-    <div class="span1" style="min-width:20px">
-    </div>
-    <div class="span3" style="min-width:100px">
-                       <form id="frm1" action="/graphconf" method="get" style="display: inline;">
-                       <input type="submit" class="btn" value="Configure">
-                        </form>
-    </div>
-    <div class="span7">
+    <a href="/graphconf">Configure graph</a>
+    <div class="text-center">
         <button class="btn left"><<</button>
         ${'<button class="btn autorefresh %s">Autorefresh</button>' % ('active' if autorefresh else '')}
         <button class="btn right">>></button>
     </div>
 
     %else:
-    <div class="span11"><p><strong>Please select which lines to plot!</strong></p></div>
+    <div>
+        <p>
+            <strong>Please select which lines to plot!</strong>
+        </p>
+    </div>
                        <form id="frm1" action="/graphconf" method="get">
                        <input type="submit" class="btn" value="Configure">
                         </form>
-    </div>
     %endif
-
-    <div class="span11 offset1">
             <h3>Events</h3>
             <script>
-            linecount='5' 
+            linecount='5'
             </script>
             <div id='lines'>
             </div>
-    </div>
 </div>
-

@@ -1,15 +1,23 @@
 <%inherit file="layout.html"/>
 <%def name="title()">
-       	Login 
+       	Login
 </%def>
-<div class="span1">
-</div>
-<div class="span5">
-	<h1>Login</h1>
-            <form method="post" action="/auth/login">
+<div class="container">
+	<div class="col-md-6">
+		<h1>Login</h1>
+        <form method="post" action="/auth/login">
             <input type="hidden" name="from_page" value="${from_page}" />
-            <p class="alert alert-info">${msg}</p>
-            <label>Username: <input type="text" name="username" value="${username}" /></label>
-            <label>Password: <input type="password" name="password" /></label>
-            <input type="submit" value="Log in" class="btn" />
+        <p class="alert alert-info">${msg}</p>
+        <div class="form-group">
+            <label>Username: </label>
+            <input type="text" name="username" value="${username}" class="form-control" placeholder="Enter username" />
+        </div>
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" name="password" class="form-control" placeholder="Enter password" />
+        </div>
+        <input type="submit" value="Log in" class="btn btn-default" />
+        </div>
+        </form>
+	</div>
 </div>
