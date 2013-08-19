@@ -19,6 +19,7 @@
 
 
 dataDescriptions = {          #name, unit, description
+    'magazine_content':      ('magazine content', 'kg', 'Calculated magazine content'),
     'power':                 ('power', '%',  'Modulated power level'),
     'power_kW':              ('power kW', 'kW',  'Calculated power level'),
     'boiler_temp':           ('boiler temp', '°',  'Measured Boiler temperature'),
@@ -101,7 +102,7 @@ dataDescriptions = {          #name, unit, description
     'burner_off':            ('burner OFF', '',  'Switch to off mode, if running the burner will go through the shutdown sequence'),
     'burner_on':             ('burner ON', '',  'Switch to run mode, the burner will start automatically when the temperature falls below set point'),
     'reset_alarm':           ('reset alarm', '',  'Reset alarm'),
-}   
+}
 
 
 

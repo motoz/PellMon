@@ -23,25 +23,25 @@ from frames import *
 # 'param' type is for setting values that can be read and written
 # 'data' type is for read-only measurement values
 # 'command' type is for write-only data
-param   = namedtuple('param',   'frame index decimals address min max') 
-data    = namedtuple('data',    'frame index decimals') 
+param   = namedtuple('param',   'frame index decimals address min max')
+data    = namedtuple('data',    'frame index decimals')
 command = namedtuple('command', 'address min max')
 
 # dataBaseMap is a dictionary of parameter names and their protocol mappings.
-# The protocol mapping is itself a dictionary with "supported from" and "support ends with" version strings 
+# The protocol mapping is itself a dictionary with "supported from" and "support ends with" version strings
 # as key and a "param, data or command" named tuple as value. This way a parameter name can have
-# several different protocol mappings identified by their version identifiers. 
-# All chip versions, existing and future, are newer than '0000' and older than 'zzzz' 
+# several different protocol mappings identified by their version identifiers.
+# All chip versions, existing and future, are newer than '0000' and older than 'zzzz'
 # 'data' type is for read-only measurement values
 # 'param' type is for setting values that can be read and written
 # 'command' type is for write-only data
 
 dataBaseMap =  {
-    
-#    parameter name             versions        type   frame   index decimals  
+
+#    parameter name             versions        type   frame   index decimals
     'power':                { ('0000','zzzz') : data (FrameZ00,  0,     0) }, # Z00 is probably supported on all version
     'power_kW':             { ('0000','zzzz') : data (FrameZ00,  1,     1) },
-    'boiler_temp':          { ('0000','zzzz') : data (FrameZ00,  2,     1) }, 
+    'boiler_temp':          { ('0000','zzzz') : data (FrameZ00,  2,     1) },
     'chute_temp':           { ('0000','zzzz') : data (FrameZ00,  3,     0) },
     'smoke_temp':           { ('0000','zzzz') : data (FrameZ00,  4,     0) },
     'oxygen':               { ('0000','zzzz') : data (FrameZ00,  5,     1) },
@@ -49,7 +49,7 @@ dataBaseMap =  {
     'feeder_time':          { ('0000','zzzz') : data (FrameZ00,  7,     0) },
     'ignition_time':        { ('0000','zzzz') : data (FrameZ00,  8,     0) },
     'alarm':                { ('0000','zzzz') : data (FrameZ00,  9,     0) },
-    'oxygen_desired':       { ('0000','zzzz') : data (FrameZ00, 11,     1) }, 
+    'oxygen_desired':       { ('0000','zzzz') : data (FrameZ00, 11,     1) },
     'mode':                 { ('0000','zzzz') : data (FrameZ00, 16,     0) },
     'model':                { ('0000','zzzz') : data (FrameZ00, 17,     0) },
     'motor_time':           { ('0000','zzzz') : data (FrameZ02,  0,     0) },
@@ -122,6 +122,7 @@ dataBaseMap =  {
     'timer_hotwater_start_1':{('6.03','zzzz') : param (FrameZ05, 15, 	0,    'K06',   0,  1439) },
     'timer_hotwater_start_2':{('6.03','zzzz') : param (FrameZ05, 16, 	0,    'K07',   0,  1439) },
     'timer_hotwater_start_3':{('6.03','zzzz') : param (FrameZ05, 17, 	0,    'K08',   0,  1439) },
+    'magazine_content'      :{('6.03','zzzz') : param (FrameZ05, 25,    0,    'F04',   0,  9999) },
 
     'comp_clean_interval':  { ('6.03','zzzz') : param (FrameZ05, 18,    0,    'L00',   0,    21) },
     'comp_clean_time':      { ('6.03','zzzz') : param (FrameZ05, 19,    0,    'L01',   0,    10) },
@@ -137,4 +138,4 @@ dataBaseMap =  {
     'burner_off':           { ('4.99','zzzz') : command (                     'V00',   0,     0) },
     'burner_on':            { ('4.99','zzzz') : command (                     'V01',   0,     0) },
     'reset_alarm':          { ('4.99','zzzz') : command (                     'V02',   0,     0) },
-}   
+}

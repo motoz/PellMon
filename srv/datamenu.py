@@ -18,7 +18,7 @@
 """
 
 # Tags:                       Basic  All      Settings   Measurements  Overview Blower Ignition Feeder Oxygen Timer Cleaning  Temps
-dataBaseTags = {    
+dataBaseTags = {
     'power':                 ('X',   'X',      ' ',       'X',          'X',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
     'power_kW':              ('X',   'X',      ' ',       'X',          'X',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
     'boiler_temp':           ('X',   'X',      ' ',       'X',          'X',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     'X'),
@@ -101,4 +101,5 @@ dataBaseTags = {
     'burner_off':            ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
     'burner_on':             ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
     'reset_alarm':           ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
-}   
+    'magazine_content':      ('X',   'X',      'X',       'X',          'X',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
+}

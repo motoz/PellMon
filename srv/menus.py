@@ -33,9 +33,9 @@ def getDbWithTags(wantedtags):
                 break;
             if not tag in paramtags:
                 accepted=False
-        if accepted: 
-            params.append(param)                  
+        if accepted:
+            params.append(param)
     return params
 
 def getMenutags():
-    return Menutags    
+    return Menutags
