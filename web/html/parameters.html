@@ -55,7 +55,8 @@
         <div class="col-md-10">
 
         %if len(commands)>0:
-        <div class="col-md-2">
+        <div class="row">
+            <div class="col-md-12">
             <h3>Control</h3>
             %for key in commands:
             <%
@@ -69,17 +70,20 @@
             if key['type'] == 'R/W':
                 range='  (%u..%u)'%(key['min'], key['max'])
             %>
-	            <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+	            <form id="${key}-form" name="${name}" class="param" action="" method="post">
 		            <input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
-		            <input type="submit" value="${longname}" class="command btn btn-primary" />
+                    <div class="form-group">
+		              <input type="submit" value="${longname}" class="command btn btn-primary" />
+                    </div>
 	            </form>
             %endfor
+            </div>
         </div>
         %endif
 
-
+        <div class="row">
         %if len(data)>0:
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <h3>Data</h3>
                 %for key in data:
                 <%
@@ -93,15 +97,17 @@
                 if key['type'] == 'R/W':
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
-	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+	                <form id="${key}-form" name="${name}" class="param form-inline" action="" method="post">
                         %if key['description']:
                         <h5 data-toggle="collapse" data-target="#viewdetails-${name}" href="#" for="${name}-text"> ${longname} <i class="icon-info-sign"> </i></h5>
                         %else:
                         <h5 for="${name}-text"> ${longname}</h5>
                         %endif
                         <div class="collapse" class="text-info" id="viewdetails-${name}"> ${key['description'].decode('utf-8')}<br>(${key['unit'].decode('utf-8')})</div>
-		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
-		                <input type="submit" value="Get" class="get btn" />
+                        <div class="form-group">
+		                  <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" class="form-control" />
+                        </div>
+		                  <input type="submit" value="Get" class="get btn" />
 	                </form>
 
 
@@ -110,7 +116,7 @@
         %endif
 
         %if len(params)>0:
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <h3>Settings</h3>
                 %for key in params:
                 <%
@@ -124,7 +130,7 @@
                 if key['type'] == 'R/W':
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
-	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+	                <form id="${key}-form" name="${name}" class="param form-inline" action="" method="post">
 
                         %if key['description']:
                         <h5 data-toggle="collapse" data-target="#viewdetails2-${name}" href="#" for="${name}-text"> ${longname} <i class="icon-info-sign"> </i></h5>
@@ -133,7 +139,9 @@
                         %endif
 
                         <div class="collapse" class="text-info" id="viewdetails2-${name}"> ${key['description'].decode('utf-8')}<br>Setting range is from ${key['min']} to ${key['max']}<br>(${key['unit'].decode('utf-8')}) </div>
-		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
+                        <div class="form-group">
+		                  <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" class="form-control" />
+                        </div>
 		                <input type="submit" value="Get" class="get btn" />
 		                <input type="submit" value="Set" class="set btn btn-primary" />
 	                </form>
