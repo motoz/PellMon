@@ -219,7 +219,7 @@ def settings_pollthread(settings):
                             if not value==conf.dbvalues[item]:
                                 # These are settings but their values are changed by the firmware also, 
                                 # so small changes are suppressed from the log
-                                selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2}
+                                selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
                                 try:
                                     change = abs(float(value) - float(conf.dbvalues[item]))
                                     squelch = selfmodifying_params[item]
