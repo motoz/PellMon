@@ -1,68 +1,62 @@
 <%inherit file="layout.html"/>
 <%! scripts = ['parameters.js'] %>
 <%def name="title()">
-       	${heading} 
+       	${heading}
 </%def>
 
-<div class="container-fluid">
-    <div class="row-fluid">
-        <div class="span12">
-            <h1>${heading}</h1>
-        </div>
-    </div>
+<div class="container">
+    <h1>${heading}</h1>
     <div class="row">
-        <div class="span2">
-        <div class="navbar">
-        <div class="navbar-inner">
-            <ul class="nav">
-		        <li class="">
-			        <a href="/parameters/Blower" >Blower</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Feeder" >Feeder</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Cleaning">Cleaning</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Overview">Overview</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Ignition" >Ignition</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Oxygen" >Oxygen</a>
-		        </li>
-		        <li class="">
-			        <a href="/parameters/Temps" >Temperature</a>
-		        </li>
-            </ul>
-        </div>
-        </div>
+        <div class="col-md-2">
+            <div class="navbar navbar-default">
+                <ul class="nav nav-pills nav-stacked">
+                    <li class="">
+                        <a href="/parameters/All">All</a>
+                    </li>
+    		        <li class="">
+    			        <a href="/parameters/Blower">Blower</a>
+    		        </li>
+    		        <li class="">
+    			        <a href="/parameters/Feeder">Feeder</a>
+    		        </li>
+    		        <li class="">
+    			        <a href="/parameters/Cleaning">Cleaning</a>
+    		        </li>
+    		        <li class="">
+    			        <a href="/parameters/Overview">Overview</a>
+    		        </li>
+    		        <li class="">
+    			        <a href="/parameters/Ignition" >Ignition</a>
+    		        </li>
+    		        <li class="">
+    			        <a href="/parameters/Oxygen">Oxygen</a>
+    		        </li>
+    		        <li class="">
+    			        <a href="/parameters/Temps">Temperature</a>
+    		        </li>
+                </ul>
+            </div>
 
-        <div class="navbar">
-        <div class="navbar-inner">
-            <ul class="nav">  
-                  <% 
-                     if level=='All':
-                        switch='Less..'
-                        link='Basic'
-                     else:
-                        switch='More..'
-                        link='All'
-                   %>
-                  
-                <li><a href="/setlevel/${link}">${switch}</a></li>  
-            </ul>  
+            <div class="navbar navbar-default">
+                <ul class="nav">
+                      <%
+                         if level=='All':
+                            switch='Less..'
+                            link='Basic'
+                         else:
+                            switch='More..'
+                            link='All'
+                       %>
+
+                    <li><a href="/setlevel/${link}">${switch}</a></li>
+                </ul>
+            </div>
         </div>
-        </div>
-        </div>
-        
-        <div class="span1">
-        </div>
-        
+        <div class="col-md-10">
+
         %if len(commands)>0:
-        <div class="span2">
+        <div class="row">
+            <div class="col-md-12">
             <h3>Control</h3>
             %for key in commands:
             <%
@@ -76,19 +70,20 @@
             if key['type'] == 'R/W':
                 range='  (%u..%u)'%(key['min'], key['max'])
             %>
-            <div class="row-fluid">
-	            <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+	            <form id="${key}-form" name="${name}" class="param" action="" method="post">
 		            <input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
-		            <input type="submit" value="${longname}" class="command btn btn-primary" />
+                    <div class="form-group">
+		              <input type="submit" value="${longname}" class="command btn btn-primary" />
+                    </div>
 	            </form>
-            </div>
             %endfor
+            </div>
         </div>
         %endif
 
-
+        <div class="row">
         %if len(data)>0:
-            <div class="span4">
+            <div class="col-md-6">
                 <h3>Data</h3>
                 %for key in data:
                 <%
@@ -102,26 +97,26 @@
                 if key['type'] == 'R/W':
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
-                <div class="row-fluid">
-	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+	                <form id="${key}-form" name="${name}" class="param form-inline" action="" method="post">
                         %if key['description']:
-                        <h5 data-toggle="collapse" data-target="#viewdetails-${name}" href="#" for="${name}-text"> ${longname} <i class="icon-info-sign"> </i></h5>
+                        <h5 data-toggle="collapse" data-target="#viewdetails-${name}" href="#" for="${name}-text"> ${longname} <i class="glyphicon glyphicon-info-sign"> </i></h5>
                         %else:
                         <h5 for="${name}-text"> ${longname}</h5>
                         %endif
                         <div class="collapse" class="text-info" id="viewdetails-${name}"> ${key['description'].decode('utf-8')}<br>(${key['unit'].decode('utf-8')})</div>
-		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
-		                <input type="submit" value="Get" class="get btn" />
+                        <div class="form-group">
+		                  <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" class="form-control" />
+                        </div>
+		                  <input type="submit" value="Get" class="get btn btn-default" />
 	                </form>
-                </div>
 
-                      
+
                 %endfor
             </div>
         %endif
 
         %if len(params)>0:
-            <div class="span5">
+            <div class="col-md-6">
                 <h3>Settings</h3>
                 %for key in params:
                 <%
@@ -135,21 +130,24 @@
                 if key['type'] == 'R/W':
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
-	                <form id="${key}-form" name="${name}" class="param form-horizontal" action="" method="post">
+	                <form id="${key}-form" name="${name}" class="param form-inline" action="" method="post">
 
                         %if key['description']:
-                        <h5 data-toggle="collapse" data-target="#viewdetails2-${name}" href="#" for="${name}-text"> ${longname} <i class="icon-info-sign"> </i></h5>
+                        <h5 data-toggle="collapse" data-target="#viewdetails2-${name}" href="#" for="${name}-text"> ${longname} <i class="glyphicon glyphicon-info-sign"> </i></h5>
                         %else:
                         <h5 for="${name}-text"> ${longname}</h5>
                         %endif
-                                                
+
                         <div class="collapse" class="text-info" id="viewdetails2-${name}"> ${key['description'].decode('utf-8')}<br>Setting range is from ${key['min']} to ${key['max']}<br>(${key['unit'].decode('utf-8')}) </div>
-		                <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" />
-		                <input type="submit" value="Get" class="get btn" />
+                        <div class="form-group">
+		                  <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" class="form-control" />
+                        </div>
+		                <input type="submit" value="Get" class="get btn btn-default" />
 		                <input type="submit" value="Set" class="set btn btn-primary" />
 	                </form>
                 %endfor
             </div>
         %endif
+        </div>
     </div>
 </div>
