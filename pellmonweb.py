@@ -342,7 +342,7 @@ def getFullDB(tags):
     return db
         
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
-
+FAVICON = os.path.join(os.path.abspath("."), u"web/media/favicon.ico")
 global_conf = {
        'global':    { 'server.environment': 'debug',
                       'tools.sessions.on' : True,
@@ -356,7 +356,10 @@ global_conf = {
               }
 app_conf =  {'/media':
                 {'tools.staticdir.on': True,
-                 'tools.staticdir.dir': MEDIA_DIR}
+                 'tools.staticdir.dir': MEDIA_DIR},
+             '/favicon.ico':
+                {'tools.staticfile.on':True,
+                 'tools.staticfile.filename': FAVICON}
             }
 
 # Connect to pellmonsrv on the dbus system bus
