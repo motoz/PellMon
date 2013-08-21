@@ -5,17 +5,22 @@
 <head>
 	<title>${next.title()}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link href="/media/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<link href="/media/bs3/css/bootstrap.min.css" rel="stylesheet" media="screen">
 	${self.stylesheetIncludes()}
 </head>
 <body>
-	<div class="navbar">
-		<div class="navbar-inner">
-			<div class="container">
-				<ul class="nav">
-					<li class="">
-						<a href="/">Home</a>
-					</li>
+	<div class="navbar navbar-default navbar-static-top">
+		<div class="container">
+			<div class="navbar-header">
+				<button data-target=".navbar-collapse" data-toggle="collapse" class="navbar-toggle" type="button">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a href="/" class="navbar-brand">PellMon</a>
+    		</div>
+    		<div class="navbar-collapse collapse">
+				<ul class="nav navbar-nav">
 					<li class="">
 						<a href="/consumptionview/consumption">Consumption</a>
 					</li>
@@ -36,11 +41,11 @@
 			</div>
 		</div>
 	</div>
-	<!div class="container-fluid">
+	<!-- <div class="container"> -->
 		${self.body()}
-	<!/div>
+	<!-- </div> -->
 	<script src="http://code.jquery.com/jquery.js"></script>
-	<script src="/media/bootstrap/js/bootstrap.min.js"></script>
+	<script src="/media/bs3/js/bootstrap.min.js"></script>
 	${self.scriptIncludes()}
 </body>
 </html>
