@@ -30,9 +30,6 @@ import threading, Queue
 from web import *
 from time import time
 
-#Look for temlates in this directory
-lookup = TemplateLookup(directories=['web/html'])
-
 parser = ConfigParser.ConfigParser()
 
 # Load the configuration file
@@ -325,31 +322,46 @@ def parameterReader(q):
     q.put(('**end**','**end**'))
 
 def getItem(itm):
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
     return notify.GetItem('(s)',itm)
 
 def setItem(item, value):
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
     return notify.SetItem('(ss)',item, value)
 
 def getdb():
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
     return notify.GetDB()
 
 def getDBwithTags(tags):
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
     return notify.GetDBwithTags('(as)',tags)
 
 def getFullDB(tags):
+    # Connect to pellmonsrv on the dbus system bus
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
     db = notify.GetFullDB('(as)', tags)
-    #print str(db)
     return db
         
+
+
 MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
 FAVICON = os.path.join(os.path.abspath("."), u"web/media/favicon.ico")
+path.HTML_DIR = os.path.join(os.path.abspath("."), 'web/html')
+
+#Look for temlates in this directory
+lookup = TemplateLookup(directories=[path.HTML_DIR])
+
 global_conf = {
-       'global':    { 'server.environment': 'debug',
+        'global':    { 'server.environment': 'debug',
                       'tools.sessions.on' : True,
                       'tools.sessions.timeout': 7200,
                       'tools.auth.on': True,
-                      'engine.autoreload_on': True,
-                      'engine.autoreload_frequency': 5,
                       'server.socket_host': '0.0.0.0',
                       'server.socket_port': int(parser.get('conf', 'port')),
                     }
@@ -362,13 +374,12 @@ app_conf =  {'/media':
                  'tools.staticfile.filename': FAVICON}
             }
 
-# Connect to pellmonsrv on the dbus system bus
-d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)
-cherrypy.quickstart(PellMonWebb(), config=app_conf)
 
+if __name__=="__main__":
+    cherrypy.quickstart(PellMonWebb(), config=app_conf)
+else:
+    cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
 
 

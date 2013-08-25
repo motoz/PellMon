@@ -22,9 +22,7 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from itertools import islice
-
-#Look for temlates in this directory
-lookup = TemplateLookup(directories=['web/html'])
+import path
 
 # Load the configuration file
 parser = ConfigParser.ConfigParser()
@@ -36,6 +34,8 @@ logfile=parser.get('conf', 'logfile')
 class LogViewer(object):    
     @cherrypy.expose
     def logView(self):
+        #Look for temlates in this directory
+        lookup = TemplateLookup(directories=[path.HTML_DIR])
         tmpl = lookup.get_template("logview.html")
         return tmpl.render()
     
@@ -46,6 +46,7 @@ class LogViewer(object):
         try:
             ln=int(linenum)
             lines = islice(reversed_lines(f), ln)        
+            lookup = TemplateLookup(directories=[path.HTML_DIR])
             tmpl = lookup.get_template("loglines.html")
             return tmpl.render(lines=lines)
         except:

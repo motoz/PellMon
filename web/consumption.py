@@ -24,9 +24,7 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from time import time,localtime
-
-#Look for temlates in this directory
-lookup = TemplateLookup(directories=['web/html'])
+import path
 
 # Load the configuration file
 parser = ConfigParser.ConfigParser()
@@ -42,6 +40,7 @@ except ConfigParser.NoOptionError:
 class Consumption(object):    
     @cherrypy.expose
     def consumption(self):
+        lookup = TemplateLookup(directories=[path.HTML_DIR])
         tmpl = lookup.get_template("consumption.html")
         return tmpl.render()
     

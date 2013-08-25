@@ -29,9 +29,7 @@ from cgi import escape
 from mako.template import Template
 from mako.lookup import TemplateLookup
 import urllib
-
-#Look for temlates in this directory
-lookup = TemplateLookup(directories=['web/html'])
+import path
 
 # Load the configuration file
 parser = ConfigParser.ConfigParser()
@@ -145,7 +143,7 @@ class AuthController(object):
     def get_loginform(self, username, msg="Enter login information", from_page="/"):
         from_page = escape(from_page, True)
         username = escape(username, True)
-        
+        lookup = TemplateLookup(directories=[path.HTML_DIR])
         tmpl = lookup.get_template("login.html")
         return tmpl.render(username=username, from_page=from_page, msg=msg)
 
