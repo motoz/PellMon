@@ -20,40 +20,35 @@ import os
 import os.path
 import cherrypy
 from cherrypy.lib.static import serve_file
-import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from time import time,localtime
-import path
 
-# Load the configuration file
-parser = ConfigParser.ConfigParser()
-parser.read('pellmon.conf')        
+lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
-try:
-    polling=True
-    db = parser.get('conf', 'database') 
-    graph_file_base = os.path.dirname(db)
-except ConfigParser.NoOptionError:
-    polling=False
-    
 class Consumption(object):    
+
+    def __init__(self, polling, db):
+        self.polling=polling
+        self.db = db
+        
     @cherrypy.expose
     def consumption(self):
-        lookup = TemplateLookup(directories=[path.HTML_DIR])
+        if not self.polling:
+            return ""
         tmpl = lookup.get_template("consumption.html")
         return tmpl.render()
     
     @cherrypy.expose
     def consumption24h(self):    
-        if not polling:
+        if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(db), 'consumption24h.png')
+        graph_file = os.path.join(os.path.dirname(self.db), 'consumption24h.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         now=int(time())/3600*3600
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-86400s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
+        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
         for h in range(0,24):
             start=(now-h*3600-3600)
             end=(now-h*3600)
@@ -66,15 +61,15 @@ class Consumption(object):
 
     @cherrypy.expose
     def consumption7d(self):    
-        if not polling:
+        if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(db), 'consumption7d.png')
+        graph_file = os.path.join(os.path.dirname(self.db), 'consumption7d.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         t=time()
         now=int(time())/86400*86400-(localtime(t).tm_hour-int(t)%86400/3600)*3600
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-604800s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
+        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
         for h in range(0,7):
             start=(now-h*86400-86400)
             end=(now-h*86400)
@@ -87,15 +82,15 @@ class Consumption(object):
 
     @cherrypy.expose
     def consumption1m(self):    
-        if not polling:
+        if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(db), 'consumption1m.png')
+        graph_file = os.path.join(os.path.dirname(self.db), 'consumption1m.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         t=time()
         now=int(time()+4*86400)/(86400*7)*(86400*7)-(localtime(t).tm_hour-int(t)%86400/3600)*3600 -4*86400
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-4838400s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
+        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
         for h in range(0,8):
             start=(now-h*(86400*7)-(86400*7))
             end=(now-h*(86400*7))
@@ -108,16 +103,16 @@ class Consumption(object):
         
     @cherrypy.expose
     def consumption1y(self):    
-        if not polling:
+        if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(db), 'consumption1y.png')
+        graph_file = os.path.join(os.path.dirname(self.db), 'consumption1y.png')
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Pragma'] = 'no-cache'
         t=time()
         now=int(time())/int(31556952/12)*int(31556952/12)-(localtime(t).tm_hour-int(t)%86400/3600)*3600
         
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-31556952s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
+        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
         for h in range(0,12):
             start=(now-h*(86400*30)-(86400*30))
             end=(now-h*(86400*30))

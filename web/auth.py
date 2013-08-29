@@ -24,30 +24,18 @@
 
 
 import cherrypy
-import ConfigParser
 from cgi import escape
 from mako.template import Template
 from mako.lookup import TemplateLookup
 import urllib
-import path
+import os
 
-# Load the configuration file
-parser = ConfigParser.ConfigParser()
-parser.read('pellmon.conf')
 
 SESSION_KEY = '_cp_username'
 
-def check_credentials(username, password):
-    """Verifies credentials for username and password.
-    Returns None on success or a string describing the error on failure"""
-    # Adapt to your needs
-    try:
-        if password == parser.get('authentication', username):
-            return None
-        else:
-            return "Incorrect username or password."
-    except:
-        return "Incorrect username or password."
+lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
+
+    
     
     # An example implementation which uses an ORM could be:
     # u = User.get(username)
@@ -134,6 +122,9 @@ def all_of(*conditions):
 
 class AuthController(object):
     
+    def __init__(self, credentials):
+        self.credentials = credentials
+    
     def on_login(self, username):
         """Called on successful login"""
     
@@ -143,16 +134,27 @@ class AuthController(object):
     def get_loginform(self, username, msg="Enter login information", from_page="/"):
         from_page = escape(from_page, True)
         username = escape(username, True)
-        lookup = TemplateLookup(directories=[path.HTML_DIR])
         tmpl = lookup.get_template("login.html")
         return tmpl.render(username=username, from_page=from_page, msg=msg)
+
+    def check_credentials(self, username, password):
+        """Verifies credentials for username and password.
+        Returns None on success or a string describing the error on failure"""
+        # Adapt to your needs
+        try:
+            if (username,password) in self.credentials:
+                return None
+            else:
+                return "Incorrect username or password."
+        except:
+            return "Incorrect username or password."
 
     @cherrypy.expose
     def login(self, username=None, password=None, from_page="/"):
         if username is None or password is None:
             return self.get_loginform("", from_page=from_page)
         
-        error_msg = check_credentials(username, password)
+        error_msg = self.check_credentials(username, password)
         if error_msg:
             return self.get_loginform(username, error_msg, from_page)
         else:

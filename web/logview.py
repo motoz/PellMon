@@ -18,41 +18,33 @@
 
 import os
 import cherrypy
-import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from itertools import islice
-import path
 
-# Load the configuration file
-parser = ConfigParser.ConfigParser()
-parser.read('pellmon.conf')        
-
-logfile=parser.get('conf', 'logfile')
-
+lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
 class LogViewer(object):    
+    def __init__(self, logfile):
+        self.logfile = logfile
+    
     @cherrypy.expose
     def logView(self):
         #Look for temlates in this directory
-        lookup = TemplateLookup(directories=[path.HTML_DIR])
         tmpl = lookup.get_template("logview.html")
         return tmpl.render()
     
     @cherrypy.expose
     def getlines(self, linenum=100):    
-        f = open(logfile, "r")
+        f = open(self.logfile, "r")
         #lines = f.readlines()
         try:
             ln=int(linenum)
             lines = islice(reversed_lines(f), ln)        
-            lookup = TemplateLookup(directories=[path.HTML_DIR])
             tmpl = lookup.get_template("loglines.html")
             return tmpl.render(lines=lines)
         except:
             pass
-        
-parser = ConfigParser.ConfigParser()
 
 def reversed_lines(file):
     "Generate the lines of file in reverse order."

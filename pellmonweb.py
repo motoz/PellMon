@@ -30,50 +30,12 @@ import threading, Queue
 from web import *
 from time import time
 
-parser = ConfigParser.ConfigParser()
-
-# Load the configuration file
-parser.read('pellmon.conf')
-
-# The RRD database, updated by pellMon
-try:
-    polling=True
-    db = parser.get('conf', 'database') 
-    graph_file = os.path.join(os.path.dirname(db), 'graph.png')
-except ConfigParser.NoOptionError:
-    polling=False
-    
-# And the colors to use when drawing the graph
-colors = parser.items('graphcolors')
-colorsDict = {}
-for key, value in colors:
-    colorsDict[key] = value
-
-# Get the names of the polled data
-polldata = parser.items("pollvalues")
-
-timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
-timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
-timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
-
-ft=False
-fc=False
-for a,b in polldata:
-    print a,b
-    if b=='feeder_capacity':
-        fc=True
-    if b=='feeder_time':
-        ft=True
-if fc and ft:
-    consumption_graph=True
-else:
-    consumption_graph=False
-
 class PellMonWebb:
 
-    auth = AuthController()
-    logview = LogViewer()
-    consumptionview = Consumption()
+    def __init__(self):
+        self.logview = LogViewer(logfile)
+        self.auth = AuthController(credentials)
+        self.consumptionview = Consumption(polling, db)
 
     @cherrypy.expose
     def form1(self, **args):
@@ -349,13 +311,57 @@ def getFullDB(tags):
     return db
         
 
-
-MEDIA_DIR = os.path.join(os.path.abspath("."), u"web/media")
-FAVICON = os.path.join(os.path.abspath("."), u"web/media/favicon.ico")
-path.HTML_DIR = os.path.join(os.path.abspath("."), 'web/html')
+HERE = os.path.dirname(os.path.abspath(__file__))
+MEDIA_DIR = os.path.join(HERE, 'web/media')
+FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 
 #Look for temlates in this directory
-lookup = TemplateLookup(directories=[path.HTML_DIR])
+lookup = TemplateLookup(directories=[os.path.join(HERE, 'web/html')])
+
+parser = ConfigParser.ConfigParser()
+
+# Load the configuration file
+if __name__=="__main__":
+    parser.read('pellmon.conf')
+else:
+    # config file when run as daemon
+    parser.read('/etc/pellmon/pellmon.conf')
+    
+# The RRD database, updated by pellMon
+try:
+    polling = True
+    db = parser.get('conf', 'database') 
+    graph_file = os.path.join(os.path.dirname(db), 'graph.png')
+except ConfigParser.NoOptionError:
+    polling = False
+    db = ''
+    
+# the colors to use when drawing the graph
+colors = parser.items('graphcolors')
+colorsDict = {}
+for key, value in colors:
+    colorsDict[key] = value
+
+# Get the names of the polled data
+polldata = parser.items("pollvalues")
+credentials = parser.items('authentication')
+logfile = parser.get('conf', 'logfile')
+
+timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
+timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
+
+ft=False
+fc=False
+for a,b in polldata:
+    if b=='feeder_capacity':
+        fc=True
+    if b=='feeder_time':
+        ft=True
+if fc and ft:
+    consumption_graph=True
+else:
+    consumption_graph=False
 
 global_conf = {
         'global':    { 'server.environment': 'debug',
