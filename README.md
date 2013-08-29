@@ -23,11 +23,8 @@ setting values, edit as desired
 pellmon_dbus.conf
 should be copied to /etc/dbus-1/system.d/ to allow pellmonsrv running as user "pi" to implement the DBUS interface on the system bus, edit the file to match the user name
 
-html/
-templates for the web interface
 
 dependencies:
 rrdtool, python-serial, python-cherrypy3, python-dbus, python-mako, python-gobject, python-simplejson
-(and maybe something else I forgot)
 
 
