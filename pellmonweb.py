@@ -130,7 +130,7 @@ class PellMonWebb:
             #Build the command string to make a graph from the database         
             now=int(time())/3600*3600
             
-            RrdGraphString1="rrdtool graph "+"/home/pi/pellmon/consumption.png"+" --right-axis 1:0 --right-axis-format %%1.1lf --width 760 --height 400 --end %u --start %u-86400s "%(now,now)
+            RrdGraphString1="rrdtool graph "+consumption_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 760 --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
                 start=(now-h*3600-3600)
@@ -141,7 +141,7 @@ class PellMonWebb:
             RrdGraphString1=RrdGraphString1+" >>/dev/null"
             os.system(RrdGraphString1)
             cherrypy.response.headers['Pragma'] = 'no-cache'
-            return serve_file("/home/pi/pellmon/consumption.png", content_type='image/png')
+            return serve_file(consumption_file, content_type='image/png')
 
     @cherrypy.expose
     @require() #requires valid login
@@ -360,6 +360,7 @@ for a,b in polldata:
         ft=True
 if fc and ft:
     consumption_graph=True
+    consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
 else:
     consumption_graph=False
 
