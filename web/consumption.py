@@ -37,7 +37,7 @@ class Consumption(object):
         if not self.polling:
             return ""
         tmpl = lookup.get_template("consumption.html")
-        return tmpl.render()
+        return tmpl.render(username=cherrypy.session.get('_cp_username'))
     
     @cherrypy.expose
     def consumption24h(self):    

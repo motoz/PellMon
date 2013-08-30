@@ -32,7 +32,7 @@ class LogViewer(object):
     def logView(self):
         #Look for temlates in this directory
         tmpl = lookup.get_template("logview.html")
-        return tmpl.render()
+        return tmpl.render(username = cherrypy.session.get('_cp_username'))
     
     @cherrypy.expose
     def getlines(self, linenum=100):    

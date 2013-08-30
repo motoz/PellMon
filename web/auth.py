@@ -135,7 +135,7 @@ class AuthController(object):
         from_page = escape(from_page, True)
         username = escape(username, True)
         tmpl = lookup.get_template("login.html")
-        return tmpl.render(username=username, from_page=from_page, msg=msg)
+        return tmpl.render(user_name=username, username=cherrypy.session.get('_cp_username'), from_page=from_page, msg=msg)
 
     def check_credentials(self, username, password):
         """Verifies credentials for username and password.

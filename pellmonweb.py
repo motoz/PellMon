@@ -215,7 +215,7 @@ class PellMonWebb:
                     except:
                         values[parameterlist.index(item['name'])]='error'
         tmpl = lookup.get_template("parameters.html")
-        return tmpl.render(data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
 
     # Empty the item/value queue, call several times until all data is retrieved
     @cherrypy.expose
