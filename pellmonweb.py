@@ -24,14 +24,86 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
-from gi.repository import Gio, GLib
+from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
 from web import *
 from time import time
+import threading
 
+class DbusNotConnected(Exception):
+    pass
+
+class Dbus_handler:
+    def setup(self):
+        # Needed to be able to use threads with a glib main loop running
+        GObject.threads_init()
+        # A main loop is needed for dbus "name watching" to work
+        main_loop = GObject.MainLoop()
+        # The glib main loop gets along with the cherrypy main loop if run in it's own thread
+        DBUSLOOPTHREAD = threading.Thread(name='glib_mainloop', target=main_loop.run)
+        # This causes the dbus main loop thread to just die when the main thread exits
+        DBUSLOOPTHREAD.setDaemon(True)
+        # Start it here, thes must happen after the daemonizer double fork
+        DBUSLOOPTHREAD.start()
+        
+        self.notify = None
+        self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        Gio.bus_watch_name(
+            Gio.BusType.SYSTEM,
+            'org.pellmon.int',
+            Gio.DBusProxyFlags.NONE,
+            self.dbus_connect,
+            self.dbus_disconnect,
+        )
+
+    def dbus_connect(self, connection, name, owner):
+        self.notify = Gio.DBusProxy.new_sync(
+            self.bus,
+            Gio.DBusProxyFlags.NONE,
+            None,
+            'org.pellmon.int',
+            '/org/pellmon/int',
+            'org.pellmon.int',
+            None,
+        )
+
+    def dbus_disconnect(self, connection, name):
+        if self.notify:
+            self.notify = None
+
+    def getItem(self, itm):
+        if self.notify:
+            return self.notify.GetItem('(s)',itm)
+        else:
+            raise DbusNotConnected("server not running")
+
+    def setItem(self, item, value):
+        if self.notify:
+            return self.notify.SetItem('(ss)',item, value)
+        else:
+            raise DbusNotConnected("server not running")
+
+    def getdb(self):
+        if self.notify:
+            return self.notify.GetDB()
+        else:
+            raise DbusNotConnected("server not running")
+
+    def getDBwithTags(self, tags):
+        if self.notify:
+            return self.notify.GetDBwithTags('(as)',tags)
+        else:
+            raise DbusNotConnected("server not running")
+
+    def getFullDB(self, tags):
+        if self.notify:
+            db = self.notify.GetFullDB('(as)', tags)
+            return db
+        else:
+            raise DbusNotConnected("server not running")
+    
 class PellMonWebb:
-
     def __init__(self):
         self.logview = LogViewer(logfile)
         self.auth = AuthController(credentials)
@@ -146,11 +218,11 @@ class PellMonWebb:
     @cherrypy.expose
     @require() #requires valid login
     def getparam(self, param):
-        parameterlist=getdb()
+        parameterlist=dbus.getdb()
         if cherrypy.request.method == "GET":
             if param in(parameterlist):
                 try:
-                    result = getItem(param)
+                    result = dbus.getItem(param)
                 except:
                     result = 'error'
             else: result = 'not found'
@@ -160,11 +232,11 @@ class PellMonWebb:
     @cherrypy.expose
     @require() #requires valid login
     def setparam(self, param, data=None):
-        parameterlist=getdb()
+        parameterlist=dbus.getdb()
         if cherrypy.request.method == "POST":
             if param in(parameterlist):
                 try:
-                    result = setItem(param, data)
+                    result = dbus.setItem(param, data)
                 except:
                     result = 'error'
             else: result = 'not found'
@@ -180,48 +252,51 @@ class PellMonWebb:
         except:
             cherrypy.session['level'] = 'Basic'
         level=cherrypy.session['level']
-        parameterlist = getFullDB([level,t1,t2,t3,t4])
-        # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
-        paramQueue = Queue.Queue(300)
-        # Store the queue in the session
-        cherrypy.session['paramReaderQueue'] = paramQueue
-        ht = threading.Thread(target=parameterReader, args=(paramQueue,))
-        ht.start()    
-        values=['']*len(parameterlist)
-        params={}
-        paramlist=[]
-        datalist=[]
-        commandlist=[]
-        for item in parameterlist:
-            if item['type'] == 'R':
-                datalist.append(item)
-            if item['type'] == 'R/W':
-                paramlist.append(item)
-            if item['type'] == 'W':
-                commandlist.append(item)
-                
-            params[item['name']] = ' '
-            if args.has_key(item['name']):
-                if cherrypy.request.method == "POST":
-                    # set parameter
-                    try:
-                        values[parameterlist.index(item['name'])]=setItem(item['name'], args[item['name']][1])
-                    except:
-                        values[parameterlist.index(item['name'])]='error'
-                else:
-                    # get parameter
-                    try:
-                        values[parameterlist.index(item['name'])]=getItem(item['name'])
-                    except:
-                        values[parameterlist.index(item['name'])]='error'
-        tmpl = lookup.get_template("parameters.html")
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
+        try:
+            parameterlist = dbus.getFullDB([level,t1,t2,t3,t4])
+            # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
+            paramQueue = Queue.Queue(300)
+            # Store the queue in the session
+            cherrypy.session['paramReaderQueue'] = paramQueue
+            ht = threading.Thread(target=parameterReader, args=(paramQueue,))
+            ht.start()    
+            values=['']*len(parameterlist)
+            params={}
+            paramlist=[]
+            datalist=[]
+            commandlist=[]
+            for item in parameterlist:
+                if item['type'] == 'R':
+                    datalist.append(item)
+                if item['type'] == 'R/W':
+                    paramlist.append(item)
+                if item['type'] == 'W':
+                    commandlist.append(item)
+                    
+                params[item['name']] = ' '
+                if args.has_key(item['name']):
+                    if cherrypy.request.method == "POST":
+                        # set parameter
+                        try:
+                            values[parameterlist.index(item['name'])]=dbus.setItem(item['name'], args[item['name']][1])
+                        except:
+                            values[parameterlist.index(item['name'])]='error'
+                    else:
+                        # get parameter
+                        try:
+                            values[parameterlist.index(item['name'])]=dbus.getItem(item['name'])
+                        except:
+                            values[parameterlist.index(item['name'])]='error'
+            tmpl = lookup.get_template("parameters.html")
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
+        except DbusNotConnected:
+            return "Pellmonsrv not running?"
 
     # Empty the item/value queue, call several times until all data is retrieved
     @cherrypy.expose
     @require() #requires valid login
     def getparams(self):
-        parameterlist=getdb()
+        parameterlist=dbus.getdb()
         paramReaderQueue = cherrypy.session.get('paramReaderQueue')
         params={}
         if paramReaderQueue:
@@ -274,42 +349,15 @@ class PellMonWebb:
         return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=empty, autorefresh=autorefresh )
 
 def parameterReader(q):
-    parameterlist=getdb()
+    parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = getItem(item)
+            value = dbus.getItem(item)
         except:
             value='error'
         q.put((item,value))
     q.put(('**end**','**end**'))
 
-def getItem(itm):
-    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    return notify.GetItem('(s)',itm)
-
-def setItem(item, value):
-    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    return notify.SetItem('(ss)',item, value)
-
-def getdb():
-    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    return notify.GetDB()
-
-def getDBwithTags(tags):
-    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    return notify.GetDBwithTags('(as)',tags)
-
-def getFullDB(tags):
-    # Connect to pellmonsrv on the dbus system bus
-    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    db = notify.GetFullDB('(as)', tags)
-    return db
-        
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MEDIA_DIR = os.path.join(HERE, 'web/media')
@@ -350,7 +398,6 @@ logfile = parser.get('conf', 'logfile')
 timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
 timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
 timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
-
 ft=False
 fc=False
 for a,b in polldata:
@@ -365,7 +412,7 @@ else:
     consumption_graph=False
 
 global_conf = {
-        'global':    { 'server.environment': 'debug',
+        'global':   { 'server.environment': 'debug',
                       'tools.sessions.on' : True,
                       'tools.sessions.timeout': 7200,
                       'tools.auth.on': True,
@@ -381,12 +428,16 @@ app_conf =  {'/media':
                  'tools.staticfile.filename': FAVICON}
             }
 
+dbus = Dbus_handler()
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)
+
+# The dbus main_loop thread can't be started before double fork to daemon, the
+# daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
+cherrypy.engine.subscribe('start', dbus.setup, 90)
 
 if __name__=="__main__":
     cherrypy.quickstart(PellMonWebb(), config=app_conf)
 else:
     cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
-
 
