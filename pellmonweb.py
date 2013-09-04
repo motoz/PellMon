@@ -30,6 +30,7 @@ import threading, Queue
 from web import *
 from time import time
 import threading
+import sys
 
 class DbusNotConnected(Exception):
     pass
@@ -369,11 +370,12 @@ lookup = TemplateLookup(directories=[os.path.join(HERE, 'web/html')])
 parser = ConfigParser.ConfigParser()
 
 # Load the configuration file
-if __name__=="__main__":
-    parser.read('pellmon.conf')
-else:
-    # config file when run as daemon
-    parser.read('/etc/pellmon/pellmon.conf')
+config_file = 'pellmon.conf'
+if not os.path.isfile(config_file):
+    config_file = '/etc/pellmon/pellmon.conf'
+if not os.path.isfile(config_file):
+    sys.exit(1) 
+parser.read(config_file)
     
 # The RRD database, updated by pellMon
 try:
