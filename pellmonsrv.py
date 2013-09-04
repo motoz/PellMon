@@ -28,6 +28,7 @@ import ConfigParser
 import time
 from smtplib import SMTP as smtp
 from email.mime.text import MIMEText as mimetext
+import argparse
 
 from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
@@ -434,26 +435,26 @@ class config:
 
 
 if __name__ == "__main__":
-  
+
+    daemon = MyDaemon()
+    commands = {
+        'start':daemon.start,
+        'stop':daemon.stop,
+        'restart':daemon.restart,
+        'debug':daemon.run}
+
+    parser = argparse.ArgumentParser(prog='pellmonsrv')
+    parser.add_argument('command', choices=commands, help="With debug argument pellmonsrv won't daemonize")
+    parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonsrv.pid', help='Full path to pidfile')
+    args = parser.parse_args()
+
     config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pellmon.conf')
-    
-    daemon = MyDaemon('/tmp/pelletMonitor.pid')
-    if len(sys.argv) == 2:
-        if 'start' == sys.argv[1]:
-            daemon.start()
-        elif 'stop' == sys.argv[1]:
-            daemon.stop()
-        elif 'restart' == sys.argv[1]:
-            daemon.restart()
-        elif 'debug' == sys.argv[1]:
-            daemon.run()
-        else:
-            print "Unknown command"
-            sys.exit(2)
-            sys.exit(0)
-    else:
-        print "usage: %s start|stop|restart|debug" % sys.argv[0]
-        sys.exit(2)
+    if not os.path.isfile(config_file):
+        config_file = '/etc/pellmon/pellmon.conf'
+    if not os.path.isfile(config_file):
+        sys.exit(1)
 
+    daemon.pidfile = args.PIDFILE
 
+    commands[args.command]()
 
