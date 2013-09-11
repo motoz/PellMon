@@ -1,8 +1,7 @@
 SUBDIRS = srv web
 
-bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli
+bin_SCRIPTS = pellmonsrv.py pellmonweb.py pellmoncli.py
 CLEANFILES = $(bin_SCRIPTS)
-EXTRA_DIST = pellmonsrv.in pellmonweb.in pellmoncli.in
 
 sysconf_DATA = pellmon.conf
 
