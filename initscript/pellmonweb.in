@@ -15,7 +15,7 @@ DAEMON=cherryd
 USER=pi
 GROUP=pi
 
-EXEC=/usr/bin/$DAEMON
+EXEC=@sbindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
 ARGS="-i $NAME -d -p $PIDFILE"
 
