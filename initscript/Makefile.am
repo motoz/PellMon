@@ -32,14 +32,14 @@ CLEANFILES = \
 
 pellmonsrv: pellmonsrv.in
 	sed \
-		-e 's,@sbindir\@,$(sbindir),g' \
+		-e 's,@bindir\@,$(bindir),g' \
 		-e 's,@sysconfdir\@,$(sysconfdir),g' \
 		$< > $@
 	chmod +x $@
 
 pellmonweb: pellmonweb.in
 	sed \
-		-e 's,@sbindir\@,$(sbindir),g' \
+		-e 's,@bindir\@,$(bindir),g' \
 		-e 's,@sysconfdir\@,$(sysconfdir),g' \
 		$< > $@
 	chmod +x $@

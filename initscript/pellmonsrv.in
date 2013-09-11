@@ -15,7 +15,7 @@ DAEMON=pellmonsrv.py
 USER=pi
 GROUP=pi
 
-EXEC=@sbindir@/$DAEMON
+EXEC=@bindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
 ARGS="start --PIDFILE=$PIDFILE"
 
