@@ -1,4 +1,4 @@
-SUBDIRS = srv web common
+SUBDIRS = srv web
 
 bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli
 CLEANFILES = $(bin_SCRIPTS)
