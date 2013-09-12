@@ -372,8 +372,11 @@ parser = ConfigParser.ConfigParser()
 # Load the configuration file
 config_file = 'pellmon.conf'
 if not os.path.isfile(config_file):
-    config_file = '/etc/pellmon/pellmon.conf'
+    config_file = '/etc/pellmon.conf'
 if not os.path.isfile(config_file):
+    config_file = '/usr/local/etc/pellmon.conf'
+if not os.path.isfile(config_file):
+    print "config file not found"
     sys.exit(1) 
 parser.read(config_file)
     
