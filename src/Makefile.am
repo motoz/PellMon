@@ -5,6 +5,11 @@ CLEANFILES = $(bin_SCRIPTS)
 
 sysconf_DATA = pellmon.conf
 
+web_PYTHON = \
+	pellmonweb.py 
+
+webdir = $(pythondir)
+
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' \

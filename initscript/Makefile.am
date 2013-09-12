@@ -18,16 +18,16 @@
 initddir = $(sysconfdir)/init.d
 
 EXTRA_DIST = \
-	pellmonsrv.in
+	pellmonsrv.in \
 	pellmonweb.in
 
 
 initd_SCRIPTS = \
-	pellmonsrv
+	pellmonsrv \
 	pellmonweb
 
 CLEANFILES = \
-	pellmonsrv
+	pellmonsrv \
 	pellmonweb
 
 pellmonsrv: pellmonsrv.in
