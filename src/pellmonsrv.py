@@ -450,7 +450,9 @@ if __name__ == "__main__":
 
     config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pellmon.conf')
     if not os.path.isfile(config_file):
-        config_file = '/etc/pellmon/pellmon.conf'
+        config_file = '/etc/pellmon.conf'
+    if not os.path.isfile(config_file):
+        config_file = '/usr/local/etc/pellmon.conf'
     if not os.path.isfile(config_file):
         sys.exit(1)
 
