@@ -12,8 +12,8 @@
 
 NAME=pellmonweb
 DAEMON=cherryd
-USER=pi
-GROUP=pi
+USER=@user_web@
+GROUP=@user_web@
 
 EXEC=/usr/bin/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
