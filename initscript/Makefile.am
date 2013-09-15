@@ -32,6 +32,7 @@ CLEANFILES = \
 
 pellmonsrv: pellmonsrv.in
 	sed \
+		-e 's,[@]user_srv[@],$(user_srv),g' \
 		-e 's,@bindir\@,$(bindir),g' \
 		-e 's,@sysconfdir\@,$(sysconfdir),g' \
 		$< > $@
@@ -40,6 +41,7 @@ pellmonsrv: pellmonsrv.in
 pellmonweb: pellmonweb.in
 	sed \
 		-e 's,@bindir\@,$(bindir),g' \
+		-e 's,[@]user_web[@],$(user_web),g' \
 		-e 's,@sysconfdir\@,$(sysconfdir),g' \
 		$< > $@
 	chmod +x $@
