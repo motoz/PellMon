@@ -2,13 +2,13 @@
 [conf]
 # Full path to the rrd database, if it does not exist it is created
 # Remove if you don't want data polling 
-database = /home/pi/pellmon/rrd.db
+database = @localstatedir@/lib/pellmon/rrd.db
 
 # Full path to the optional persistent rrd database. It is copied
 # over the database file at startup, and on shutdown the database
 # is copied to the persistent_db file. Useful if the database
 # is in a ramdisk
-#persistent_db = /home/pi/pellmon/nvrrd.db
+#persistent_db = @localstatedir@/lib/pellmon/nvrrd.db
 
 # If persistent_db is in use the database is copied to 
 # persistent_db every db_store_interval seconds
@@ -22,7 +22,7 @@ serialport = /dev/ttyUSB0
 chipversion = auto
 
 # Full path to the logfile
-logfile = /home/pi/pellmon/pellmon.log
+logfile = @localstatedir@/log/pellmon/pellmon.log
 
 # logging level = info/debug
 loglevel = info
