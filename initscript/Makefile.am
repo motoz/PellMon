@@ -33,16 +33,16 @@ CLEANFILES = \
 pellmonsrv: pellmonsrv.in Makefile
 	sed \
 		-e 's,[@]user_srv[@],$(user_srv),g' \
-		-e 's,[@]bindir\[@],$(bindir),g' \
-		-e 's,[@]sysconfdir\[@],$(sysconfdir),g' \
+		-e 's,[@]bindir[@],$(bindir),g' \
+		-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
 		$< > $@
 	chmod +x $@
 
 pellmonweb: pellmonweb.in Makefile
 	sed \
-		-e 's,[@]bindir\[@],$(bindir),g' \
+		-e 's,[@]bindir[@],$(bindir),g' \
 		-e 's,[@]user_web[@],$(user_web),g' \
-		-e 's,[@]sysconfdir\[@],$(sysconfdir),g' \
+		-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
 		$< > $@
 	chmod +x $@
 
