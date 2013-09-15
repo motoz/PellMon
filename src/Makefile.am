@@ -7,7 +7,8 @@ sysconf_DATA = pellmon.conf
 
 EXTRA_DIST = \
 	pellmonsrv.py \
-	pellmoncli.py
+	pellmoncli.py \
+	pellmon.conf.in
 
 web_PYTHON = \
 	pellmonweb.py 
