@@ -5,6 +5,10 @@ CLEANFILES = $(bin_SCRIPTS)
 
 sysconf_DATA = pellmon.conf
 
+EXTRA_DIST = \
+	pellmonsrv.py \
+	pellmoncli.py
+
 web_PYTHON = \
 	pellmonweb.py 
 
