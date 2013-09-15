@@ -24,7 +24,7 @@ AC_ARG_WITH([user_web],
 	[],
 	[with_user_web=$(whoami)])
 
-AC_SUBST([usr_web], [$with_user_web])
+AC_SUBST([user_web], [$with_user_web])
 
 AC_SUBST([dbuspolicydir], [$with_dbuspolicydir])
 
