@@ -28,4 +28,7 @@ pellmon.conf: pellmon.conf.in Makefile
 
 install-data-local:
 	$(MKDIR_P) $(localstatedir)/log/pellmon
+	chown $(user_srv) $(localstatedir)/log/pellmon
 	$(MKDIR_P) $(localstatedir)/lib/pellmon
+	chown $(user_srv) $(localstatedir)/lib/pellmon
+

@@ -13,7 +13,7 @@
 NAME=pellmonweb
 DAEMON=cherryd
 USER=@user_web@
-GROUP=@user_web@
+GROUP=nogroup
 
 EXEC=/usr/bin/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid

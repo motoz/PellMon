@@ -13,7 +13,7 @@
 NAME=pellmonsrv
 DAEMON=pellmonsrv.py
 USER=@user_srv@
-GROUP=@user_srv@
+GROUP=nogroup
 
 EXEC=@bindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
