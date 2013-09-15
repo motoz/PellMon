@@ -26,3 +26,6 @@ do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 pellmon.conf: pellmon.conf.in Makefile
 	$(do_substitution) < $(srcdir)/pellmon.conf.in > pellmon.conf
 
+install-data-local:
+	$(MKDIR_P) $(localstatedir)/log/pellmon
+	$(MKDIR_P) $(localstatedir)/lib/pellmon
