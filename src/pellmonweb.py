@@ -31,6 +31,7 @@ from web import *
 from time import time
 import threading
 import sys
+from web import __file__ as webpath
 
 class DbusNotConnected(Exception):
     pass
@@ -360,12 +361,12 @@ def parameterReader(q):
     q.put(('**end**','**end**'))
 
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-MEDIA_DIR = os.path.join(HERE, 'web/media')
+HERE = os.path.dirname(os.path.dirname(webpath))
+MEDIA_DIR = os.path.join(HERE, 'media')
 FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 
 #Look for temlates in this directory
-lookup = TemplateLookup(directories=[os.path.join(HERE, 'web/html')])
+lookup = TemplateLookup(directories=[os.path.join(HERE, 'html')])
 
 parser = ConfigParser.ConfigParser()
 
