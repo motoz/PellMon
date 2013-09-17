@@ -361,7 +361,7 @@ def parameterReader(q):
     q.put(('**end**','**end**'))
 
 
-HERE = os.path.dirname(os.path.dirname(webpath))
+HERE = os.path.dirname(webpath)
 MEDIA_DIR = os.path.join(HERE, 'media')
 FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 
