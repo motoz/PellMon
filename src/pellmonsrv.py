@@ -29,6 +29,8 @@ import time
 from smtplib import SMTP as smtp
 from email.mime.text import MIMEText as mimetext
 import argparse
+import pwd
+import grp
 
 from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
@@ -274,11 +276,6 @@ def sendmail_thread(msg):
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
     def run(self):
-    
-        # Init global configuration from the conf file
-        global conf
-        conf = config(config_file)
-
         global logger
         logger = logging.getLogger('pellMon')
 
@@ -429,7 +426,27 @@ class config:
             self.email=True
         except ConfigParser.NoOptionError:
             self.email=False
-            
+
+def drop_privileges(uid_name='nobody', gid_name='nogroup'):
+    if os.getuid() != 0:
+        # We're not root so don't do anything
+        return
+
+    # Get the uid/gid from the name
+    running_uid = pwd.getpwnam(uid_name).pw_uid
+    running_gid = grp.getgrnam(gid_name).gr_gid
+
+    # Remove group privileges
+    os.setgroups([])
+
+    #Set the new uid/gid
+    os.setgid(running_gid)
+    os.setuid(running_uid)
+
+    # Set umask
+    old_umask = os.umask(033)
+
+
 #########################################################################################
 
 
@@ -446,9 +463,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='pellmonsrv')
     parser.add_argument('command', choices=commands, help="With debug argument pellmonsrv won't daemonize")
     parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonsrv.pid', help='Full path to pidfile')
+    parser.add_argument('-U', '--USER', help='Run as USER')
+    parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
+    parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     args = parser.parse_args()
 
-    config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pellmon.conf')
+    config_file = args.CONFIG
     if not os.path.isfile(config_file):
         config_file = '/etc/pellmon.conf'
     if not os.path.isfile(config_file):
@@ -456,7 +476,36 @@ if __name__ == "__main__":
     if not os.path.isfile(config_file):
         sys.exit(1)
 
+    if args.USER:
+        parser = ConfigParser.ConfigParser()
+        parser.read(config_file)
+
+        logfile = parser.get('conf', 'logfile')
+        logdir = os.dirname(logfile)
+        if not os.path.isdir(logdir):
+            os.mkdir(logdir)
+        uid = pwd.getpwnam(args.USER).pw_uid
+        gid = grp.getgrnam(args.GROUP).gr_gid
+        os.chown(logdir, uid, gid)
+
+        dbfile = parser.get('conf', 'database')
+        dbdir = os.dirname(dbfile)
+        if not os.path.isdir(dbdir):
+            os.mkdir(dbdir)
+        uid = pwd.getpwnam(args.USER).pw_uid
+        gid = grp.getgrnam(args.GROUP).gr_gid
+        os.chown(dbdir, uid, gid)
+        if os.path.isfile(dbfile):
+            os.chown(dbfile, uid, gid)
+
+    # Init global configuration from the conf file
+    global conf
+    conf = config(config_file)
+
     daemon.pidfile = args.PIDFILE
+
+    if args.USER:
+        drop_privileges(args.USER, args.GROUP)
 
     commands[args.command]()
 
