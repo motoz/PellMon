@@ -1,2 +1,15 @@
 *~
 *.pyc
+Makefile.in
+aclocal.m4
+autom4te.cache/
+configure
+data/Makefile.in
+initscript/Makefile.in
+install-sh
+missing
+py-compile
+src/Makefile.in
+src/srv/Makefile.in
+src/web/Makefile.in
+
