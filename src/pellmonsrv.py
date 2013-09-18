@@ -36,8 +36,11 @@ from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
-    def __init__(self):
-        bus=dbus.SystemBus()
+    def __init__(self, bus='SESSION'):
+        if bus=='SESSION':
+            bus=dbus.SessionBus()
+        else:
+            bus=dbus.SystemBus()
         bus_name = dbus.service.BusName('org.pellmon.int', bus)
         dbus.service.Object.__init__(self, bus_name, '/org/pellmon/int')
 
@@ -290,7 +293,7 @@ class MyDaemon(Daemon):
         dbus.mainloop.glib.threads_init()    
         DBUSMAINLOOP = gobject.MainLoop()
         DBusGMainLoop(set_as_default=True)
-        myservice = MyDBUSService()
+        myservice = MyDBUSService(conf.dbus)
         
         # Create SIGTERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
@@ -466,6 +469,7 @@ if __name__ == "__main__":
     parser.add_argument('-U', '--USER', help='Run as USER')
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     args = parser.parse_args()
 
     config_file = args.CONFIG
@@ -501,6 +505,7 @@ if __name__ == "__main__":
     # Init global configuration from the conf file
     global conf
     conf = config(config_file)
+    conf.dbus = args.DBUS
 
     daemon.pidfile = args.PIDFILE
 

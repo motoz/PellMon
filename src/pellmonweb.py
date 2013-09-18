@@ -39,6 +39,12 @@ class DbusNotConnected(Exception):
     pass
 
 class Dbus_handler:
+    def __init__(self, bus='SESSION'):
+        if bus=='SYSTEM':
+            self.bustype=Gio.BusType.SYSTEM
+        else:
+            self.bustype=Gio.BusType.SESSION
+        
     def setup(self):
         # Needed to be able to use threads with a glib main loop running
         GObject.threads_init()
@@ -50,11 +56,10 @@ class Dbus_handler:
         DBUSLOOPTHREAD.setDaemon(True)
         # Start it here, thes must happen after the daemonizer double fork
         DBUSLOOPTHREAD.start()
-        
         self.notify = None
-        self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        self.bus = Gio.bus_get_sync(self.bustype, None)
         Gio.bus_watch_name(
-            Gio.BusType.SYSTEM,
+            self.bustype,
             'org.pellmon.int',
             Gio.DBusProxyFlags.NONE,
             self.dbus_connect,
@@ -436,13 +441,8 @@ app_conf =  {'/media':
                  'tools.staticfile.filename': FAVICON}
             }
 
-dbus = Dbus_handler()
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)
-
-# The dbus main_loop thread can't be started before double fork to daemon, the
-# daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-cherrypy.engine.subscribe('start', dbus.setup, 90)
 
 if __name__=="__main__":
 
@@ -452,7 +452,14 @@ if __name__=="__main__":
     parser.add_argument('-U', '--USER', help='Run as USER')
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    parser.add_argument('-d', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     args = parser.parse_args()
+
+    dbus = Dbus_handler(args.DBUS)
+
+    # The dbus main_loop thread can't be started before double fork to daemon, the
+    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
+    cherrypy.engine.subscribe('start', dbus.setup, 90)
 
     cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
     
@@ -485,5 +492,9 @@ if __name__=="__main__":
 #    cherrypy.quickstart(PellMonWebb(), config=app_conf)
 
 else:
+    # The dbus main_loop thread can't be started before double fork to daemon, the
+    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
+    cherrypy.engine.subscribe('start', dbus.setup, 90)
+    dbus = Dbus_handler('SYSTEM')
     cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
 
