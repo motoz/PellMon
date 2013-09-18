@@ -20,6 +20,7 @@
 import os.path
 import cherrypy
 from cherrypy.lib.static import serve_file
+from cherrypy.process import plugins, servers
 import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
@@ -443,7 +444,37 @@ cherrypy.config.update(global_conf)
 cherrypy.engine.subscribe('start', dbus.setup, 90)
 
 if __name__=="__main__":
-    cherrypy.quickstart(PellMonWebb(), config=app_conf)
+
+    cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
+    
+    engine = cherrypy.engine
+
+    # Only daemonize if asked to.
+#    if daemonize:
+    if False:
+        # Don't print anything to stdout/sterr.
+        cherrypy.config.update({'log.screen': False})
+        plugins.Daemonizer(engine).subscribe()
+    pidfile = "/home/anders/test.pid"
+    if pidfile:
+        plugins.PIDFile(engine, pidfile).subscribe()
+    
+    if hasattr(engine, "signal_handler"):
+        engine.signal_handler.subscribe()
+    if hasattr(engine, "console_control_handler"):
+        engine.console_control_handler.subscribe()
+
+    # Always start the engine; this will start all other services
+    try:
+        engine.start()
+    except:
+        # Assume the error has been logged already via bus.log.
+        sys.exit(1)
+    else:
+        engine.block()
+
+#    cherrypy.quickstart(PellMonWebb(), config=app_conf)
+
 else:
     cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
 
