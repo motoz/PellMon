@@ -1,5 +1,5 @@
 # Dbus policy file
-policydir = $(dbuspolicydir)
+policydir = $(sysconfdir)/dbus-1/system.d
 policy_DATA = pellmon_dbus.conf
 
 EXTRA_DIST = \
