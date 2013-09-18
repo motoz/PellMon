@@ -485,7 +485,7 @@ if __name__ == "__main__":
         parser.read(config_file)
 
         logfile = parser.get('conf', 'logfile')
-        logdir = os.dirname(logfile)
+        logdir = os.path.dirname(logfile)
         if not os.path.isdir(logdir):
             os.mkdir(logdir)
         uid = pwd.getpwnam(args.USER).pw_uid
@@ -493,7 +493,7 @@ if __name__ == "__main__":
         os.chown(logdir, uid, gid)
 
         dbfile = parser.get('conf', 'database')
-        dbdir = os.dirname(dbfile)
+        dbdir = os.path.dirname(dbfile)
         if not os.path.isdir(dbdir):
             os.mkdir(dbdir)
         uid = pwd.getpwnam(args.USER).pw_uid
