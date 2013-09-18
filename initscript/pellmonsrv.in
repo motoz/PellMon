@@ -17,7 +17,8 @@ GROUP=nogroup
 
 EXEC=@bindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
-ARGS="start --PIDFILE=$PIDFILE"
+CONFIGFILE=@sysconfdir@/pellmon.conf
+ARGS="start --PIDFILE=$PIDFILE --USER=$USER --CONFIG=$CONFIGFILE"
 
 . /lib/lsb/init-functions
 

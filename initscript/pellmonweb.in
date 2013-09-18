@@ -11,13 +11,14 @@
 ### END INIT INFO
 
 NAME=pellmonweb
-DAEMON=cherryd
+DAEMON=pellmonweb.py
 USER=@user_web@
 GROUP=nogroup
 
-EXEC=/usr/bin/$DAEMON
+EXEC=@bindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
-ARGS="-i $NAME -d -p $PIDFILE"
+CONFIGFILE=@sysconfdir@/pellmon.conf
+ARGS="-D --PIDFILE $PIDFILE  --USER=$USER --CONFIG=$CONFIGFILE -d=SYSTEM"
 
 
 . /lib/lsb/init-functions
