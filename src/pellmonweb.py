@@ -33,6 +33,7 @@ from time import time
 import threading
 import sys
 from web import __file__ as webpath
+import argparse
 
 class DbusNotConnected(Exception):
     pass
@@ -445,17 +446,25 @@ cherrypy.engine.subscribe('start', dbus.setup, 90)
 
 if __name__=="__main__":
 
+    parser = argparse.ArgumentParser(prog='pellmonweb')
+    parser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
+    parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
+    parser.add_argument('-U', '--USER', help='Run as USER')
+    parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
+    parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    args = parser.parse_args()
+
     cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
     
     engine = cherrypy.engine
 
     # Only daemonize if asked to.
 #    if daemonize:
-    if False:
+    if args.DAEMONIZE:
         # Don't print anything to stdout/sterr.
         cherrypy.config.update({'log.screen': False})
         plugins.Daemonizer(engine).subscribe()
-    pidfile = "/home/anders/test.pid"
+    pidfile = args.PIDFILE
     if pidfile:
         plugins.PIDFile(engine, pidfile).subscribe()
     
