@@ -2,7 +2,6 @@ SUBDIRS = srv web
 
 bin_SCRIPTS = pellmonsrv.py pellmonweb.py pellmoncli.py
 CLEANFILES = \
-	$(bin_SCRIPTS) \
 	pellmon.conf
 
 confdir = $(sysconfdir)/pellmon
