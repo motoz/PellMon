@@ -491,6 +491,8 @@ if __name__ == "__main__":
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
         os.chown(logdir, uid, gid)
+        if os.path.isfile(logfile):
+            os.chown(logfile, uid, gid)
 
         dbfile = parser.get('conf', 'database')
         dbdir = os.path.dirname(dbfile)
@@ -501,16 +503,15 @@ if __name__ == "__main__":
         os.chown(dbdir, uid, gid)
         if os.path.isfile(dbfile):
             os.chown(dbfile, uid, gid)
+        drop_privileges(args.USER, args.GROUP)
+
+    # must be be set before calling daemon.start
+    daemon.pidfile = args.PIDFILE
 
     # Init global configuration from the conf file
     global conf
     conf = config(config_file)
     conf.dbus = args.DBUS
-
-    daemon.pidfile = args.PIDFILE
-
-    if args.USER:
-        drop_privileges(args.USER, args.GROUP)
 
     commands[args.command]()
 

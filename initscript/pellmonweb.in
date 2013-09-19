@@ -17,8 +17,8 @@ GROUP=nogroup
 
 EXEC=@bindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
-CONFIGFILE=@sysconfdir@/pellmon.conf
-ARGS="-D --PIDFILE $PIDFILE  --USER=$USER --CONFIG=$CONFIGFILE -d=SYSTEM"
+CONFIGFILE=@confdir@/pellmon.conf
+ARGS="-D --PIDFILE $PIDFILE  --USER=$USER --GROUP=$GROUP --CONFIG=$CONFIGFILE --DBUS=SYSTEM"
 
 
 . /lib/lsb/init-functions
@@ -29,7 +29,7 @@ ARGS="-D --PIDFILE $PIDFILE  --USER=$USER --CONFIG=$CONFIGFILE -d=SYSTEM"
 start() {
   log_begin_msg "Starting $NAME..."
   test -e /var/run/$NAME || install -m 755 -o $USER -g $GROUP -d /var/run/$NAME
-  if start-stop-daemon --start --pidfile $PIDFILE --chuid $USER:$GROUP --startas $EXEC -- $ARGS; then
+  if start-stop-daemon --start --pidfile $PIDFILE --startas $EXEC -- $ARGS; then
     log_end_msg 0
   else
     log_end_msg $?

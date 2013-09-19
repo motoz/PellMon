@@ -5,7 +5,8 @@ CLEANFILES = \
 	$(bin_SCRIPTS) \
 	pellmon.conf
 
-sysconf_DATA = pellmon.conf
+confdir = $(sysconfdir)/pellmon
+conf_DATA = pellmon.conf
 
 EXTRA_DIST = \
 	pellmonsrv.py \

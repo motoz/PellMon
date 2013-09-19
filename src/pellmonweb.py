@@ -34,6 +34,8 @@ import threading
 import sys
 from web import __file__ as webpath
 import argparse
+import pwd
+import grp
 
 class DbusNotConnected(Exception):
     pass
@@ -376,9 +378,44 @@ FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 lookup = TemplateLookup(directories=[os.path.join(HERE, 'html')])
 
 parser = ConfigParser.ConfigParser()
+config_file = 'pellmon.conf'
+
+if __name__ == '__main__':
+    argparser = argparse.ArgumentParser(prog='pellmonweb')
+    argparser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
+    argparser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
+    argparser.add_argument('-U', '--USER', help='Run as USER')
+    argparser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
+    argparser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    argparser.add_argument('-d', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
+    args = argparser.parse_args()
+
+    dbus = Dbus_handler(args.DBUS)
+
+    # The dbus main_loop thread can't be started before double fork to daemon, the
+    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
+    cherrypy.engine.subscribe('start', dbus.setup, 90)
+
+    engine = cherrypy.engine
+
+    # Only daemonize if asked to.
+#    if daemonize:
+    if args.DAEMONIZE:
+        # Don't print anything to stdout/sterr.
+        cherrypy.config.update({'log.screen': False})
+        plugins.Daemonizer(engine).subscribe()
+    pidfile = args.PIDFILE
+    if pidfile:
+        plugins.PIDFile(engine, pidfile).subscribe()
+
+    if args.USER:
+        uid = pwd.getpwnam(args.USER).pw_uid
+        gid = grp.getgrnam(args.GROUP).gr_gid
+        plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=777).subscribe()
+
+    config_file = args.CONFIG
 
 # Load the configuration file
-config_file = 'pellmon.conf'
 if not os.path.isfile(config_file):
     config_file = '/etc/pellmon.conf'
 if not os.path.isfile(config_file):
@@ -446,35 +483,7 @@ cherrypy.config.update(global_conf)
 
 if __name__=="__main__":
 
-    parser = argparse.ArgumentParser(prog='pellmonweb')
-    parser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
-    parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
-    parser.add_argument('-U', '--USER', help='Run as USER')
-    parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
-    parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
-    parser.add_argument('-d', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
-    args = parser.parse_args()
-
-    dbus = Dbus_handler(args.DBUS)
-
-    # The dbus main_loop thread can't be started before double fork to daemon, the
-    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-    cherrypy.engine.subscribe('start', dbus.setup, 90)
-
     cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
-    
-    engine = cherrypy.engine
-
-    # Only daemonize if asked to.
-#    if daemonize:
-    if args.DAEMONIZE:
-        # Don't print anything to stdout/sterr.
-        cherrypy.config.update({'log.screen': False})
-        plugins.Daemonizer(engine).subscribe()
-    pidfile = args.PIDFILE
-    if pidfile:
-        plugins.PIDFile(engine, pidfile).subscribe()
-    
     if hasattr(engine, "signal_handler"):
         engine.signal_handler.subscribe()
     if hasattr(engine, "console_control_handler"):
