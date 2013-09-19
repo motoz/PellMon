@@ -19,7 +19,7 @@
 
 import os.path
 import cherrypy
-from cherrypy.lib.static import serve_file
+from cherrypy.lib.static import serve_file, serve_fileobj
 from cherrypy.process import plugins, servers
 import ConfigParser
 from mako.template import Template
@@ -36,6 +36,7 @@ from web import __file__ as webpath
 import argparse
 import pwd
 import grp
+from tempfile import NamedTemporaryFile
 
 class DbusNotConnected(Exception):
     pass
@@ -195,15 +196,19 @@ class PellMonWebb:
         graphTimeStart=str(graphTime + offset)
         graphTimeEnd=str(offset)
         #Build the command string to make a graph from the database         
+        fd=NamedTemporaryFile(suffix='.png')
+        graph_file=fd.name
         RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 760 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
         RrdGraphString1=RrdGraphString1+"DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
         RrdGraphString1=RrdGraphString1+">>/dev/null"
+
         os.system(RrdGraphString1)
+        #f=os.fdopen(fd, 'r')
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_file(graph_file, content_type='image/png')
+        return serve_fileobj(fd, content_type='image/png')
 
     @cherrypy.expose
     def consumption(self, **args):
@@ -411,7 +416,7 @@ if __name__ == '__main__':
     if args.USER:
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
-        plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=777).subscribe()
+        plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=033).subscribe()
 
     config_file = args.CONFIG
 
