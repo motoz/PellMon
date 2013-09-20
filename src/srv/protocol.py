@@ -47,7 +47,10 @@ class Protocol(threading.Thread):
         try:
             s.open()
         except serial.SerialException, e:
-            logger.info("Could not open serial port %s: %s\n" % (ser.portstr, e))
+            logger.info("Could not open serial port %s: %s\n" % (device, e))
+            self.dummyDevice=True
+            self.dataBase = self.createDataBase('6.99')
+            return 
         logger.info('serial port ok')
         self.ser = s
             

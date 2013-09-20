@@ -286,7 +286,12 @@ class MyDaemon(Daemon):
 
         # Initialize protocol and setup the database according to version_string
         global protocol 
-        protocol = Protocol(conf.serial_device, conf.version_string)
+        global conf
+        try:
+            protocol = Protocol(conf.serial_device, conf.version_string)
+        except:
+            conf.polling=False
+            logger.info('protocol setup failed')
         
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
