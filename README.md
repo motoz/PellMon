@@ -3,28 +3,69 @@ PellMon
 
 Bio comfort / scotte / woody pellet burner - communication, setting and monitoring
 
-Tested on a raspberry pi with debian
-
-
-Contains: 
+Contains:
 
 pellmonsrv.py:
-Communication daemon. Implements a DBUS interface for reading and writing setting values and read measurement data. Also handles handles logging of measurement data to an RRD database. Usage: pellmonsrv.py start
+Communication daemon. Implements a DBUS interface for reading and writing setting values and reading of measurement data. Optionally handles handles logging of measurement data to an RRD database. 
 
-pellmoncli.py:
-Interactive command line client with tab completion. Uses the DBUS interface to read and write setting values, and read measurement data. 
+usage: pellmonsrv [-h] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-D {SESSION,SYSTEM}]
+                  {debug,start,stop,restart}
+
+positional arguments:
+  {debug,start,stop,restart}
+                        With debug argument pellmonsrv won't daemonize
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -P PIDFILE, --PIDFILE PIDFILE
+                        Full path to pidfile
+  -U USER, --USER USER  Run as USER
+  -G GROUP, --GROUP GROUP
+                        Run as GROUP
+  -C CONFIG, --CONFIG CONFIG
+                        Full path to config file
+  -D {SESSION,SYSTEM}, --DBUS {SESSION,SYSTEM}
+                        which bus to use, SESSION is default
 
 pellmonweb.py:
-webserver and webapp, plotting of measurement data and parameter reading/writing.
+Webserver and webapp, plotting of measurement, calculated consumption and data and parameter reading/writing.
+
+usage: pellmonweb [-h] [-D] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-d {SESSION,SYSTEM}]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -D, --DAEMONIZE       Run as daemon
+  -P PIDFILE, --PIDFILE PIDFILE
+                        Full path to pidfile
+  -U USER, --USER USER  Run as USER
+  -G GROUP, --GROUP GROUP
+                        Run as GROUP
+  -C CONFIG, --CONFIG CONFIG
+                        Full path to config file
+  -d {SESSION,SYSTEM}, --DBUS {SESSION,SYSTEM}
+                        which bus to use, SESSION is default
+
+pellmoncli.py:
+Interactive command line client with tab completion. Reading and writeing of setting values, and reading of measurement data.
+
+usage: pellmoncli [-h] {get,set,list,i}
 
 pellmon.conf
-setting values, edit as desired
+Setting values.
 
-pellmon_dbus.conf
-should be copied to /etc/dbus-1/system.d/ to allow pellmonsrv running as user "pi" to implement the DBUS interface on the system bus, edit the file to match the user name
+User installation:
+    ./autogen.sh
+    ./configure.sh --prefix=/home/<user>/.local
+    make
+    make install
+    /home/<user>/.local/bin/pellmonsrv -C /home/<user>/.local/etc/pellmon/pellmon.conf start
+    /home/<user>/.local/bin/pellmonsrv -C /home/<user>/.local/etc/pellmon/pellmon.conf -D
 
+System installation:
+    to be documented...
 
-dependencies:
+Dependencies:
 rrdtool, python-serial, python-cherrypy3, python-dbus, python-mako, python-gobject, python-simplejson
 
-
+Build dependencies:
+autoconf
