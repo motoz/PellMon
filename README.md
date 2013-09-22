@@ -57,17 +57,40 @@ usage: pellmoncli.py [-h] {get,set,list,i}
 Configuration values. 
 
 ##User installation:
+    # Generate configure script
     ./autogen.sh
-    ./configure.sh --prefix=/home/<user>/.local
+    # Configure for installation in home directory
+    ./configure --prefix=/home/<user>/.local
     make
     make install
+    # Start the daemons manually
     /home/<user>/.local/bin/pellmonsrv.py -C /home/<user>/.local/etc/pellmon/pellmon.conf start
     /home/<user>/.local/bin/pellmonweb.py -C /home/<user>/.local/etc/pellmon/pellmon.conf -D
+    # Stop the daemons manually
+    kill $(cat /tmp/pellmonsrv.pid)
+    kill $(cat /tmp/pellmonweb.pid)
 
 ##System installation:
-<pre>
-to be documented...
-</pre>
+    # Add system users
+    sudo adduser --system --group --no-create-home pellmonsrv
+    sudo adduser --system --group --no-create-home pellmonweb
+    ./autogen.sh
+    # Configure for running as system users
+    ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb
+    sudo make install
+    # Copy the dbus permission file in place
+    sudo cp /usr/local/etc/dbus-1/system.d/pellmon_dbus.conf /etc/dbus-1/system.d/
+    # Activate it
+    sudo service dbus reload
+    # Copy init scripts in place
+    sudo cp /usr/local/etc/init.d/pellmonsrv /etc/init.d/
+    sudo cp /usr/local/etc/init.d/pellmonweb /etc/init.d/
+    # And install them
+    sudo update-rc.d pellmonsrv defaults
+    sudo update-rc.d pellmonweb defaults
+    # Start the daemons manually, or they will start at system boot
+    sudo service pellmonsrv start
+    sudo service pellmonweb start
 
 ##Dependencies:
 <pre>
