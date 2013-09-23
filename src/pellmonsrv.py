@@ -444,11 +444,16 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     running_uid = pwd.getpwnam(uid_name).pw_uid
     running_gid = grp.getgrnam(gid_name).gr_gid
 
-    # Remove group privileges
-    os.setgroups([])
 
     #Set the new uid/gid
     os.setgid(running_gid)
+    try:
+        # Set supplementary group privilege to access serial port
+        dialoutgid = grp.getgrnam('dialout').gr_gi
+        os.setgroups([dialoutgid,])
+    except:
+        # Can live without it for testing purposes
+        pass
     os.setuid(running_uid)
 
     # Set umask
