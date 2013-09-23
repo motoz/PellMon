@@ -80,7 +80,6 @@ Configuration values.
     sudo adduser --system --group --no-create-home pellmonweb
     ./autogen.sh
     # Configure for running as system users
-    ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb
     ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb --sysconfdir=/etc
     sudo make install
     # Activate pellmon dbus system bus permissions
