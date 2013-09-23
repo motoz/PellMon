@@ -56,6 +56,7 @@ usage: pellmoncli.py [-h] {get,set,list,i}
 ###pellmon.conf
 Configuration values. 
 
+
 ##User installation:
     # Generate configure script
     ./autogen.sh
@@ -69,6 +70,9 @@ Configuration values.
     # Stop the daemons manually
     kill $(cat /tmp/pellmonsrv.pid)
     kill $(cat /tmp/pellmonweb.pid)
+###Uninstall
+    make uninstall
+
 
 ##System installation:
     # Add system users
@@ -76,22 +80,22 @@ Configuration values.
     sudo adduser --system --group --no-create-home pellmonweb
     ./autogen.sh
     # Configure for running as system users
-    ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb
+    ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb --sysconfdir=/etc
     sudo make install
-    # Copy the dbus permission file in place
-    sudo cp /usr/local/etc/dbus-1/system.d/pellmon_dbus.conf /etc/dbus-1/system.d/
-    # Activate it
+    # Activate pellmon dbus system bus permissions
     sudo service dbus reload
-    # Copy init scripts in place
-    sudo cp /usr/local/etc/init.d/pellmonsrv /etc/init.d/
-    sudo cp /usr/local/etc/init.d/pellmonweb /etc/init.d/
-    # And install them
-    sudo update-rc.d pellmonsrv defaults
-    sudo update-rc.d pellmonweb defaults
-    # Start the daemons manually, or they will start at system boot
+    # Start the daemons manually
     sudo service pellmonsrv start
     sudo service pellmonweb start
-
+    # Or add them to init so they are started at boot
+    sudo update-rc.d pellmonsrv defaults
+    sudo update-rc.d pellmonweb defaults
+###Uninstall
+    sudo make uninstall
+    # Remove from init if you added them
+    sudo update-rc.d pellmonsrv remove
+    sudo update-rc.d pellmonweb remove
+    
 ##Dependencies:
 <pre>
 rrdtool, python-serial, python-cherrypy3, python-dbus, python-mako, python-gobject, python-simplejson
