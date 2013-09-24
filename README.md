@@ -81,6 +81,7 @@ Configuration values.
     ./autogen.sh
     # Configure for running as system users
     ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb --sysconfdir=/etc
+    make
     sudo make install
     # Activate pellmon dbus system bus permissions
     sudo service dbus reload
