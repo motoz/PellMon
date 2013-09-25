@@ -435,6 +435,12 @@ class config:
         except ConfigParser.NoOptionError:
             self.email=False
 
+def getgroups(user):
+    gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
+    gid = pwd.getpwnam(user).pw_gid
+    gids.append(grp.getgrgid(gid).gr_gid)
+    return gids
+    
 def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     if os.getuid() != 0:
         # We're not root so don't do anything
@@ -444,13 +450,12 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     running_uid = pwd.getpwnam(uid_name).pw_uid
     running_gid = grp.getgrnam(gid_name).gr_gid
 
-
     #Set the new uid/gid
     os.setgid(running_gid)
     try:
-        # Set supplementary group privilege to access serial port
-        dialoutgid = grp.getgrnam('dialout').gr_gid
-        os.setgroups([dialoutgid,])
+        # Set supplementary group privileges
+        gids = getgroups(uid_name)
+        os.setgroups(gids)
     except:
         # Can live without it for testing purposes
         pass
