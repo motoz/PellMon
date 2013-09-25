@@ -78,6 +78,8 @@ Configuration values.
     # Add system users
     sudo adduser --system --group --no-create-home pellmonsrv
     sudo adduser --system --group --no-create-home pellmonweb
+    # Give the server access to the serial port
+    sudo adduser pellmonsrv dialout
     ./autogen.sh
     # Configure for running as system users
     ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb --sysconfdir=/etc
