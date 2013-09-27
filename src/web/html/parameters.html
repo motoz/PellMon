@@ -16,6 +16,11 @@
 	.details .form-inline .form-control {
 		width: 60%;
 	}
+
+	.form-control.error {
+		background-color: #F2DEDE;
+		color: #B94A48;
+	}
 	
 </style>
 <div class="container">
@@ -116,7 +121,7 @@
 						<p><i>No description</i></p>
 					%endif
 					<p>Valid values: ${key['min']} - ${key['max']}</p>
-					<form class="set form-inline">
+					<form class="save form-inline">
 						<input type="text" class="form-control" name="${key['name']}" />
 						<input type="submit" class="btn btn-primary" value="Save" data-loading-text="Saving..." />
 					</form>
