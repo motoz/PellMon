@@ -86,11 +86,15 @@
                 <h3>Data</h3>
 		<dl class="dl dl-horizontal">
                 %for key in data:
-                        <dt>${key['longname'].title()}</dt>
-			<dd>
-				<span id="${key['name']}-value" class="param value editable"></span> ${key['unit'].decode('utf-8')}
+                        <dt class="editable">${key['longname'].title()}</dt>
+			<dd class="editable">
+				<span id="${key['name']}-value" class="param value"></span> ${key['unit'].decode('utf-8')}
 				<div class="details hidden">
-					<p>${key['description'].decode('utf-8')}</p>
+					%if key['description']:
+						<p><i>${key['description'].decode('utf-8')}</i></p>
+					%else:
+						<p><i>No description</i></p>
+					%endif
 				</div>
                 %endfor
 		</dl>
@@ -102,17 +106,16 @@
                 <h3>Settings</h3>
 		<dl class="dl dl-horizontal">
                 %for key in params:
-                <%
-                if key['type'] == 'R/W':
-                    range='  (%u..%u)'%(key['min'], key['max'])
-                %>
-
-                        <dt>${key['longname'].title()}</dt>
-			<dd> 
-				<span id="${key['name']}-value" class="param value editable"></span> ${key['unit'].decode('utf-8')}
+                        <dt class="editable">${key['longname'].title()}</dt>
+			<dd class="editable"> 
+				<span id="${key['name']}-value" class="param value"></span> ${key['unit'].decode('utf-8')}
 				<div class="details hidden">
-					<p>${key['description'].decode('utf-8')}</p>
-					<p>Range: ${range}</p>
+					%if key['description']:
+						<p><i>${key['description'].decode('utf-8')}</i></p>
+					%else:
+						<p><i>No description</i></p>
+					%endif
+					<p>Valid values: ${key['min']} - ${key['max']}</p>
 					<form class="set form-inline">
 						<input type="text" class="form-control" name="${key['name']}" />
 						<input type="submit" class="btn btn-primary" value="Update" data-loading-text="Updating..." />
