@@ -1,9 +1,13 @@
 var getParam = function(param) {
 	$.get('/getparam/' + param,
 		function(data) {
-			$('#' + param + '-value').text(data.value);
+			setParam(param, data.value);
 		}
 	);
+};
+
+var setParam = function(param, value) {
+	$('#' + param + '-value').text(value);
 };
 
 $('.editable').on('click', function(e) {
@@ -25,25 +29,37 @@ $('.editable').on('click', function(e) {
 	
 });
 
-$(".set").on('submit', function(e) {
+$(".save").on('submit', function(e) {
 	e.preventDefault();
 
 	var form = $(this),
 	btn = $('input[type=submit]', form),
-	textfield = $('input[type=text]', form);
+	textfield = $('input[type=text]', form),
+	name = textfield.attr('name'),
+	value = textfield.val();
+
+	if(value == '') {
+		textfield.addClass('error');
+		return;
+	}
+
+	textfield.removeClass('error');
 
 	btn.button('loading');
 
 	$.post(
-		'/setparam/' + textfield.attr('name'),
+		'/setparam/' + name,
 		{
-			data: textfield.val()
+			data: value
 		},
 		function(data) {
-			setTimeout(function() {
+			if(data.value === 'OK') {
 				btn.button('reset');
-				getParam(textfield.attr('name'));
-			}, 1000);
+				setParam(name, value);
+				textfield.val('');
+			} else {
+				textfield.addClass('error');
+			}
 		});
 });
 
