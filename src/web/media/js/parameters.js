@@ -8,12 +8,13 @@ var getParam = function(param) {
 
 $('.editable').on('click', function(e) {
 	e.preventDefault();
+	
         var me = $(this);
 
 	if(me.is('dt')) {
 		var container = me.next();
 	} else {
-		var container = me;
+		var container = me.closest('dd');
 	}
 
 	var details = $('.details.hidden', container),

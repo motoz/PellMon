@@ -107,9 +107,9 @@
 		<dl class="dl dl-horizontal">
                 %for key in params:
                         <dt class="editable">${key['longname'].title()}</dt>
-			<dd class="editable"> 
-				<span id="${key['name']}-value" class="param value"></span> ${key['unit'].decode('utf-8')}
-				<div class="details hidden">
+			<dd> 
+				<span id="${key['name']}-value" class="editable param value"></span> ${key['unit'].decode('utf-8')}
+				<div style="z-index: 10000" class="details hidden">
 					%if key['description']:
 						<p><i>${key['description'].decode('utf-8')}</i></p>
 					%else:
@@ -118,7 +118,7 @@
 					<p>Valid values: ${key['min']} - ${key['max']}</p>
 					<form class="set form-inline">
 						<input type="text" class="form-control" name="${key['name']}" />
-						<input type="submit" class="btn btn-primary" value="Update" data-loading-text="Updating..." />
+						<input type="submit" class="btn btn-primary" value="Save" data-loading-text="Saving..." />
 					</form>
 				</div>
 			</dd>
