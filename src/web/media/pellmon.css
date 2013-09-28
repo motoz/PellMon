@@ -1,0 +1,9 @@
+/**
+ * Always show the scrollbar
+ * to stop the layout form shifting
+ * left/right when the page isn't high enough
+ */
+html {
+    overflow-y: scroll;
+}
+
