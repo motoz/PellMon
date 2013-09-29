@@ -12,12 +12,14 @@ rnd=str(random())
 
 <div class="container">
 <div class="row">
+	<div class="col-md-12">
     %if not empty:
     <div id="spin">
-	    <h3>Graph</h3>
+	    <h1>Graph</h1>
         <p>
             <img class="img-responsive" src="image?rand=${rnd}" id="graph" />
         </p>
+		<h1>Consumption</h1>
         <p>
             <img class="img-responsive" src="consumption?rand=${rnd}" id="graph" />
         </p>
@@ -45,4 +47,5 @@ rnd=str(random())
             </script>
             <div id='lines'>
             </div>
+	</div>
 </div>
