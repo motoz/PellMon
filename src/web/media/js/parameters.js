@@ -1,17 +1,30 @@
 var getParam = function(param) {
 	$.get('/getparam/' + param,
 		function(data) {
-			$('#' + param + '-text').val(data.value);
+			$('#' + param + '-value').text(data.value);
 		}
 	);
 };
 
-$(".set").on('click', function(e) {
+$('.editable').on('click', function(e) {
+        var me = $(this);
+		par = me.parent(),
+		details = $('.details.hidden', par),
+		others = $('.details').not(details);
+
+	details.removeClass('hidden');
+	others.addClass('hidden');
+	
+});
+
+$(".set").on('submit', function(e) {
 	e.preventDefault();
 
-	var me = $(this),
-	form = me.closest('form'),
+	var form = $(this),
+	btn = $('input[type=submit]', form),
 	textfield = $('input[type=text]', form);
+
+	btn.button('loading');
 
 	$.post(
 		'/setparam/' + textfield.attr('name'),
@@ -19,41 +32,25 @@ $(".set").on('click', function(e) {
 			data: textfield.val()
 		},
 		function(data) {
-			textfield.val(data.value);
 			setTimeout(function() {
+				btn.button('reset');
 				getParam(textfield.attr('name'));
-			}, 2000);
+			}, 1000);
 		});
-});
-
-$(".get").on('click', function(e) {
-	e.preventDefault();
-
-	var me = $(this),
-	form = me.closest('form'),
-	textfield = $('input[type=text]', form);
-
-	getParam(textfield.attr('name'));
 });
 
 $(".command").on('click', function(e) {
 	e.preventDefault();
 
 	var me = $(this),
-	form = me.closest('form'),
-	textfield = $('input[type=hidden]', form);
+	name = me.data('name');
 
 	$.post(
-		'/setparam/' + textfield.attr('name'),
+		'/setparam/' + name,
 		{
 			data: '0'
-		},
-		function(data) {
-			textfield.val(data.value);
-			setTimeout(function() {
-				getParam(textfield.attr('name'));
-			}, 2000);
-		});
+		}
+	);
 });
 
 var params = $('.param'),
@@ -63,15 +60,15 @@ function getParams() {
 	$.get(
 		'/getparams/',
 		function(data) {
-            for (var param in data) {
-				var textfield = $('#' + param + '-text');
-				if(textfield.length > 0) {
-					textfield.val(data[param]);
-					count = count-1;
-				}
+            	for (var param in data) {
+			var container = $('#' + param + '-value');
+			if(container.length > 0) {
+				container.html(data[param]);
+				count = count-1;
+			}
             }
 
-			if (count > 0) {
+		if (count > 0) {
 				getParams();
 			}
 		}
@@ -79,3 +76,5 @@ function getParams() {
 }
 
 getParams();
+
+$('.set').button();
