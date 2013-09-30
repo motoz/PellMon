@@ -4,6 +4,20 @@
        	${heading}
 </%def>
 
+<style>
+	dd,dt {
+		cursor: pointer;	
+	}
+	
+	.dl-horizontal dt {
+		text-align: left;
+	}
+
+	.details .form-inline .form-control {
+		width: 60%;
+	}
+	
+</style>
 <div class="container">
     <h1>${heading}</h1>
     <div class="row">
@@ -53,101 +67,64 @@
             </div>
         </div>
         <div class="col-md-10">
-
+	<div class="row">
         %if len(commands)>0:
-        <div class="row">
-            <div class="col-md-12">
+        <div class="col-md-12">
             <h3>Control</h3>
-            %for key in commands:
-            <%
-            val=' '
-            name=key['name']
-            longname=key['longname']
-            if key['type'] == 'W':
-                range=' - command'
-            if key['type'] == 'R':
-                range=''
-            if key['type'] == 'R/W':
-                range='  (%u..%u)'%(key['min'], key['max'])
-            %>
-	            <form id="${key}-form" name="${name}" class="param" action="" method="post">
-		            <input type="hidden" id="${name}-text" placeholder=" " value="0" name="${name}" />
-                    <div class="form-group">
-		              <input type="submit" value="${longname}" class="command btn btn-primary" />
-                    </div>
-	            </form>
-            %endfor
-            </div>
+		<div class="btn-group">
+            	%for key in commands:
+			<button type="button" data-name="${key['name']}" class="command btn btn-primary">${key['longname'].title()}</button>
+            	%endfor
+            	</div>
         </div>
         %endif
+	</div>	
 
-        <div class="row">
+	<div class="row">
         %if len(data)>0:
             <div class="col-md-6">
                 <h3>Data</h3>
+		<dl class="dl dl-horizontal">
                 %for key in data:
-                <%
-                val=' '
-                name=key['name']
-                longname=key['longname']
-                if key['type'] == 'W':
-                    range=' - command'
-                if key['type'] == 'R':
-                    range=''
-                if key['type'] == 'R/W':
-                    range='  (%u..%u)'%(key['min'], key['max'])
-                %>
-	                <form id="${key}-form" name="${name}" class="param form-inline" action="" method="post">
-                        %if key['description']:
-                        <h5 data-toggle="collapse" data-target="#viewdetails-${name}" href="#" for="${name}-text"> ${longname} <i class="glyphicon glyphicon-info-sign"> </i></h5>
-                        %else:
-                        <h5 for="${name}-text"> ${longname}</h5>
-                        %endif
-                        <div class="collapse" class="text-info" id="viewdetails-${name}"> ${key['description'].decode('utf-8')}<br>(${key['unit'].decode('utf-8')})</div>
-                        <div class="form-group">
-		                  <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" class="form-control" />
-                        </div>
-		                  <input type="submit" value="Get" class="get btn btn-default" />
-	                </form>
-
-
+                        <dt>${key['longname'].title()}</dt>
+			<dd>
+				<span id="${key['name']}-value" class="param value editable"></span> ${key['unit'].decode('utf-8')}
+				<div class="details hidden">
+					<p>${key['description'].decode('utf-8')}</p>
+				</div>
                 %endfor
+		</dl>
             </div>
         %endif
 
         %if len(params)>0:
             <div class="col-md-6">
                 <h3>Settings</h3>
+		<dl class="dl dl-horizontal">
                 %for key in params:
                 <%
-                val=' '
-                name=key['name']
-                longname=key['longname']
-                if key['type'] == 'W':
-                    range=' - command'
-                if key['type'] == 'R':
-                    range=''
                 if key['type'] == 'R/W':
                     range='  (%u..%u)'%(key['min'], key['max'])
                 %>
-	                <form id="${key}-form" name="${name}" class="param form-inline" action="" method="post">
 
-                        %if key['description']:
-                        <h5 data-toggle="collapse" data-target="#viewdetails2-${name}" href="#" for="${name}-text"> ${longname} <i class="glyphicon glyphicon-info-sign"> </i></h5>
-                        %else:
-                        <h5 for="${name}-text"> ${longname}</h5>
-                        %endif
-
-                        <div class="collapse" class="text-info" id="viewdetails2-${name}"> ${key['description'].decode('utf-8')}<br>Setting range is from ${key['min']} to ${key['max']}<br>(${key['unit'].decode('utf-8')}) </div>
-                        <div class="form-group">
-		                  <input type="text" id="${name}-text" placeholder="${val}" value="${val}" name="${name}" class="form-control" />
-                        </div>
-		                <input type="submit" value="Get" class="get btn btn-default" />
-		                <input type="submit" value="Set" class="set btn btn-primary" />
-	                </form>
+                        <dt>${key['longname'].title()}</dt>
+			<dd> 
+				<span id="${key['name']}-value" class="param value editable"></span> ${key['unit'].decode('utf-8')}
+				<div class="details hidden">
+					<p>${key['description'].decode('utf-8')}</p>
+					<p>Range: ${range}</p>
+					<form class="set form-inline">
+						<input type="text" class="form-control" name="${key['name']}" />
+						<input type="submit" class="btn btn-primary" value="Update" data-loading-text="Updating..." />
+					</form>
+				</div>
+			</dd>
+	
                 %endfor
+		</dl>
             </div>
         %endif
+	</div>
         </div>
     </div>
 </div>
