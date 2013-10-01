@@ -7,9 +7,16 @@ var getParam = function(param) {
 };
 
 $('.editable').on('click', function(e) {
+	e.preventDefault();
         var me = $(this);
-		par = me.parent(),
-		details = $('.details.hidden', par),
+
+	if(me.is('dt')) {
+		var container = me.next();
+	} else {
+		var container = me;
+	}
+
+	var details = $('.details.hidden', container),
 		others = $('.details').not(details);
 
 	details.removeClass('hidden');
