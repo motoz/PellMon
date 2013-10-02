@@ -53,8 +53,8 @@ $(".save").on('submit', function(e) {
 			data: value
 		},
 		function(data) {
+			btn.button('reset');
 			if(data.value === 'OK') {
-				btn.button('reset');
 				setParam(name, value);
 				textfield.val('');
 			} else {
