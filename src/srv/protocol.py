@@ -156,6 +156,7 @@ class Protocol(threading.Thread):
                     response = responseQueue.get()
                     if response == addCheckSum('OK'):
                         logger.info('Parameter %s = %s'%(param,s))
+                        response = 'OK'                        
                     return response
                 else:
                     return "Expected value "+str(dataparam.min)+".."+str(dataparam.max)
