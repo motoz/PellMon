@@ -184,13 +184,23 @@ class PellMonWebb:
         return simplejson.dumps(dict(offset=cherrypy.session['time']))
 
     @cherrypy.expose
-    def image(self, **args):
+    def image(self, screenWidth=0, **args):
         if not polling:
              return None
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice'] = 'time1h'
         if not cherrypy.session.get('time'):
             cherrypy.session['time'] = 0
+	
+	screenWidth = int(screenWidth)
+	if screenWidth >= 1200:
+		graphWidth = '1170'
+	elif screenWidth >= 992:
+		graphWidth = '970'
+	elif screenWidth >= 768:
+		graphWidth = '750'
+	else:
+		graphWidth = '440'
         graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
         offset = cherrypy.session['time']
         graphTimeStart=str(graphTime + offset)
@@ -198,7 +208,7 @@ class PellMonWebb:
         #Build the command string to make a graph from the database         
         fd=NamedTemporaryFile(suffix='.png')
         graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 1170 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
+        RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width "+graphWidth+" --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
         RrdGraphString1=RrdGraphString1+"DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
@@ -210,16 +220,26 @@ class PellMonWebb:
         return serve_fileobj(fd, content_type='image/png')
 
     @cherrypy.expose
-    def consumption(self, **args):
+    def consumption(self, screenWidth='', **args):
         if not polling:
              return None
         if consumption_graph:
             #Build the command string to make a graph from the database         
             now=int(time())/3600*3600
-            
+           
+            screenWidth = int(screenWidth)
+            if screenWidth >= 1200:
+                graphWidth = '1170'
+            elif screenWidth >= 992:
+                graphWidth = '970'
+            elif screenWidth >= 768:
+                graphWidth = '750'
+            else:
+                graphWidth = '440'
+
             fd=NamedTemporaryFile(suffix='.png')
             consumption_file=fd.name
-            RrdGraphString1="rrdtool graph "+consumption_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 1170 --height 400 --end %u --start %u-86400s "%(now,now)
+            RrdGraphString1="rrdtool graph "+consumption_file+" --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
                 start=(now-h*3600-3600)

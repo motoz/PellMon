@@ -1,3 +1,13 @@
+$(function() {
+	var images = $('.image-container');
+
+	images.each(function(i, element){
+		var elm = $(element);
+		var img = '<img src="' + elm.data('src') + '/' + screen.width + '?random=' + Math.random() + '" class="img-responsive" />';
+		elm.append(img);
+	});
+
+});
 var refreshTimer = null;
 
 var refreshImage = function() {
@@ -17,7 +27,7 @@ $('.btn.left').click(function(e) {
 	$.post('/left', {}, function(data) {
 		refreshImage();
 	});
-    spinner.spin(target);
+    	spinner.spin(target);
 });
 
 $('.btn.right').click(function(e) {
@@ -25,7 +35,7 @@ $('.btn.right').click(function(e) {
 	$.post('/right', {}, function(data) {
 		refreshImage();
 	});
-    spinner.spin(target);
+    	spinner.spin(target);
 });
 
 $("#graph").bind('load', function() {

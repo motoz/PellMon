@@ -1,11 +1,6 @@
 <%inherit file="layout.html"/>
 <%! scripts = ['spin.js','index.js','logview.js'] %>
 
-<%
-from random import random
-rnd=str(random())
-%>
-
 <%def name="title()">
 	Graph
 </%def>
@@ -15,13 +10,13 @@ rnd=str(random())
 	<div class="col-md-12">
     %if not empty:
     <div id="spin">
-	    <h1>Graph</h1>
+	<h1>Graph</h1>
         <p>
-            <img class="img-responsive" src="image?rand=${rnd}" id="graph" />
+		<div class="image-container" data-src="image"></div>
         </p>
 		<h1>Consumption</h1>
         <p>
-            <img class="img-responsive" src="consumption?rand=${rnd}" id="graph" />
+		<div class="image-container" data-src="consumption"></div>
         </p>
     </div>
     <a href="/graphconf">Configure graph</a>
