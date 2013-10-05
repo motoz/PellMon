@@ -137,16 +137,6 @@ class PellMonWebb:
         raise cherrypy.HTTPRedirect('/')
 
     @cherrypy.expose
-    def form2(self, **args):
-        # The radiobuttons are submitted with 'post'
-        if cherrypy.request.method == "POST":
-            if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
-                cherrypy.session['timeChoice']=args.get('graphtime')
-        # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect('/')
-
-
-    @cherrypy.expose
     def autorefresh(self, **args):
         if cherrypy.request.method == "POST":
             if args.has_key('autorefresh') and args.get('autorefresh') == 'yes':
@@ -155,33 +145,6 @@ class PellMonWebb:
                 cherrypy.session['autorefresh'] = 'no'
         cherrypy.response.headers['Content-Type'] = 'application/json'
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
-
-    @cherrypy.expose
-    def left(self, **args):
-        if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = 0
-        if not cherrypy.session.get('timeChoice'):
-            cherrypy.session['timeChoice'] = 'time1h'
-        if cherrypy.request.method == "POST":
-            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            cherrypy.session['time']=cherrypy.session['time']+seconds
-        cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(offset=cherrypy.session['time']))
-
-    @cherrypy.expose
-    def right(self, **args):
-        if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = 0
-        if not cherrypy.session.get('timeChoice'):
-            cherrypy.session['timeChoice'] = 'time1h'
-        if cherrypy.request.method == "POST":
-            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            time=cherrypy.session['time']-seconds
-            if time<0:
-                time=0
-            cherrypy.session['time']=time
-        cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(offset=cherrypy.session['time']))
 
     @cherrypy.expose
     def image(self, timeChoice='time1h', direction='', **args):
