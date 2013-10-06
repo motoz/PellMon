@@ -1,35 +1,42 @@
 var refreshTimer = null;
 
-var refreshImage = function() {
-	img = document.getElementById("graph");
-	img.src="image?rand=" + Math.random();
+var refreshImage = function(direction) {
+	var graph = $('#graph'),
+		timeChoice = graph.data('time-choice');
+
+	if(typeof timeChoice === 'undefined') {
+		graph.data('time-choice', 'time1h');
+		timeChoice = 'time1h';
+	}
+
+	if(typeof direction === 'undefined') {
+		direction = '';
+	}
+
+	graph.attr('src', "image/"+timeChoice+"/"+direction+"?rand=" + Math.random());
 }
 
 var startImageRefresh = function() {
 	refreshTimer = setInterval(refreshImage, 10000);
 }
 
-var target = document.getElementById('spin');
-var spinner = new Spinner().spin();
+$('.timeChoice').click(function(e) {
+	e.preventDefault();
+	var graph = $('#graph'),
+		me = $(this);
+
+	graph.data('time-choice', me.data('time-choice'));
+	refreshImage();
+});
 
 $('.btn.left').click(function(e) {
 	e.preventDefault();
-	$.post('/left', {}, function(data) {
-		refreshImage();
-	});
-    spinner.spin(target);
+	refreshImage('left');
 });
 
 $('.btn.right').click(function(e) {
 	e.preventDefault();
-	$.post('/right', {}, function(data) {
-		refreshImage();
-	});
-    spinner.spin(target);
-});
-
-$("#graph").bind('load', function() {
-    spinner.spin(false)
+	refreshImage('right');
 });
 
 $('.btn.autorefresh').click(function(e) {
