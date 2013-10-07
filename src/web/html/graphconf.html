@@ -17,22 +17,6 @@
                 <input type="submit" class="btn btn-default" value="Set">
             </form>
         </div>
-        <div class="col-md-3">
-                <h4>Time period to plot:</h4>
-                <form id="frm2" action="form2" method="post">
-                        %for index in range(len(timeChoices)):
-                        <%
-                        key=timeChoices[index]
-                        val=timeNames[index]
-                        %>
-                        <label class="radio">
-                                ${'<input type="radio" name="graphtime" value="%s" %s>' % (key, 'checked="checked"' if timeChoice == key else '')}
-                                ${val}
-                        </label>
-                        %endfor
-                        <input type="submit" class="btn btn-default" value="Set">
-                </form>
-        </div>
     </div>
 </div>
 

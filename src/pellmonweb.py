@@ -47,7 +47,7 @@ class Dbus_handler:
             self.bustype=Gio.BusType.SYSTEM
         else:
             self.bustype=Gio.BusType.SESSION
-        
+
     def setup(self):
         # Needed to be able to use threads with a glib main loop running
         GObject.threads_init()
@@ -114,7 +114,7 @@ class Dbus_handler:
             return db
         else:
             raise DbusNotConnected("server not running")
-    
+
 class PellMonWebb:
     def __init__(self):
         self.logview = LogViewer(logfile)
@@ -137,16 +137,6 @@ class PellMonWebb:
         raise cherrypy.HTTPRedirect('/')
 
     @cherrypy.expose
-    def form2(self, **args):
-        # The radiobuttons are submitted with 'post'
-        if cherrypy.request.method == "POST":
-            if args.has_key('graphtime') and args.get('graphtime') in timeChoices:
-                cherrypy.session['timeChoice']=args.get('graphtime')
-        # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect('/')
-
-
-    @cherrypy.expose
     def autorefresh(self, **args):
         if cherrypy.request.method == "POST":
             if args.has_key('autorefresh') and args.get('autorefresh') == 'yes':
@@ -157,55 +147,45 @@ class PellMonWebb:
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
 
     @cherrypy.expose
-    def left(self, **args):
-        if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = 0
-        if not cherrypy.session.get('timeChoice'):
-            cherrypy.session['timeChoice'] = 'time1h'
-        if cherrypy.request.method == "POST":
-            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            cherrypy.session['time']=cherrypy.session['time']+seconds
-        cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(offset=cherrypy.session['time']))
-
-    @cherrypy.expose
-    def right(self, **args):
-        if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = 0
-        if not cherrypy.session.get('timeChoice'):
-            cherrypy.session['timeChoice'] = 'time1h'
-        if cherrypy.request.method == "POST":
-            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            time=cherrypy.session['time']-seconds
-            if time<0:
-                time=0
-            cherrypy.session['time']=time
-        cherrypy.response.headers['Content-Type'] = 'application/json'
-        return simplejson.dumps(dict(offset=cherrypy.session['time']))
-
-    @cherrypy.expose
-    def image(self, screenWidth=0, **args):
+    def image(self, timeChoice='time1h', direction='', **args):
         if not polling:
              return None
         if not cherrypy.session.get('timeChoice'):
             cherrypy.session['timeChoice'] = 'time1h'
         if not cherrypy.session.get('time'):
             cherrypy.session['time'] = 0
-	
-	screenWidth = int(screenWidth)
-	if screenWidth >= 1200:
-		graphWidth = '1170'
-	elif screenWidth >= 992:
-		graphWidth = '970'
-	elif screenWidth >= 768:
-		graphWidth = '750'
-	else:
-		graphWidth = '440'
-        graphTime = timeSeconds[timeChoices.index(cherrypy.session.get('timeChoice'))]
-        offset = cherrypy.session['time']
+        if not timeChoice == cherrypy.session.get('timeChoice'):
+            cherrypy.session['timeChoice'] = timeChoice
+        if direction == 'left':
+            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
+            cherrypy.session['time']=cherrypy.session['time']+seconds
+        elif direction == 'right':
+            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
+            time=cherrypy.session['time']-seconds
+            if time<0:
+                time=0
+            cherrypy.session['time']=time
+
+        if not cherrypy.request.params.get('maxWidth'):
+            maxWidth = 0;
+        else:
+            maxWidth = cherrypy.request.params.get('maxWidth');
+
+        maxWidth = int(maxWidth)
+        if maxWidth >= 1200:
+            graphWidth = '1170'
+        elif maxWidth >= 992:
+            graphWidth = '970'
+        elif maxWidth >= 768:
+            graphWidth = '750'
+        else:
+            graphWidth = '440'
+
+        offset = cherrypy.session.get('time')
+        graphTime = timeSeconds[timeChoices.index(timeChoice)]
         graphTimeStart=str(graphTime + offset)
         graphTimeEnd=str(offset)
-        #Build the command string to make a graph from the database         
+        #Build the command string to make a graph from the database
         fd=NamedTemporaryFile(suffix='.png')
         graph_file=fd.name
         RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width "+graphWidth+" --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
@@ -220,19 +200,24 @@ class PellMonWebb:
         return serve_fileobj(fd, content_type='image/png')
 
     @cherrypy.expose
-    def consumption(self, screenWidth='', **args):
+    def consumption(self, **args):
         if not polling:
              return None
         if consumption_graph:
-            #Build the command string to make a graph from the database         
+            #Build the command string to make a graph from the database
             now=int(time())/3600*3600
-           
-            screenWidth = int(screenWidth)
-            if screenWidth >= 1200:
+
+            if not cherrypy.request.params.get('maxWidth'):
+                maxWidth = 0;
+            else:
+                maxWidth = cherrypy.request.params.get('maxWidth');
+
+            maxWidth = int(maxWidth)
+            if maxWidth >= 1200:
                 graphWidth = '1170'
-            elif screenWidth >= 992:
+            elif maxWidth >= 992:
                 graphWidth = '970'
-            elif screenWidth >= 768:
+            elif maxidth >= 768:
                 graphWidth = '750'
             else:
                 graphWidth = '440'
@@ -283,7 +268,7 @@ class PellMonWebb:
     @cherrypy.expose
     @require() #requires valid login
     def parameters(self, t1='', t2='', t3='', t4='', **args):
-        # Get list of data/parameters 
+        # Get list of data/parameters
         try:
             level=cherrypy.session['level']
         except:
@@ -296,7 +281,7 @@ class PellMonWebb:
             # Store the queue in the session
             cherrypy.session['paramReaderQueue'] = paramQueue
             ht = threading.Thread(target=parameterReader, args=(paramQueue,))
-            ht.start()    
+            ht.start()
             values=['']*len(parameterlist)
             params={}
             paramlist=[]
@@ -309,7 +294,7 @@ class PellMonWebb:
                     paramlist.append(item)
                 if item['type'] == 'W':
                     commandlist.append(item)
-                    
+
                 params[item['name']] = ' '
                 if args.has_key(item['name']):
                     if cherrypy.request.method == "POST":
@@ -373,7 +358,7 @@ class PellMonWebb:
                     checkboxes.append((val,''))
         tmpl = lookup.get_template("graphconf.html")
         return tmpl.render(checkboxes=checkboxes, empty=empty, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
-            
+
     @cherrypy.expose
     def index(self, **args):
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
@@ -383,7 +368,7 @@ class PellMonWebb:
                 if cherrypy.session.get(val)=='yes':
                     empty=False
         tmpl = lookup.get_template("index.html")
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=empty, autorefresh=autorefresh )
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
 
 def parameterReader(q):
     parameterlist=dbus.getdb()
@@ -448,18 +433,18 @@ if not os.path.isfile(config_file):
     config_file = '/usr/local/etc/pellmon.conf'
 if not os.path.isfile(config_file):
     print "config file not found"
-    sys.exit(1) 
+    sys.exit(1)
 parser.read(config_file)
-    
+
 # The RRD database, updated by pellMon
 try:
     polling = True
-    db = parser.get('conf', 'database') 
+    db = parser.get('conf', 'database')
     graph_file = os.path.join(os.path.dirname(db), 'graph.png')
 except ConfigParser.NoOptionError:
     polling = False
     db = ''
-    
+
 # the colors to use when drawing the graph
 colors = parser.items('graphcolors')
 colorsDict = {}

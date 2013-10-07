@@ -1,45 +1,53 @@
 $(function() {
-	var images = $('.image-container');
+	var images = $('.image-container'),
+		containerWidth = $('.container:first').width();
 
 	images.each(function(i, element){
-		var elm = $(element);
-		var img = '<img src="' + elm.data('src') + '/' + screen.width + '?random=' + Math.random() + '" class="img-responsive" />';
+		var elm = $(element),
+			img = '<img id="' + elm.data('id') + '" src="' + elm.data('src') + '?random=' + Math.random() + '&maxWidth=' + containerWidth + '" class="img-responsive" />';
 		elm.append(img);
 	});
-
 });
 var refreshTimer = null;
 
-var refreshImage = function() {
-	img = document.getElementById("graph");
-	img.src="image?rand=" + Math.random();
+var refreshImage = function(direction) {
+	var graph = $('#graph'),
+		timeChoice = graph.data('time-choice'),
+		containerWidth = $('.container:first').width();
+
+	if(typeof timeChoice === 'undefined') {
+		graph.data('time-choice', 'time1h');
+		timeChoice = 'time1h';
+	}
+
+	if(typeof direction === 'undefined') {
+		direction = '';
+	}
+
+	graph.attr('src', 'image/' + timeChoice + "/" + direction + "?random=" + Math.random() + '&maxWidth=' + containerWidth);
 }
 
 var startImageRefresh = function() {
 	refreshTimer = setInterval(refreshImage, 10000);
 }
 
-var target = document.getElementById('spin');
-var spinner = new Spinner().spin();
+$('.timeChoice').click(function(e) {
+	e.preventDefault();
+	var graph = $('#graph'),
+		me = $(this);
+
+	graph.data('time-choice', me.data('time-choice'));
+	refreshImage();
+});
 
 $('.btn.left').click(function(e) {
 	e.preventDefault();
-	$.post('/left', {}, function(data) {
-		refreshImage();
-	});
-    	spinner.spin(target);
+	refreshImage('left');
 });
 
 $('.btn.right').click(function(e) {
 	e.preventDefault();
-	$.post('/right', {}, function(data) {
-		refreshImage();
-	});
-    	spinner.spin(target);
-});
-
-$("#graph").bind('load', function() {
-    spinner.spin(false)
+	refreshImage('right');
 });
 
 $('.btn.autorefresh').click(function(e) {
