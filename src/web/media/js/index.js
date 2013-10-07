@@ -1,53 +1,82 @@
+var refreshTimer = null,
+	windowResizeTimer = null;
+
+/**
+ * Refresh/lazy load graphs at page load
+ */
 $(function() {
-	var images = $('.image-container'),
-		containerWidth = $('.container:first').width();
-
-	images.each(function(i, element){
-		var elm = $(element),
-			img = '<img id="' + elm.data('id') + '" src="' + elm.data('src') + '?random=' + Math.random() + '&maxWidth=' + containerWidth + '" class="img-responsive" />';
-		elm.append(img);
-	});
+	refreshGraph();
+	refreshConsumption();
 });
-var refreshTimer = null;
 
-var refreshImage = function(direction) {
-	var graph = $('#graph'),
+/**
+ * Refresh graphs when the window is resized
+ */
+$(window).on('resize', function(e) {
+	if(windowResizeTimer !== null) {
+		clearTimeout(windowResizeTimer);
+	}
+
+	windowResizeTimer = setTimeout(function() {
+		refreshAll();
+	}, 300);
+});
+
+var getMaxWidth = function() {
+	return 	getGraph().closest('div').innerWidth();
+}
+
+var refreshAll = function() {
+	refreshGraph();
+	refreshConsumption();
+}
+
+var refreshGraph = function() {
+	var graph = getGraph(),
 		timeChoice = graph.data('time-choice'),
-		containerWidth = $('.container:first').width();
+		direction = graph.data('direction'),
+		maxWidth = getMaxWidth();
 
-	if(typeof timeChoice === 'undefined') {
-		graph.data('time-choice', 'time1h');
-		timeChoice = 'time1h';
-	}
+	graph.data('direction', '');
 
-	if(typeof direction === 'undefined') {
-		direction = '';
-	}
+	graph.attr('src', graph.data('src') + '/' + timeChoice + '/' + direction + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+}
 
-	graph.attr('src', 'image/' + timeChoice + "/" + direction + "?random=" + Math.random() + '&maxWidth=' + containerWidth);
+var refreshConsumption = function() {
+	var consumption = $('#consumption'),
+		maxWidth = getMaxWidth();
+
+	consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var startImageRefresh = function() {
-	refreshTimer = setInterval(refreshImage, 10000);
+	refreshTimer = setInterval(refreshGraph, 10000);
+}
+
+var getGraph = function() {
+	return $('#graph');
 }
 
 $('.timeChoice').click(function(e) {
 	e.preventDefault();
-	var graph = $('#graph'),
-		me = $(this);
+	var me = $(this);
 
-	graph.data('time-choice', me.data('time-choice'));
-	refreshImage();
+	getGraph().data('time-choice', me.data('time-choice'));
+	refreshGraph();
 });
 
 $('.btn.left').click(function(e) {
 	e.preventDefault();
-	refreshImage('left');
+
+	getGraph().data('direction', 'left');
+	refreshGraph();
 });
 
 $('.btn.right').click(function(e) {
 	e.preventDefault();
-	refreshImage('right');
+
+	getGraph().data('direction', 'right');
+	refreshGraph();
 });
 
 $('.btn.autorefresh').click(function(e) {
@@ -85,7 +114,7 @@ $('.btn.autorefresh').click(function(e) {
 		setAutorefresh('yes', function() {
 			startImageRefresh();
 		});
-		refreshImage();
+		refreshGraph();
 	}
 });
 

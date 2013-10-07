@@ -10,8 +10,10 @@
 	<div class="col-md-12">
     %if not empty:
 	    <h4>Graph</h4>
+            <div>
+            <img class="graph image-responsive image-lazy" id="graph" data-time-choice="time1h" data-direction="" data-src="image" src="media/img/spinner.gif" />
+            </div>
         <p>
-            <div class="image-container" data-id="graph" data-src="image"></div>
 		Show:
 		%for index in range(len(timeChoices)):
 		${'<a href="#" data-time-choice="%s" class="timeChoice %s">%s</a> | ' % (timeChoices[index], 'selected' if timeChoice == timeChoices[index] else '', timeNames[index])}
@@ -25,9 +27,9 @@
         </div>
 
 		<h4>Consumption</h4>
-        <p>
-            <div class="image-container" data-id="consumption" data-src="consumption"></div>
-        </p>
+        <div>
+            <img class="graph image-responsive image-lazy" id="consumption" data-src="consumption" src="media/img/spinner.gif" />
+        </div>
     </div>
 
     %else:
