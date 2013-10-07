@@ -12,4 +12,6 @@ py-compile
 src/Makefile.in
 src/srv/Makefile.in
 src/web/Makefile.in
-
+*.log
+*.conf
+*.db
