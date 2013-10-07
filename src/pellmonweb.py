@@ -165,15 +165,26 @@ class PellMonWebb:
             if time<0:
                 time=0
             cherrypy.session['time']=time
+
+        if not cherrypy.request.params.get('maxWidth'):
+            maxWidth = '440'
+        else:
+            maxWidth = cherrypy.request.params.get('maxWidth')
+
+        if(int(maxWidth) < 440):
+            maxWidth = '440'
+
+        # The width passed to rrdtool does not include the sidebars
+        graphWidth = str(maxWidth)
+
         offset = cherrypy.session.get('time')
         graphTime = timeSeconds[timeChoices.index(timeChoice)]
-
         graphTimeStart=str(graphTime + offset)
         graphTimeEnd=str(offset)
         #Build the command string to make a graph from the database
         fd=NamedTemporaryFile(suffix='.png')
         graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --width 1170 --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
+        RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --full-size-mode --width "+graphWidth+" --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
         RrdGraphString1=RrdGraphString1+"DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
@@ -192,9 +203,20 @@ class PellMonWebb:
             #Build the command string to make a graph from the database
             now=int(time())/3600*3600
 
+            if not cherrypy.request.params.get('maxWidth'):
+                maxWidth = '440';
+            else:
+                maxWidth = cherrypy.request.params.get('maxWidth')
+
+            if(int(maxWidth) < 440):
+                maxWidth = '440'
+
+            # The width passed to rrdtool does not include the sidebars
+            graphWidth = str(maxWidth)
+
             fd=NamedTemporaryFile(suffix='.png')
             consumption_file=fd.name
-            RrdGraphString1="rrdtool graph "+consumption_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 1170 --height 400 --end %u --start %u-86400s "%(now,now)
+            RrdGraphString1="rrdtool graph "+consumption_file+" --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
                 start=(now-h*3600-3600)
