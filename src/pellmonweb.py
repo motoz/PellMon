@@ -147,22 +147,26 @@ class PellMonWebb:
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
 
     @cherrypy.expose
-    def image(self, timeChoice=None, direction=None, **args):
+    def image(self, **args):
         if not polling:
-             return None
-
-        # Set graph time scale with first positional parameter
-        if timeChoice:
-            cherrypy.session['timeChoice'] = timeChoice
-        # Use 'time1h' if never set
+            return None
         try:
-            timeChoice = timeChoices.index(cherrypy.session['timeChoice'])
+            timeChoice = args['timeChoice']
+            timeChoice = timeChoices.index(timeChoice)
+            cherrypy.session['timeChoice'] = timeChoice
         except:
-            timeChoice = timeChoices.index('time1h')
+            pass
+        print timeChoice
+        try:
+            timeChoice = cherrypy.session['timeChoice']
+            seconds=timeSeconds[timeChoice]
+        except:
+            seconds=timeSeconds[0]
+        print timeChoice
 
         # Set time offset with ?time=xx 
         try:
-            time = int(args.get('time'))
+            time = int(args['time'])
             # And save it in the session
             cherrypy.session['time'] = str(time)
         except:
@@ -171,14 +175,18 @@ class PellMonWebb:
             except:
                 time = 0
 
-        seconds=timeSeconds[timeChoice]
-        if direction == 'left':
-            time=time+seconds
-        elif direction == 'right':
-            time=time-seconds
-            if time<0:
-                time=0
-        cherrypy.session['time']=str(time)
+
+        try:
+            direction = args['direction']
+            if direction == 'left':
+                time=time+seconds
+            elif direction == 'right':
+                time=time-seconds
+                if time<0:
+                    time=0
+            cherrypy.session['time']=str(time)
+        except:
+            pass
 
         try:
             graphWidth = args.get('maxWidth')

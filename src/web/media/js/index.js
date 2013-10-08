@@ -38,8 +38,9 @@ var refreshGraph = function() {
 		maxWidth = getMaxWidth();
 
 	graph.data('direction', '');
+	graph.data('timeChoice', '');
 
-	graph.attr('src', graph.data('src') + '/' + timeChoice + '/' + direction + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+	graph.attr('src', graph.data('src') + '?timeChoice=' + timeChoice + '&direction=' + direction + '&random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var refreshConsumption = function() {
