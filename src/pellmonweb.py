@@ -147,47 +147,63 @@ class PellMonWebb:
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
 
     @cherrypy.expose
-    def image(self, timeChoice='time1h', direction='', **args):
+    def image(self, timeChoice=None, direction=None, **args):
         if not polling:
              return None
-        if not cherrypy.session.get('timeChoice'):
-            cherrypy.session['timeChoice'] = 'time1h'
-        if not cherrypy.session.get('time'):
-            cherrypy.session['time'] = 0
-        if not timeChoice == cherrypy.session.get('timeChoice'):
+
+        # Set graph time scale with first positional parameter
+        if timeChoice:
             cherrypy.session['timeChoice'] = timeChoice
+        # Use 'time1h' if never set
+        try:
+            timeChoice = timeChoices.index(cherrypy.session['timeChoice'])
+        except:
+            timeChoice = timeChoices.index('time1h')
+
+        # Set time offset with ?time=xx 
+        try:
+            time = int(args.get('time'))
+            # And save it in the session
+            cherrypy.session['time'] = str(time)
+        except:
+            try:
+                time = int(cherrypy.session['time'])
+            except:
+                time = 0
+
+        seconds=timeSeconds[timeChoice]
         if direction == 'left':
-            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            cherrypy.session['time']=cherrypy.session['time']+seconds
+            time=time+seconds
         elif direction == 'right':
-            seconds=timeSeconds[timeChoices.index(cherrypy.session['timeChoice'])]
-            time=cherrypy.session['time']-seconds
+            time=time-seconds
             if time<0:
                 time=0
-            cherrypy.session['time']=time
+        cherrypy.session['time']=str(time)
 
-        if not cherrypy.request.params.get('maxWidth'):
-            maxWidth = '440' # Default bootstrap 3 grid size
-        else:
-            maxWidth = cherrypy.request.params.get('maxWidth')
+        try:
+            graphWidth = args.get('maxWidth')
+            test = int(graphWidth) # should be int
+        except:
+            graphWidth = '440' # Default bootstrap 3 grid size
 
-        # The width passed to rrdtool does not include the sidebars
-        graphWidth = str(int(maxWidth))
+        graphTimeStart=str(seconds + time)
+        graphTimeEnd=str(time)
 
-        offset = cherrypy.session.get('time')
-        graphTime = timeSeconds[timeChoices.index(timeChoice)]
-        graphTimeStart=str(graphTime + offset)
-        graphTimeEnd=str(offset)
         #Build the command string to make a graph from the database
         fd=NamedTemporaryFile(suffix='.png')
         graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --lower-limit 0 --right-axis 1:0 --full-size-mode --width "+graphWidth+" --height 400 --end now-"+graphTimeEnd+"s --start now-"+graphTimeStart+"s "
-        RrdGraphString1=RrdGraphString1+"DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
+        if int(graphWidth)>500:
+            rightaxis = '--right-axis 1:0'
+        else:
+            rightaxis = ''
+        RrdGraphString1 = "rrdtool graph "+ graph_file + ' --disable-rrdtool-tag' +\
+            " --lower-limit 0 %s --full-size-mode --width "%rightaxis + graphWidth + \
+            " --height 400 --end now-" + graphTimeEnd + "s --start now-" + graphTimeStart + "s " + \
+            "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
         RrdGraphString1=RrdGraphString1+">>/dev/null"
-
         os.system(RrdGraphString1)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return serve_fileobj(fd, content_type='image/png')
@@ -210,7 +226,7 @@ class PellMonWebb:
 
             fd=NamedTemporaryFile(suffix='.png')
             consumption_file=fd.name
-            RrdGraphString1="rrdtool graph "+consumption_file+" --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
+            RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
                 start=(now-h*3600-3600)
