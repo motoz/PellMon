@@ -167,15 +167,12 @@ class PellMonWebb:
             cherrypy.session['time']=time
 
         if not cherrypy.request.params.get('maxWidth'):
-            maxWidth = '440'
+            maxWidth = '440' # Default bootstrap 3 grid size
         else:
             maxWidth = cherrypy.request.params.get('maxWidth')
 
-        if(int(maxWidth) < 440):
-            maxWidth = '440'
-
         # The width passed to rrdtool does not include the sidebars
-        graphWidth = str(maxWidth)
+        graphWidth = str(int(maxWidth))
 
         offset = cherrypy.session.get('time')
         graphTime = timeSeconds[timeChoices.index(timeChoice)]
@@ -204,15 +201,12 @@ class PellMonWebb:
             now=int(time())/3600*3600
 
             if not cherrypy.request.params.get('maxWidth'):
-                maxWidth = '440';
+                maxWidth = '440'; # Default bootstrap 3 grid size
             else:
                 maxWidth = cherrypy.request.params.get('maxWidth')
 
-            if(int(maxWidth) < 440):
-                maxWidth = '440'
-
             # The width passed to rrdtool does not include the sidebars
-            graphWidth = str(maxWidth)
+            graphWidth = str(int(maxWidth))
 
             fd=NamedTemporaryFile(suffix='.png')
             consumption_file=fd.name
