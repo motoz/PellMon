@@ -208,7 +208,7 @@ class PellMonWebb:
             " --height 400 --end now-" + graphTimeEnd + "s --start now-" + graphTimeStart + "s " + \
             "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
-            if cherrypy.session.get(value)=='yes' and colorsDict.has_key(key):
+            if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
         RrdGraphString1=RrdGraphString1+">>/dev/null"
         os.system(RrdGraphString1)
@@ -354,19 +354,16 @@ class PellMonWebb:
 
     @cherrypy.expose
     def graphconf(self):
-        if not cherrypy.session.get('timeChoice'):
-            cherrypy.session['timeChoice']=timeChoices[0]
         checkboxes=[]
         empty=True
         for key, val in polldata:
             if colorsDict.has_key(key):
-                if cherrypy.session.get(val)=='yes':
+                if cherrypy.session.get(val) in ['yes', None]:
                     checkboxes.append((val,True))
-                    empty=False
                 else:
                     checkboxes.append((val,''))
         tmpl = lookup.get_template("graphconf.html")
-        return tmpl.render(checkboxes=checkboxes, empty=empty, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
+        return tmpl.render(checkboxes=checkboxes, empty=False)
 
     @cherrypy.expose
     def index(self, **args):
@@ -377,7 +374,7 @@ class PellMonWebb:
                 if cherrypy.session.get(val)=='yes':
                     empty=False
         tmpl = lookup.get_template("index.html")
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=empty, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
 
 def parameterReader(q):
     parameterlist=dbus.getdb()
