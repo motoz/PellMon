@@ -1,14 +1,12 @@
-
-
 function getLog() {
+	var container = $('#lines');
+
 	$.get(
-		
-		'/logview/getlines?linenum='+linecount,
+		'/logview/getlines?linenum='+container.data('lines'),
 		function(data) {
-            $("#lines").html(data)
+            container.append(data)
 		}
 	);
 }
-
 
 getLog();
