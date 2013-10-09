@@ -156,13 +156,12 @@ class PellMonWebb:
             cherrypy.session['timeChoice'] = timeChoice
         except:
             pass
-        print timeChoice
+
         try:
             timeChoice = cherrypy.session['timeChoice']
             seconds=timeSeconds[timeChoice]
         except:
             seconds=timeSeconds[0]
-        print timeChoice
 
         # Set time offset with ?time=xx 
         try:
