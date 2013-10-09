@@ -21,6 +21,8 @@ nobase_dist_foohtml_DATA = \
 	media/bootstrap/css/bootstrap-responsive.css \
 	media/favicon.ico \
 	media/pellmon.svg \
+	media/pellmon.css \
+	media/img/spinner.gif \
 	media/bs3/fonts/glyphicons-halflings-regular.svg \
 	media/bs3/fonts/glyphicons-halflings-regular.woff \
 	media/bs3/fonts/glyphicons-halflings-regular.eot \
