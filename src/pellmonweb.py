@@ -36,7 +36,7 @@ from web import __file__ as webpath
 import argparse
 import pwd
 import grp
-from tempfile import NamedTemporaryFile
+import subprocess
 
 class DbusNotConnected(Exception):
     pass
@@ -197,8 +197,7 @@ class PellMonWebb:
         graphTimeEnd=str(time)
 
         #Build the command string to make a graph from the database
-        fd=NamedTemporaryFile(suffix='.png')
-        graph_file=fd.name
+        graph_file='-'
         if int(graphWidth)>500:
             rightaxis = '--right-axis 1:0'
         else:
@@ -210,10 +209,10 @@ class PellMonWebb:
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
-        RrdGraphString1=RrdGraphString1+">>/dev/null"
-        os.system(RrdGraphString1)
+        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(fd, content_type='image/png')
+        return serve_fileobj(cmd.stdout)
 
     @cherrypy.expose
     def consumption(self, **args):
@@ -231,8 +230,7 @@ class PellMonWebb:
             # The width passed to rrdtool does not include the sidebars
             graphWidth = str(int(maxWidth))
 
-            fd=NamedTemporaryFile(suffix='.png')
-            consumption_file=fd.name
+            consumption_file = '-'
             RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
@@ -241,10 +239,10 @@ class PellMonWebb:
                 RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
 
             RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"24h consumption %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
-            RrdGraphString1=RrdGraphString1+" >>/dev/null"
-            os.system(RrdGraphString1)
+            cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+            cmd.wait()
             cherrypy.response.headers['Pragma'] = 'no-cache'
-            return serve_fileobj(fd, content_type='image/png')
+            return serve_fileobj(cmd.stdout)
 
     @cherrypy.expose
     @require() #requires valid login
