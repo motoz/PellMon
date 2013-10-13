@@ -29,10 +29,9 @@ import time
 from smtplib import SMTP as smtp
 from email.mime.text import MIMEText as mimetext
 import argparse
-import pwd
-import grp
-
-from Scotteprotocol import Protocol, getDbWithTags, dataDescriptions
+import pwd, grp
+from Pellmonsrv.yapsy.PluginManager import PluginManager
+from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
 
 class MyDBUSService(dbus.service.Object):
@@ -209,51 +208,6 @@ def sigterm_handler(signum, frame):
         logger.info('exiting')
         sys.exit(0)
     
-def settings_pollthread(settings):
-    """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
-    global conf
-    allparameters = protocol.getDataBase()    
-    for item in settings:
-        if item in allparameters:
-            param = allparameters[item]
-            if hasattr(param, 'max') and hasattr(param, 'min') and hasattr(param, 'frame'):
-                paramrange = param.max - param.min
-                try:
-                    value = protocol.getItem(item)
-                    if item in conf.dbvalues:
-                        try:
-                            logline=''
-                            if not value==conf.dbvalues[item]:
-                                # These are settings but their values are changed by the firmware also, 
-                                # so small changes are suppressed from the log
-                                selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
-                                try:
-                                    change = abs(float(value) - float(conf.dbvalues[item]))
-                                    squelch = selfmodifying_params[item]
-                                    # These items change by themselves, log change only if bigger than 0.3% of range
-                                    if change > squelch:
-                                        # Don't log clock turn around
-                                        if not (item == 'time_minutes' and change == 1439): 
-                                            logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
-                                            logger.info(logline)
-                                            conf.tickcounter=int(time.time())
-                                except:
-                                    logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
-                                    logger.info(logline)
-                                    conf.tickcounter=int(time.time())
-                                conf.dbvalues[item]=value
-                                if logline and conf.email and 'parameter' in conf.emailconditions:
-                                    sendmail(logline)
-                        except:
-                            logger.info('trouble with parameter change detection, item:%s'%item)
-                    else:
-                        conf.dbvalues[item]=value        
-                except:
-                    pass
-    # run this thread again after 30 seconds        
-    ht = threading.Timer(30, settings_pollthread, args=(settings,))
-    ht.setDaemon(True)
-    ht.start()
 
 def sendmail(msg):
     ht = threading.Timer(2, sendmail_thread, args=(msg,))
@@ -285,22 +239,13 @@ class MyDaemon(Daemon):
 
         logger.info('starting pelletMonitor')
 
-        # Initialize protocol and setup the database according to version_string
-        global protocol 
-        global conf
-        try:
-            protocol = Protocol(conf.serial_device, conf.version_string)
-        except:
-            conf.polling=False
-            logger.info('protocol setup failed')
-        
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()    
         DBUSMAINLOOP = gobject.MainLoop()
         DBusGMainLoop(set_as_default=True)
         myservice = MyDBUSService(conf.dbus)
-        
+
         # Create SIGTERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
 
@@ -324,12 +269,19 @@ class MyDaemon(Daemon):
                 ht.setDaemon(True)
                 ht.start()
 
-        # Create and start settings_pollthread to log settings changed locally
-        settings = getDbWithTags(('Settings',))        
-        ht = threading.Timer(4, settings_pollthread, args=(settings,))
-        ht.setDaemon(True)
-        ht.start()
-       
+        # Load all plugins in the plugins directory.
+        manager = PluginManager(categories_filter={ "Protocols": protocols})
+        manager.setPluginPlaces(["/home/anders/Dokument/PellMon/src/Pellmonsrv/plugins"])
+        manager.collectPlugins()
+
+        print manager.getCategories()
+
+        # Initialize all plugins
+        for plugin in manager.getPluginsOfCategory('Protocols'):
+            plugin.plugin_object.setup(conf)
+            global protocol
+            protocol = plugin.plugin_object
+
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
         
@@ -403,7 +355,7 @@ class config:
             self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
 
         # create logger
-        logger = logging.getLogger('pellMon')
+        logger = logging.getLogger('yapsy')
         loglevel = parser.get('conf', 'loglevel')
         loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
         try:
