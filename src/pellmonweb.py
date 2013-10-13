@@ -28,11 +28,11 @@ from cherrypy.lib import caching
 from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
-from web import *
+from Pellmonweb import *
 from time import time
 import threading
 import sys
-from web import __file__ as webpath
+from Pellmonweb import __file__ as webpath
 import argparse
 import pwd
 import grp

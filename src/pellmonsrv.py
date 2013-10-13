@@ -32,7 +32,8 @@ import argparse
 import pwd
 import grp
 
-from srv import Protocol, Daemon, getDbWithTags, dataDescriptions
+from Scotteprotocol import Protocol, getDbWithTags, dataDescriptions
+from Pellmonsrv import Daemon
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""

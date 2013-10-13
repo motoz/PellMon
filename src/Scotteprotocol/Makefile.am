@@ -1,5 +1,4 @@
 srv_PYTHON = \
-	daemon.py \
 	datamap.py \
 	datamenu.py \
 	descriptions.py \
@@ -9,4 +8,4 @@ srv_PYTHON = \
 	protocol.py \
 	__init__.py 
 
-srvdir = $(pythondir)/srv
+srvdir = $(pythondir)/Scotteprotocol
