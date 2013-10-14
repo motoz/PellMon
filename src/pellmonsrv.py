@@ -47,18 +47,18 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
-        return protocol.getItem(param)
+        return protocol.protocol.getItem(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return protocol.setItem(param, value)
+        return protocol.protocol.setItem(param, value)
 
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
         l=[]
-        dataBase = protocol.getDataBase()
+        dataBase = protocol.protocol.getDataBase()
         for item in dataBase:
             l.append(item)
         l.sort()
@@ -71,7 +71,7 @@ class MyDBUSService(dbus.service.Object):
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
         l=[]
-        allparameters = protocol.getDataBase()
+        allparameters = protocol.protocol.getDataBase()
         filteredParams = getDbWithTags(tags)
         params = []
         for param in filteredParams:
@@ -104,7 +104,7 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetDBwithTags(self, tags):
         """Get the menutags for param"""
-        allparameters = protocol.getDataBase()
+        allparameters = protocol.protocol.getDataBase()
         filteredParams = getDbWithTags(tags)            
         params = []
         for param in filteredParams:
@@ -129,10 +129,10 @@ def pollThread():
                 else:
                     items.append('U')
             else:
-                items.append(protocol.getItem(data))
+                items.append(protocol.protocol.getItem(data))
         # Log changes to 'mode' and 'alarm' here, their data frame is already read here anyway
         for param in ('mode', 'alarm'):
-            value = protocol.getItem(param)
+            value = protocol.protocol.getItem(param)
             if param in conf.dbvalues:
                 if not value==conf.dbvalues[param]:
                     logline='%s changed from %s to %s'%(param, conf.dbvalues[param], value)
@@ -151,7 +151,7 @@ def pollThread():
         logger.debug('   Trying Z01...')
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            protocol.getItem('oxygen_regulation')
+            protocol.protocol.getItem('oxygen_regulation')
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
     
@@ -271,7 +271,7 @@ class MyDaemon(Daemon):
 
         # Load all plugins in the plugins directory.
         manager = PluginManager(categories_filter={ "Protocols": protocols})
-        manager.setPluginPlaces(["/home/anders/Dokument/PellMon/src/Pellmonsrv/plugins"])
+        manager.setPluginPlaces(["Pellmonsrv/plugins"])
         manager.collectPlugins()
 
         print manager.getCategories()
@@ -480,6 +480,5 @@ if __name__ == "__main__":
     global conf
     conf = config(config_file)
     conf.dbus = args.DBUS
-
     commands[args.command]()
 

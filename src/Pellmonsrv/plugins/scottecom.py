@@ -39,52 +39,52 @@ class scottecom(protocols):
 
         # Create and start settings_pollthread to log settings changed locally
         settings = getDbWithTags(('Settings',))        
-        ht = threading.Timer(4, settings_pollthread, args=(settings,))
+        ht = threading.Timer(4, self.settings_pollthread, args=(settings,))
         ht.setDaemon(True)
         ht.start()
 
-def settings_pollthread(settings):
-    """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
-    global conf
-    allparameters = protocol.getDataBase()    
-    for item in settings:
-        if item in allparameters:
-            param = allparameters[item]
-            if hasattr(param, 'max') and hasattr(param, 'min') and hasattr(param, 'frame'):
-                paramrange = param.max - param.min
-                try:
-                    value = protocol.getItem(item)
-                    if item in conf.dbvalues:
-                        try:
-                            logline=''
-                            if not value==conf.dbvalues[item]:
-                                # These are settings but their values are changed by the firmware also, 
-                                # so small changes are suppressed from the log
-                                selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
-                                try:
-                                    change = abs(float(value) - float(conf.dbvalues[item]))
-                                    squelch = selfmodifying_params[item]
-                                    # These items change by themselves, log change only if bigger than 0.3% of range
-                                    if change > squelch:
-                                        # Don't log clock turn around
-                                        if not (item == 'time_minutes' and change == 1439): 
-                                            logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
-                                            logger.info(logline)
-                                            conf.tickcounter=int(time.time())
-                                except:
-                                    logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
-                                    logger.info(logline)
-                                    conf.tickcounter=int(time.time())
-                                conf.dbvalues[item]=value
-                                if logline and conf.email and 'parameter' in conf.emailconditions:
-                                    sendmail(logline)
-                        except:
-                            logger.info('trouble with parameter change detection, item:%s'%item)
-                    else:
-                        conf.dbvalues[item]=value        
-                except:
-                    pass
-    # run this thread again after 30 seconds        
-    ht = threading.Timer(30, settings_pollthread, args=(settings,))
-    ht.setDaemon(True)
-    ht.start()
+    def settings_pollthread(self, settings):
+        """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
+        global conf
+        allparameters = self.protocol.getDataBase()    
+        for item in settings:
+            if item in allparameters:
+                param = allparameters[item]
+                if hasattr(param, 'max') and hasattr(param, 'min') and hasattr(param, 'frame'):
+                    paramrange = param.max - param.min
+                    try:
+                        value = self.protocol.getItem(item)
+                        if item in conf.dbvalues:
+                            try:
+                                logline=''
+                                if not value==conf.dbvalues[item]:
+                                    # These are settings but their values are changed by the firmware also, 
+                                    # so small changes are suppressed from the log
+                                    selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
+                                    try:
+                                        change = abs(float(value) - float(conf.dbvalues[item]))
+                                        squelch = selfmodifying_params[item]
+                                        # These items change by themselves, log change only if bigger than 0.3% of range
+                                        if change > squelch:
+                                            # Don't log clock turn around
+                                            if not (item == 'time_minutes' and change == 1439): 
+                                                logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
+                                                logger.info(logline)
+                                                conf.tickcounter=int(time.time())
+                                    except:
+                                        logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
+                                        logger.info(logline)
+                                        conf.tickcounter=int(time.time())
+                                    conf.dbvalues[item]=value
+                                    if logline and conf.email and 'parameter' in conf.emailconditions:
+                                        sendmail(logline)
+                            except:
+                                logger.info('trouble with parameter change detection, item:%s'%item)
+                        else:
+                            conf.dbvalues[item]=value        
+                    except:
+                        pass
+        # run this thread again after 30 seconds        
+        ht = threading.Timer(30, self.settings_pollthread, args=(settings,))
+        ht.setDaemon(True)
+        ht.start()
