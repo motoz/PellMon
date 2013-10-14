@@ -27,4 +27,6 @@ class protocols(IPlugin):
         pass
     def setItem(self, item, value):
         pass
+    def getDbWithTags(self, tags):
+        pass
 

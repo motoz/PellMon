@@ -72,7 +72,7 @@ class MyDBUSService(dbus.service.Object):
         """Get list of all data/parameter/command items"""
         l=[]
         allparameters = protocol.protocol.getDataBase()
-        filteredParams = getDbWithTags(tags)
+        filteredParams = protocol.getDbWithTags(tags)
         params = []
         for param in filteredParams:
             if param in allparameters:
@@ -92,9 +92,9 @@ class MyDBUSService(dbus.service.Object):
                     data['type']=('R')
             else:
                 data['type']=('W')
-            data['longname'] = dataDescriptions[item][0]
-            data['unit'] = dataDescriptions[item][1]
-            data['description'] = dataDescriptions[item][2]
+            data['longname'] = protocol.dataDescriptions[item][0]
+            data['unit'] = protocol.dataDescriptions[item][1]
+            data['description'] = protocol.dataDescriptions[item][2]
             l.append(data)
         if l==[]:
             return ['unsupported_version']

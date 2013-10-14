@@ -42,6 +42,10 @@ class scottecom(protocols):
         ht = threading.Timer(4, self.settings_pollthread, args=(settings,))
         ht.setDaemon(True)
         ht.start()
+        self.dataDescriptions = dataDescriptions
+
+    def getDbWithTags(self, tags):
+        return getDbWithTags(tags)
 
     def settings_pollthread(self, settings):
         """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
