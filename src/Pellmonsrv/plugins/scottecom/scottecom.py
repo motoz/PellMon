@@ -16,10 +16,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from Scotteprotocol import Protocol, getDbWithTags, dataDescriptions
+from Scotteprotocol import Protocol
 import logging
 import threading
 from Pellmonsrv.plugin_categories import protocols
+from menus import getDbWithTags
+from descriptions import dataDescriptions
 
 class scottecom(protocols):
     def setup(self, conf):
@@ -35,7 +37,7 @@ class scottecom(protocols):
             self.protocol = Protocol(self.conf.serial_device, self.conf.version_string)
         except:
             self.conf.polling=False
-            logger.info('scottecom protocol setup failed')
+            self.logger.info('scottecom protocol setup failed')
 
         # Create and start settings_pollthread to log settings changed locally
         settings = getDbWithTags(('Settings',))        
