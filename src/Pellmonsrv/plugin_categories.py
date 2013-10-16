@@ -20,13 +20,16 @@ from Pellmonsrv.yapsy.IPlugin import IPlugin
 
 class protocols(IPlugin):
     """Plugins of this class read and write data"""
-    def setup(self, conf):
-        print "hej"
-        pass
+    def activate(self, conf):
+        self.conf = conf
+        IPlugin.activate(self)
+        
     def getItem(self, item):
         pass
+        
     def setItem(self, item, value):
         pass
+        
     def getDbWithTags(self, tags):
         pass
 

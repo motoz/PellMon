@@ -24,9 +24,12 @@ from menus import getDbWithTags
 from descriptions import dataDescriptions
 
 class scottecom(protocols):
-    def setup(self, conf):
+    def __init__(self):
+        protocols.__init__(self)
+        
+    def activate(self, conf):
         print "scottecom"
-        self.conf = conf
+        protocols.activate(self, conf)
 
         self.logger = logging.getLogger('yapsy')
 
@@ -45,6 +48,7 @@ class scottecom(protocols):
         ht.setDaemon(True)
         ht.start()
         self.dataDescriptions = dataDescriptions
+
 
     def getDbWithTags(self, tags):
         return getDbWithTags(tags)
