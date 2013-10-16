@@ -27,7 +27,7 @@ class protocols(IPlugin):
         self.glob = glob
         IPlugin.activate(self)
 
-    def sendmail(msg)
+    def sendmail(msg):
         glob['sendmail'](msg)
 
     def getItem(self, item):
