@@ -278,7 +278,7 @@ class MyDaemon(Daemon):
 
         # Initialize all plugins
         for plugin in manager.getPluginsOfCategory('Protocols'):
-            plugin.plugin_object.activate(conf)
+            plugin.plugin_object.activate(globals())
             global protocol
             protocol = plugin.plugin_object
 

@@ -20,10 +20,16 @@ from Pellmonsrv.yapsy.IPlugin import IPlugin
 
 class protocols(IPlugin):
     """Plugins of this class read and write data"""
-    def activate(self, conf):
-        self.conf = conf
+    def activate(self, glob):
+        # Confuguration is in global 'conf'
+        self.conf = glob['conf']
+        # Save globals for plugin access to everything
+        self.glob = glob
         IPlugin.activate(self)
-        
+
+    def sendmail(msg)
+        glob['sendmail'](msg)
+
     def getItem(self, item):
         pass
         

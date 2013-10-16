@@ -27,9 +27,9 @@ class scottecom(protocols):
     def __init__(self):
         protocols.__init__(self)
         
-    def activate(self, conf):
+    def activate(self, glob):
         print "scottecom"
-        protocols.activate(self, conf)
+        protocols.activate(self, glob)
 
         self.logger = logging.getLogger('yapsy')
 
@@ -49,14 +49,16 @@ class scottecom(protocols):
         ht.start()
         self.dataDescriptions = dataDescriptions
 
-
     def getDbWithTags(self, tags):
         return getDbWithTags(tags)
 
     def settings_pollthread(self, settings):
         """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
-        global conf
         allparameters = self.protocol.getDataBase()    
+        try:
+            d = self.conf.dbvalues
+        except:
+            self.conf.dbvalues={}
         for item in settings:
             if item in allparameters:
                 param = allparameters[item]
@@ -64,34 +66,34 @@ class scottecom(protocols):
                     paramrange = param.max - param.min
                     try:
                         value = self.protocol.getItem(item)
-                        if item in conf.dbvalues:
+                        if item in self.conf.dbvalues:
                             try:
                                 logline=''
-                                if not value==conf.dbvalues[item]:
+                                if not value==self.conf.dbvalues[item]:
                                     # These are settings but their values are changed by the firmware also, 
                                     # so small changes are suppressed from the log
                                     selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
                                     try:
-                                        change = abs(float(value) - float(conf.dbvalues[item]))
+                                        change = abs(float(value) - float(self.conf.dbvalues[item]))
                                         squelch = selfmodifying_params[item]
-                                        # These items change by themselves, log change only if bigger than 0.3% of range
+                                        # These items change by themselves, log change only squelch is exceeded
                                         if change > squelch:
                                             # Don't log clock turn around
                                             if not (item == 'time_minutes' and change == 1439): 
-                                                logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
+                                                logline = 'Parameter %s changed from %s to %s'%(item, self.conf.dbvalues[item], value)
                                                 logger.info(logline)
-                                                conf.tickcounter=int(time.time())
+                                                self.conf.tickcounter=int(time.time())
                                     except:
                                         logline = 'Parameter %s changed from %s to %s'%(item, conf.dbvalues[item], value)
                                         logger.info(logline)
-                                        conf.tickcounter=int(time.time())
-                                    conf.dbvalues[item]=value
-                                    if logline and conf.email and 'parameter' in conf.emailconditions:
-                                        sendmail(logline)
+                                        self.conf.tickcounter=int(time.time())
+                                    self.conf.dbvalues[item]=value
+                                    if logline and self.conf.email and 'parameter' in self.conf.emailconditions:
+                                        self.sendmail(logline)
                             except:
                                 logger.info('trouble with parameter change detection, item:%s'%item)
                         else:
-                            conf.dbvalues[item]=value        
+                            self.conf.dbvalues[item]=value        
                     except:
                         pass
         # run this thread again after 30 seconds        
