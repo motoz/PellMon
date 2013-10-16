@@ -30,6 +30,9 @@ class protocols(IPlugin):
     def sendmail(msg):
         glob['sendmail'](msg)
 
+    def settings_changed(oldvalue, newvalue):
+        glob['settings_changed'](oldvalue, newvalue)
+
     def getItem(self, item):
         pass
         

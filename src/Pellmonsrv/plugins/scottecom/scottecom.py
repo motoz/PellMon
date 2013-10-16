@@ -77,12 +77,8 @@ class scottecom(protocols):
                         if (item == 'time_minutes' and change == 1439): 
                             log_change = False
                         if log_change:
-                            logline = 'Parameter %s changed from %s to %s'%(item, self.conf.dbvalues[item], value)
-                            logger.info(logline)
-                            self.conf.tickcounter=int(time.time())
+                            self.settings_changed(self.conf.dbvalues[item], value)
                         self.conf.dbvalues[item]=value
-                        if logline and self.conf.email and 'parameter' in self.conf.emailconditions:
-                            self.sendmail(logline)
                 else:
                     self.conf.dbvalues[item]=value
             except:

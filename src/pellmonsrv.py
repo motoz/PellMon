@@ -154,7 +154,15 @@ def pollThread():
             protocol.protocol.getItem('oxygen_regulation')
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
-    
+
+def settings_changed(oldvalue, newvalue):
+    """ Called by the protocols when they detect that a setting has changed """
+    logline = 'Parameter %s changed from %s to %s'%(item, oldvalue, newvalue)
+    logger.info(logline)
+    global conf
+    conf.tickcounter=int(time.time())
+    if self.conf.email and 'parameter' in self.conf.emailconditions:
+        sendmail(logline)
 
 def periodic_signal_handler(signum, frame):
     """Periodic signal handler. Start pollThread to do the work"""
