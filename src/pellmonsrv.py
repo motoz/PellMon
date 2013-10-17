@@ -36,6 +36,7 @@ from Pellmonsrv import Daemon
 
 class Database(object):
     def __init__(self):
+    
         class getset:
             def __init__(self, item, obj):
                 self.item = item
@@ -44,6 +45,7 @@ class Database(object):
                 return self.obj.protocol.getItem(self.item)
             def setItem(self, value):
                 return self.obj.protocol.setItem(self.item, value)
+
         self.items={}
         self.protocols=[]
         # Initialize and activate all plugins of 'Protocols' category
@@ -56,10 +58,10 @@ class Database(object):
             try:
                 plugin.plugin_object.activate(globals())
                 self.protocols.append(plugin)
-                for item in plugin.plugin_object.protocol.getDataBase():
+                for item in plugin.plugin_object.getDataBase():
                     self.items[item] = getset(item, plugin.plugin_object)
             except:
-                logger.info('Plugin init failed')
+                logger.info('Plugin %s init failed'%plugin.name)
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -84,63 +86,20 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
-        l=[]
-        for protocol in database.protocols:
-            db = protocol.plugin_object.protocol.getDataBase()
-            for item in db:
-                l.append(item)
-        l.sort()
-        if l==[]:
-            return ['unsupported_version']
-        else:
-            return l
+        db=[]
+        for plugin in database.protocols:
+            db = db + plugin.plugin_object.getDataBase()
+        db.sort()
+        return db
 
     @dbus.service.method(dbus_interface='org.pellmon.int', in_signature='as', out_signature='aa{sv}')
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
-        l=[]
-        allparameters = database.protocols[0].plugin_object.protocol.getDataBase()
-        filteredParams = database.protocols[0].plugin_object.getDbWithTags(tags)
-        params = []
-        for param in filteredParams:
-            if param in allparameters:
-                params.append(param)
-        params.sort()
-        for item in params:
-            data={}
-            data['name']=item
-            if hasattr(allparameters[item], 'max'): 
-                data['max']=(allparameters[item].max)
-            if hasattr(allparameters[item], 'min'): 
-                data['min']=(allparameters[item].min)
-            if hasattr(allparameters[item], 'frame'): 
-                if hasattr(allparameters[item], 'address'): 
-                    data['type']=('R/W')
-                else:
-                    data['type']=('R')
-            else:
-                data['type']=('W')
-            data['longname'] = database.protocols[0].plugin_object.dataDescriptions[item][0]
-            data['unit'] = database.protocols[0].plugin_object.dataDescriptions[item][1]
-            data['description'] = database.protocols[0].plugin_object.dataDescriptions[item][2]
-            l.append(data)
-        if l==[]:
-            return ['unsupported_version']
-        else:
-            return l
-                
-    @dbus.service.method('org.pellmon.int')
-    def GetDBwithTags(self, tags):
-        """Get the menutags for param"""
-        allparameters = protocol.protocol.getDataBase()
-        filteredParams = getDbWithTags(tags)            
-        params = []
-        for param in filteredParams:
-            if param in allparameters:
-                params.append(param)
-        params.sort()
-        return params            
-        
+        db=[]
+        for plugin in database.protocols:
+            db = db + plugin.plugin_object.GetFullDB(tags)
+        return db
+
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
@@ -179,7 +138,7 @@ def pollThread():
         logger.debug('   Trying Z01...')
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            protocol.protocol.getItem('oxygen_regulation')
+            database.items['oxygen_regulation'].getItem()
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
 

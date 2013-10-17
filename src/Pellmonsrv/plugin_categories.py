@@ -19,28 +19,37 @@
 from Pellmonsrv.yapsy.IPlugin import IPlugin
 
 class protocols(IPlugin):
-    """Plugins of this class read and write data"""
+    """This is the interface for plugins of class protocols"""
     def activate(self, glob):
-        # Confuguration is in global 'conf'
-        self.conf = glob['conf']
         # Save globals for plugin access to everything
         self.glob = glob
+        # Configuration is in global 'conf'
+        self.conf = glob['conf']
         IPlugin.activate(self)
 
-    def sendmail(msg):
-        glob['sendmail'](msg)
-
-    def settings_changed(item, oldvalue, newvalue):
-        glob['settings_changed'](item, oldvalue, newvalue)
-
     def getItem(self, item):
+        """Return the value for one item"""
         return 'valuestring'
 
     def setItem(self, item, value):
+        """Set the value of one item"""
         return 'ok'
-        
-    def getDbWithTags(self, tags):
-        return ['item1', 'item2', 'item3']
+
+    def getDataBase(self):
+        """Return a list of item names"""
+        return []
 
     def GetFullDB(self, tags):
-        pass
+        """Return a list of dictionarys, each dictionary contains at least
+        'name':'item_name', 'type':'R|R/W|W'
+        and optionally 
+        'min', 'max', 'unit', 'longname', 'description' keys with string type values"""
+        return [{}]
+
+    def sendmail(msg):
+        """Callback to send mail message"""
+        glob['sendmail'](msg)
+
+    def settings_changed(item, oldvalue, newvalue):
+        """Callback from plugin when a changed setting value is detected"""
+        glob['settings_changed'](item, oldvalue, newvalue)

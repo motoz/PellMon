@@ -54,9 +54,13 @@ class scottecom(protocols):
     def setItem(self, item, value):
         return self.protocol.setItem(item, value)
 
+    def getDataBase(self):
+        db = self.protocol.getDataBase()
+        return db.keys()
+
     def getDbWithTags(self, tags):
         """Get the menutags for param"""
-        allparameters = self.protocol.getDataBase()
+        allparameters = self.getDataBase()
         filteredParams = menus.getDbWithTags(tags)            
         params = []
         for param in filteredParams:
@@ -68,7 +72,6 @@ class scottecom(protocols):
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
         l=[]
-        print tags
         allparameters = self.protocol.getDataBase()
         filteredParams = self.getDbWithTags(tags)
         params = []
@@ -90,14 +93,11 @@ class scottecom(protocols):
                     data['type']=('R')
             else:
                 data['type']=('W')
-            data['longname'] = protocol.dataDescriptions[item][0]
-            data['unit'] = protocol.dataDescriptions[item][1]
-            data['description'] = protocol.dataDescriptions[item][2]
+            data['longname'] = dataDescriptions[item][0]
+            data['unit'] = dataDescriptions[item][1]
+            data['description'] = dataDescriptions[item][2]
             l.append(data)
-        if l==[]:
-            return ['unsupported_version']
-        else:
-            return l
+        return l
 
     def settings_pollthread(self, settings):
         """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
