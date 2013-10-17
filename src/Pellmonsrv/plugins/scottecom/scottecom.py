@@ -41,9 +41,15 @@ class scottecom(protocols):
 
             # Create and start settings_pollthread to log settings changed locally
             settings = menus.getDbWithTags(('Settings',))
-            ht = threading.Timer(4, self.settings_pollthread, args=(settings,))
+            ht = threading.Timer(3, self.settings_pollthread, args=(settings,))
             ht.setDaemon(True)
             ht.start()
+
+            # Create and start alarm_pollthread to log settings changed locally
+            ht = threading.Timer(5, self.alarm_pollthread, args=(('mode', 'alarm'),))
+            ht.setDaemon(True)
+            ht.start()
+
             self.dataDescriptions = dataDescriptions
         except:
             self.logger.info('scottecom protocol setup failed')
@@ -124,12 +130,24 @@ class scottecom(protocols):
                             log_change = False
                         if log_change:
                             self.settings_changed(item, self.conf.dbvalues[item], value)
-                        self.conf.dbvalues[item]=value
-                else:
-                    self.conf.dbvalues[item]=value
+                self.conf.dbvalues[item]=value
             except:
                 pass
         # run this thread again after 30 seconds
         ht = threading.Timer(30, self.settings_pollthread, args=(settings,))
         ht.setDaemon(True)
         ht.start()
+
+    def alarm_pollthread(self, alarms):
+        # Log changes to 'mode' and 'alarm'
+        for param in alarms:
+            value = self.protocol.getItem(param)
+            if param in self.conf.dbvalues:
+                if not value==self.conf.dbvalues[param]:
+                    self.settings_changed(param, self.conf.dbvalues[item], value)
+            self.conf.dbvalues[param] = value
+        # run this thread again after 30 seconds
+        ht = threading.Timer(30, self.alarm_pollthread, args=(alarms,))
+        ht.setDaemon(True)
+        ht.start()
+

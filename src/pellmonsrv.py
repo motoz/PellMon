@@ -117,20 +117,6 @@ def pollThread():
                     itemlist.append('U')
             else:
                 itemlist.append(database.items[data].getItem())
-        # Log changes to 'mode' and 'alarm' here, their data frame is already read here anyway
-        for param in ('mode', 'alarm'):
-            value = database.items[param].getItem()
-            if param in conf.dbvalues:
-                if not value==conf.dbvalues[param]:
-                    logline='%s changed from %s to %s'%(param, conf.dbvalues[param], value)
-                    logger.info(logline)
-                    conf.tickcounter=int(time.time())
-                    if conf.email and param in conf.emailconditions:
-                        sendmail(logline)
-                    for data in conf.pollData:
-                        if data=='_logtick':
-                            itemlist.append(str(conf.tickcounter))
-            conf.dbvalues[param] = value
         s=':'.join(itemlist)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
