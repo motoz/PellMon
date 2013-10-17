@@ -30,15 +30,17 @@ class protocols(IPlugin):
     def sendmail(msg):
         glob['sendmail'](msg)
 
-    def settings_changed(oldvalue, newvalue):
-        glob['settings_changed'](oldvalue, newvalue)
+    def settings_changed(item, oldvalue, newvalue):
+        glob['settings_changed'](item, oldvalue, newvalue)
 
     def getItem(self, item):
-        pass
-        
+        return 'valuestring'
+
     def setItem(self, item, value):
-        pass
+        return 'ok'
         
     def getDbWithTags(self, tags):
-        pass
+        return ['item1', 'item2', 'item3']
 
+    def GetFullDB(self, tags):
+        pass

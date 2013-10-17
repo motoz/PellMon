@@ -34,6 +34,33 @@ from Pellmonsrv.yapsy.PluginManager import PluginManager
 from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
 
+class Database(object):
+    def __init__(self):
+        class getset:
+            def __init__(self, item, obj):
+                self.item = item
+                self.obj = obj
+            def getItem(self):
+                return self.obj.protocol.getItem(self.item)
+            def setItem(self, value):
+                return self.obj.protocol.setItem(self.item, value)
+        self.items={}
+        self.protocols=[]
+        # Initialize and activate all plugins of 'Protocols' category
+        global manager
+        manager = PluginManager(categories_filter={ "Protocols": protocols})
+        manager.setPluginPlaces(["Pellmonsrv/plugins"])
+        manager.collectPlugins()
+        print manager.getCategories()
+        for plugin in manager.getPluginsOfCategory('Protocols'):
+            try:
+                plugin.plugin_object.activate(globals())
+                self.protocols.append(plugin)
+                for item in plugin.plugin_object.protocol.getDataBase():
+                    self.items[item] = getset(item, plugin.plugin_object)
+            except:
+                logger.info('Plugin init failed')
+
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
     def __init__(self, bus='SESSION'):
@@ -47,20 +74,21 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
-        return protocol.protocol.getItem(param)
+        return database.items[param].getItem()
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return protocol.protocol.setItem(param, value)
+        return database.items[param].setItem(value)
 
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
         l=[]
-        dataBase = protocol.protocol.getDataBase()
-        for item in dataBase:
-            l.append(item)
+        for protocol in database.protocols:
+            db = protocol.plugin_object.protocol.getDataBase()
+            for item in db:
+                l.append(item)
         l.sort()
         if l==[]:
             return ['unsupported_version']
@@ -71,8 +99,8 @@ class MyDBUSService(dbus.service.Object):
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
         l=[]
-        allparameters = protocol.protocol.getDataBase()
-        filteredParams = protocol.getDbWithTags(tags)
+        allparameters = database.protocols[0].plugin_object.protocol.getDataBase()
+        filteredParams = database.protocols[0].plugin_object.getDbWithTags(tags)
         params = []
         for param in filteredParams:
             if param in allparameters:
@@ -92,9 +120,9 @@ class MyDBUSService(dbus.service.Object):
                     data['type']=('R')
             else:
                 data['type']=('W')
-            data['longname'] = protocol.dataDescriptions[item][0]
-            data['unit'] = protocol.dataDescriptions[item][1]
-            data['description'] = protocol.dataDescriptions[item][2]
+            data['longname'] = database.protocols[0].plugin_object.dataDescriptions[item][0]
+            data['unit'] = database.protocols[0].plugin_object.dataDescriptions[item][1]
+            data['description'] = database.protocols[0].plugin_object.dataDescriptions[item][2]
             l.append(data)
         if l==[]:
             return ['unsupported_version']
@@ -116,7 +144,7 @@ class MyDBUSService(dbus.service.Object):
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
-    items=[]
+    itemlist=[]
     global conf
     if not conf.polling:
         return
@@ -125,14 +153,14 @@ def pollThread():
             # 'special cases' handled here, name starting with underscore are not polled from the protocol 
             if data[0]=='_':
                 if data=='_logtick':
-                    items.append(str(conf.tickcounter))
+                    itemlist.append(str(conf.tickcounter))
                 else:
-                    items.append('U')
+                    itemlist.append('U')
             else:
-                items.append(protocol.protocol.getItem(data))
+                itemlist.append(database.items[data].getItem())
         # Log changes to 'mode' and 'alarm' here, their data frame is already read here anyway
         for param in ('mode', 'alarm'):
-            value = protocol.protocol.getItem(param)
+            value = database.items[param].getItem()
             if param in conf.dbvalues:
                 if not value==conf.dbvalues[param]:
                     logline='%s changed from %s to %s'%(param, conf.dbvalues[param], value)
@@ -142,9 +170,9 @@ def pollThread():
                         sendmail(logline)
                     for data in conf.pollData:
                         if data=='_logtick':
-                            items.append(str(conf.tickcounter))
+                            itemlist.append(str(conf.tickcounter))
             conf.dbvalues[param] = value
-        s=':'.join(items)
+        s=':'.join(itemlist)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
@@ -155,7 +183,7 @@ def pollThread():
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
 
-def settings_changed(oldvalue, newvalue):
+def settings_changed(item, oldvalue, newvalue):
     """ Called by the protocols when they detect that a setting has changed """
     logline = 'Parameter %s changed from %s to %s'%(item, oldvalue, newvalue)
     logger.info(logline)
@@ -278,17 +306,8 @@ class MyDaemon(Daemon):
                 ht.start()
 
         # Load all plugins in the plugins directory.
-        manager = PluginManager(categories_filter={ "Protocols": protocols})
-        manager.setPluginPlaces(["Pellmonsrv/plugins"])
-        manager.collectPlugins()
-
-        print manager.getCategories()
-
-        # Initialize all plugins
-        for plugin in manager.getPluginsOfCategory('Protocols'):
-            plugin.plugin_object.activate(globals())
-            global protocol
-            protocol = plugin.plugin_object
+        global database
+        database = Database()
 
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()

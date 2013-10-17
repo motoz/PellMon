@@ -20,7 +20,7 @@ from Scotteprotocol import Protocol
 import logging
 import threading
 from Pellmonsrv.plugin_categories import protocols
-from menus import getDbWithTags
+import menus
 from descriptions import dataDescriptions
 
 class scottecom(protocols):
@@ -40,7 +40,7 @@ class scottecom(protocols):
             self.allparameters = self.protocol.getDataBase()
 
             # Create and start settings_pollthread to log settings changed locally
-            settings = getDbWithTags(('Settings',))
+            settings = menus.getDbWithTags(('Settings',))
             ht = threading.Timer(4, self.settings_pollthread, args=(settings,))
             ht.setDaemon(True)
             ht.start()
@@ -48,18 +48,64 @@ class scottecom(protocols):
         except:
             self.logger.info('scottecom protocol setup failed')
 
+    def getItem(self, item):
+        return self.protocol.getItem(item)
+
+    def setItem(self, item, value):
+        return self.protocol.setItem(item, value)
+
     def getDbWithTags(self, tags):
-        return getDbWithTags(tags)
+        """Get the menutags for param"""
+        allparameters = self.protocol.getDataBase()
+        filteredParams = menus.getDbWithTags(tags)            
+        params = []
+        for param in filteredParams:
+            if param in allparameters:
+                params.append(param)
+        params.sort()
+        return params
+
+    def GetFullDB(self, tags):
+        """Get list of all data/parameter/command items"""
+        l=[]
+        print tags
+        allparameters = self.protocol.getDataBase()
+        filteredParams = self.getDbWithTags(tags)
+        params = []
+        for param in filteredParams:
+            if param in allparameters:
+                params.append(param)
+        params.sort()
+        for item in params:
+            data={}
+            data['name']=item
+            if hasattr(allparameters[item], 'max'): 
+                data['max']=(allparameters[item].max)
+            if hasattr(allparameters[item], 'min'): 
+                data['min']=(allparameters[item].min)
+            if hasattr(allparameters[item], 'frame'): 
+                if hasattr(allparameters[item], 'address'): 
+                    data['type']=('R/W')
+                else:
+                    data['type']=('R')
+            else:
+                data['type']=('W')
+            data['longname'] = protocol.dataDescriptions[item][0]
+            data['unit'] = protocol.dataDescriptions[item][1]
+            data['description'] = protocol.dataDescriptions[item][2]
+            l.append(data)
+        if l==[]:
+            return ['unsupported_version']
+        else:
+            return l
 
     def settings_pollthread(self, settings):
         """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
         for item in settings:
             try:
                 param = self.allparameters[item]
-                paramrange = param.max - param.min
                 value = self.protocol.getItem(item)
                 if item in self.conf.dbvalues:
-                    logline=''
                     if not value==self.conf.dbvalues[item]:
                         log_change = True
                         # These are settings but their values are changed by the firmware also, 
@@ -77,7 +123,7 @@ class scottecom(protocols):
                         if (item == 'time_minutes' and change == 1439): 
                             log_change = False
                         if log_change:
-                            self.settings_changed(self.conf.dbvalues[item], value)
+                            self.settings_changed(item, self.conf.dbvalues[item], value)
                         self.conf.dbvalues[item]=value
                 else:
                     self.conf.dbvalues[item]=value
