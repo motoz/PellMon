@@ -208,7 +208,7 @@ class PellMonWebb:
             "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
-                RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
+                RrdGraphString1=RrdGraphString1+"DEF:%s="%ds_names[key]+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, ds_names[key], colorsDict[key], value)
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -469,6 +469,12 @@ for key, value in colors:
 
 # Get the names of the polled data
 polldata = parser.items("pollvalues")
+# Get the names of the polled data
+rrd_ds_names = parser.items("rrd_ds_names")
+ds_names = {}
+for key, value in rrd_ds_names:
+    ds_names[key] = value
+
 credentials = parser.items('authentication')
 logfile = parser.get('conf', 'logfile')
 

@@ -112,13 +112,13 @@ def pollThread():
     try:
         for data in conf.pollData:
             # 'special cases' handled here, name starting with underscore are not polled from the protocol 
-            if data[0]=='_':
-                if data=='_logtick':
+            if data['name'][0] == '_':
+                if data['name'] == '_logtick':
                     itemlist.append(str(conf.tickcounter))
                 else:
                     itemlist.append('U')
             else:
-                itemlist.append(database.items[data].getItem())
+                itemlist.append(database.items[data['name']].getItem())
         s=':'.join(itemlist)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
@@ -275,23 +275,27 @@ class config:
         for key, value in plugins:
             self.enabled_plugins.append(value)
 
-        # These are read from the serial bus every 'pollinterval' second
+        # Data to write to the rrd
         polldata = parser.items("pollvalues")
 
-        # Optional rrd data source definitions, default is DS:%s:GAUGE:%u:U:U
-        rrd_datasources = parser.items("rrd_datasources")
+        # rrd database datasource names
+        rrd_ds_names = parser.items("rrd_ds_names")
+
+        # Optional rrd data type definitions
+        rrd_ds_types = parser.items("rrd_ds_types")
 
         self.pollData = []
-        self.dataSources = {}
-        dataSourceConf = {}
-        for key, value in rrd_datasources:
-            dataSourceConf[key] = value
+        ds_names = {}
+        ds_types = {}
+        for key, value in rrd_ds_names:
+            ds_names[key] = value
+            ds_types[key] = "DS:%s:GAUGE:%u:U:U"
+        for key, value in rrd_ds_types:
+            ds_types[key] = value
         for key, value in polldata:
-            self.pollData.append(value)
-            if dataSourceConf.has_key(key):
-                self.dataSources[value] = dataSourceConf[key]
-            else:
-                self.dataSources[value] = "DS:%s:GAUGE:%u:U:U"
+            self.pollData.append({'name':value, 'ds_name':ds_names[key], 'ds_type':ds_types[key]})
+        print self.pollData
+        
         # The RRD database
         try:
             self.polling=True
@@ -328,7 +332,7 @@ class config:
             # Build a command string to create the rrd database
             self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
             for item in self.pollData:
-                self.RrdCreateString += self.dataSources[item] % (item, self.poll_interval*4) + ' ' 
+                self.RrdCreateString += item['ds_type'] % (item['ds_name'], self.poll_interval*4) + ' ' 
             self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
             self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
             self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
