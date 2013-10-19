@@ -42,9 +42,9 @@ class Database(object):
                 self.item = item
                 self.obj = obj
             def getItem(self):
-                return self.obj.protocol.getItem(self.item)
+                return self.obj.getItem(self.item)
             def setItem(self, value):
-                return self.obj.protocol.setItem(self.item, value)
+                return self.obj.setItem(self.item, value)
 
         self.items={}
         self.protocols=[]
@@ -53,14 +53,14 @@ class Database(object):
         manager = PluginManager(categories_filter={ "Protocols": protocols})
         manager.setPluginPlaces(["Pellmonsrv/plugins"])
         manager.collectPlugins()
-        print manager.getCategories()
         for plugin in manager.getPluginsOfCategory('Protocols'):
             try:
                 plugin.plugin_object.activate(globals())
+                print "activated plugin "+ plugin.name
                 self.protocols.append(plugin)
                 for item in plugin.plugin_object.getDataBase():
                     self.items[item] = getset(item, plugin.plugin_object)
-            except:
+            except Exception as e:
                 logger.info('Plugin %s init failed'%plugin.name)
 
 class MyDBUSService(dbus.service.Object):

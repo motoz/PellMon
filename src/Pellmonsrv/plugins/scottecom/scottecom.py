@@ -28,7 +28,6 @@ class scottecom(protocols):
         protocols.__init__(self)
 
     def activate(self, glob):
-        print "scottecom"
         protocols.activate(self, glob)
         self.logger = logging.getLogger('yapsy')
         self.logger.info('starting scottecom plugin')
