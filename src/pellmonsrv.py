@@ -54,14 +54,16 @@ class Database(object):
         manager.setPluginPlaces(["Pellmonsrv/plugins"])
         manager.collectPlugins()
         for plugin in manager.getPluginsOfCategory('Protocols'):
-            try:
-                plugin.plugin_object.activate(globals())
-                print "activated plugin "+ plugin.name
-                self.protocols.append(plugin)
-                for item in plugin.plugin_object.getDataBase():
-                    self.items[item] = getset(item, plugin.plugin_object)
-            except Exception as e:
-                logger.info('Plugin %s init failed'%plugin.name)
+            if plugin.name in conf.enabled_plugins:
+                print plugin.name
+                try:
+                    plugin.plugin_object.activate(globals())
+                    self.protocols.append(plugin)
+                    logger.info("activated plugin %s"%plugin.name)
+                    for item in plugin.plugin_object.getDataBase():
+                        self.items[item] = getset(item, plugin.plugin_object)
+                except Exception as e:
+                    logger.info('Plugin %s init failed'%plugin.name)
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -250,7 +252,7 @@ class MyDaemon(Daemon):
                 ht.setDaemon(True)
                 ht.start()
 
-        # Load all plugins in the plugins directory.
+        # Load all plugins of 'protocol' category.
         global database
         database = Database()
 
@@ -266,7 +268,13 @@ class config:
         # Load the configuration file
         parser = ConfigParser.ConfigParser()
         parser.read(filename)
-    
+
+        # Get the enabled plugins list
+        plugins = parser.items("enabled_plugins")
+        self.enabled_plugins = []
+        for key, value in plugins:
+            self.enabled_plugins.append(value)
+
         # These are read from the serial bus every 'pollinterval' second
         polldata = parser.items("pollvalues")
 
@@ -327,7 +335,7 @@ class config:
             self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
 
         # create logger
-        logger = logging.getLogger('yapsy')
+        logger = logging.getLogger('pellMon')
         loglevel = parser.get('conf', 'loglevel')
         loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
         try:

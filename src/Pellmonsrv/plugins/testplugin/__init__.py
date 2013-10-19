@@ -24,6 +24,9 @@ itemList=[{'name':'testitem1', 'longname':'test item 1', 'type':'W'}, {'name':'t
 class testplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
+
+    def activate(self, glob):
+        protocols.activate(self, glob)
         for i in itemList:
             try:
                 i['value'] = i['min']

@@ -1,4 +1,11 @@
 
+[enabled_plugins]
+# List all plugins to enable pxx = PluginName
+# Enable the ScotteCom plugin to communicate with a NBE scotty/woody/biocomfort pellet burner
+p01 = ScotteCom
+# The Testplugin is a plugin template that does nothing useful
+#p02 = TestPlugin
+
 [conf]
 # Full path to the rrd database, if it does not exist it is created
 # Remove if you don't want data polling 
