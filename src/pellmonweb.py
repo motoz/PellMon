@@ -301,6 +301,18 @@ class PellMonWebb:
                     paramlist.append(item)
                 if item['type'] == 'W':
                     commandlist.append(item)
+                try:
+                    a = item['longname']
+                except:
+                    item['longname'] = item['name']
+                try:
+                    a = item['unit']
+                except:
+                    item['unit'] = ''
+                try:
+                    a = item['description']
+                except:
+                    item['description'] = ''
 
                 params[item['name']] = ' '
                 if args.has_key(item['name']):
