@@ -27,15 +27,18 @@ class scottecom(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, glob):
-        protocols.activate(self, glob)
-        self.logger = logging.getLogger('yapsy')
-        self.logger.info('starting scottecom plugin')
-        self.conf.dbvalues={}
+    def activate(self, conf, glob):
+        protocols.activate(self, conf, glob)
+        self.logger = logging.getLogger('pellMon')
+        self.dbvalues={}
 
         # Initialize protocol and setup the database according to version_string
         try:
-            self.protocol = Protocol(self.conf.serial_device, self.conf.version_string)
+            try:
+                self.protocol = Protocol(self.conf['serialport'], self.conf['chipversion'])
+            except:
+                # Create testprotocol if conf is missing
+                self.protocol = Protocol(None, '')
             self.allparameters = self.protocol.getDataBase()
 
             # Create and start settings_pollthread to log settings changed locally
@@ -110,14 +113,14 @@ class scottecom(protocols):
             try:
                 param = self.allparameters[item]
                 value = self.protocol.getItem(item)
-                if item in self.conf.dbvalues:
-                    if not value==self.conf.dbvalues[item]:
+                if item in self.dbvalues:
+                    if not value==self.dbvalues[item]:
                         log_change = True
                         # These are settings but their values are changed by the firmware also, 
                         # so small changes are suppressed from the log
                         selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
                         try:
-                            change = abs(float(value) - float(self.conf.dbvalues[item]))
+                            change = abs(float(value) - float(self.dbvalues[item]))
                             squelch = selfmodifying_params[item]
                             # These items change by themselves, log change only when squelch is exceeded
                             if change <= squelch:
@@ -128,8 +131,8 @@ class scottecom(protocols):
                         if (item == 'time_minutes' and change == 1439): 
                             log_change = False
                         if log_change:
-                            self.settings_changed(item, self.conf.dbvalues[item], value)
-                self.conf.dbvalues[item]=value
+                            self.settings_changed(item, self.dbvalues[item], value)
+                self.dbvalues[item]=value
             except:
                 pass
         # run this thread again after 30 seconds
@@ -141,10 +144,10 @@ class scottecom(protocols):
         # Log changes to 'mode' and 'alarm'
         for param in alarms:
             value = self.protocol.getItem(param)
-            if param in self.conf.dbvalues:
-                if not value==self.conf.dbvalues[param]:
-                    self.settings_changed(param, self.conf.dbvalues[item], value)
-            self.conf.dbvalues[param] = value
+            if param in self.dbvalues:
+                if not value==self.dbvalues[param]:
+                    self.settings_changed(param, self.dbvalues[item], value)
+            self.dbvalues[param] = value
         # run this thread again after 30 seconds
         ht = threading.Timer(30, self.alarm_pollthread, args=(alarms,))
         ht.setDaemon(True)

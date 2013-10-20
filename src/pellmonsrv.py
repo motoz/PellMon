@@ -55,9 +55,8 @@ class Database(object):
         manager.collectPlugins()
         for plugin in manager.getPluginsOfCategory('Protocols'):
             if plugin.name in conf.enabled_plugins:
-                print plugin.name
                 try:
-                    plugin.plugin_object.activate(globals())
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
                     self.protocols.append(plugin)
                     logger.info("activated plugin %s"%plugin.name)
                     for item in plugin.plugin_object.getDataBase():
@@ -272,8 +271,17 @@ class config:
         # Get the enabled plugins list
         plugins = parser.items("enabled_plugins")
         self.enabled_plugins = []
-        for key, value in plugins:
-            self.enabled_plugins.append(value)
+        self.plugin_conf={}
+        for key, plugin_name in plugins:
+            self.enabled_plugins.append(plugin_name)
+            self.plugin_conf[plugin_name] = {}
+            try:
+                plugin_conf = parser.items('plugin_%s'%plugin_name)
+                for key, value in plugin_conf:
+                    self.plugin_conf[plugin_name][key] = value
+            except:
+                # No plugin config found
+                pass
 
         # Data to write to the rrd
         polldata = parser.items("pollvalues")
@@ -294,8 +302,7 @@ class config:
             ds_types[key] = value
         for key, value in polldata:
             self.pollData.append({'name':value, 'ds_name':ds_names[key], 'ds_type':ds_types[key]})
-        print self.pollData
-        
+
         # The RRD database
         try:
             self.polling=True
@@ -313,30 +320,6 @@ class config:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
         except ConfigParser.NoOptionError:
             self.db_store_interval = 3600
-        try:
-            self.serial_device = parser.get('conf', 'serialport') 
-        except ConfigParser.NoOptionError:
-            self.serial_device = None
-        try:
-            self.version_string = parser.get('conf', 'chipversion')
-        except ConfigParser.NoOptionError:
-            logger.info('chipversion not specified, using 0.0')
-            self.version_string = '0.0'
-        try: 
-            self.poll_interval = int(parser.get('conf', 'pollinterval'))
-        except ConfigParser.NoOptionError:
-            logger.info('Invalid poll_interval setting, using 10s')
-            self.poll_interval = 10
-
-        if self.polling:
-            # Build a command string to create the rrd database
-            self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
-            for item in self.pollData:
-                self.RrdCreateString += item['ds_type'] % (item['ds_name'], self.poll_interval*4) + ' ' 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
 
         # create logger
         logger = logging.getLogger('pellMon')
@@ -353,7 +336,23 @@ class config:
         fh.setFormatter(formatter)
         # add the handlers to the logger
         logger.addHandler(fh)
-        
+
+        try: 
+            self.poll_interval = int(parser.get('conf', 'pollinterval'))
+        except ConfigParser.NoOptionError:
+            logger.info('Invalid poll_interval setting, using 10s')
+            self.poll_interval = 10
+
+        if self.polling:
+            # Build a command string to create the rrd database
+            self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
+            for item in self.pollData:
+                self.RrdCreateString += item['ds_type'] % (item['ds_name'], self.poll_interval*4) + ' ' 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+
         # dict to hold known recent values of db items
         self.dbvalues = {} 
 

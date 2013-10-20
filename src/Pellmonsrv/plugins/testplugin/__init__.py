@@ -25,13 +25,15 @@ class testplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, glob):
-        protocols.activate(self, glob)
+    def activate(self, conf, glob):
+        protocols.activate(self, conf, glob)
         for i in itemList:
             try:
                 i['value'] = i['min']
             except:
                 i['value'] = '1234'
+        for key, value in self.conf.iteritems():
+            itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'W', 'type':'R/W'})
 
     def getItem(self, item):
         for i in itemList:

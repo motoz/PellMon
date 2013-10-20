@@ -20,11 +20,10 @@ from Pellmonsrv.yapsy.IPlugin import IPlugin
 
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
-    def activate(self, glob):
+    def activate(self, conf, glob):
         # Save globals for plugin access to everything
         self.glob = glob
-        # Configuration is in global 'conf'
-        self.conf = glob['conf']
+        self.conf = conf
         IPlugin.activate(self)
 
     def getItem(self, item):

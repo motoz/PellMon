@@ -6,6 +6,21 @@ p01 = ScotteCom
 # The Testplugin is a plugin template that does nothing useful
 #p02 = TestPlugin
 
+[plugin_ScotteCom]
+# The settings in this section are passed to the ScotteCom plugin
+
+# Serial port device name, eg. /dev/ttyUSB0
+# Remove to run with dummy data for testing
+serialport = /dev/ttyUSB0
+
+# Chip version string or 'auto'
+chipversion = auto
+
+[plugin_TestPlugin]
+# Items in sections named as "plugin_xxx" are passed to a plugin named "xxx"
+# This plugin adds the items listed as dummy parameters
+plugindata1 = 123
+
 [conf]
 # Full path to the rrd database, if it does not exist it is created
 # Remove if you don't want data polling 
@@ -20,14 +35,6 @@ database = @localstatedir@/lib/pellmon/rrd.db
 # If persistent_db is in use the database is copied to 
 # persistent_db every db_store_interval seconds
 db_store_interval = 7200
-
-# Serial port device name, eg. /dev/ttyUSB0
-# Remove to run with dummy data for testing
-serialport = /dev/ttyUSB0
-
-# Chip version string or 'auto'
-chipversion = auto
-
 # Full path to the logfile
 logfile = @localstatedir@/log/pellmon/pellmon.log
 
