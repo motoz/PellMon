@@ -69,7 +69,7 @@ d06 = oxygen
 d07 = power
 d08 = smoke_temp
 d09 = feeder_time
-d10 = feeder_capacityhappend
+d10 = feeder_capacity
 d11 = _logtick
 
 [rrd_ds_types]
