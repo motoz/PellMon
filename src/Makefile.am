@@ -1,4 +1,4 @@
-SUBDIRS = srv web
+SUBDIRS = Pellmonsrv Pellmonweb Scotteprotocol
 
 bin_SCRIPTS = pellmonsrv.py pellmonweb.py pellmoncli.py
 CLEANFILES = \
