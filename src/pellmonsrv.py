@@ -51,7 +51,7 @@ class Database(object):
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
-        manager.setPluginPlaces(["Pellmonsrv/plugins"])
+        manager.setPluginPlaces([conf.plugin_dir])
         manager.collectPlugins()
         for plugin in manager.getPluginsOfCategory('Protocols'):
             if plugin.name in conf.enabled_plugins:
@@ -421,6 +421,7 @@ if __name__ == "__main__":
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
+    parser.add_argument('-p', '--PLUGINDIR', default='Pellmonsrv/plugins', help='Full path to plugin directory')
     args = parser.parse_args()
 
     config_file = args.CONFIG
@@ -463,5 +464,6 @@ if __name__ == "__main__":
     global conf
     conf = config(config_file)
     conf.dbus = args.DBUS
+    conf.plugin_dir = args.PLUGINDIR
     commands[args.command]()
 
