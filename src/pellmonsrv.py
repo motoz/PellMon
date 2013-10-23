@@ -133,9 +133,8 @@ def settings_changed(item, oldvalue, newvalue):
     """ Called by the protocols when they detect that a setting has changed """
     logline = 'Parameter %s changed from %s to %s'%(item, oldvalue, newvalue)
     logger.info(logline)
-    global conf
     conf.tickcounter=int(time.time())
-    if self.conf.email and 'parameter' in self.conf.emailconditions:
+    if conf.email and 'parameter' in conf.emailconditions:
         sendmail(logline)
 
 def periodic_signal_handler(signum, frame):

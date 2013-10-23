@@ -45,10 +45,11 @@ class protocols(IPlugin):
         'min', 'max', 'unit', 'longname', 'description' keys with string type values"""
         return [{}]
 
-    def sendmail(msg):
+    def sendmail(self, msg):
         """Callback to send mail message"""
         glob['sendmail'](msg)
 
-    def settings_changed(item, oldvalue, newvalue):
+    def settings_changed(self, item, oldvalue, newvalue):
         """Callback from plugin when a changed setting value is detected"""
-        glob['settings_changed'](item, oldvalue, newvalue)
+        self.glob['settings_changed'](item, oldvalue, newvalue)
+
