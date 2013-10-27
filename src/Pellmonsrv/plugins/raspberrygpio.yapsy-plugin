@@ -1,0 +1,9 @@
+[Core]
+Name = RaspberryGPIO
+Module = raspberrygpio
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = Use raspberry gpio to count screw turns and calculate feeder_time

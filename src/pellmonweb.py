@@ -150,6 +150,9 @@ class PellMonWebb:
     def image(self, **args):
         if not polling:
             return None
+        if len(colorsdict) == 0:
+            return None
+            
         try:
             timeChoice = args['timeChoice']
             timeChoice = timeChoices.index(timeChoice)

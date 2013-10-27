@@ -272,8 +272,10 @@ class PluginManager(object):
 			# specific dictionnary
 			candidate_globals = {"__file__":candidate_filepath+".py"}
 			try:
+				print candidate_filepath
 				execfile(candidate_filepath+".py",candidate_globals)
 			except Exception,e:
+				print e
 				logging.debug("Unable to execute the code in plugin: %s" % candidate_filepath)
 				logging.debug("\t The following problem occured: %s %s " % (os.linesep, e))
 

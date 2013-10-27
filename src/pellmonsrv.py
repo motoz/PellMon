@@ -62,6 +62,7 @@ class Database(object):
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
+                    print e
                     logger.info('Plugin %s init failed'%plugin.name)
 
 class MyDBUSService(dbus.service.Object):
@@ -251,8 +252,8 @@ class MyDaemon(Daemon):
                 ht.start()
 
         # Load all plugins of 'protocol' category.
-        global database
-        database = Database()
+#        global database
+#        database = Database()
 
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
@@ -321,6 +322,7 @@ class config:
             self.db_store_interval = 3600
 
         # create logger
+        global logger
         logger = logging.getLogger('pellMon')
         loglevel = parser.get('conf', 'loglevel')
         loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
@@ -454,7 +456,6 @@ if __name__ == "__main__":
         os.chown(dbdir, uid, gid)
         if os.path.isfile(dbfile):
             os.chown(dbfile, uid, gid)
-        drop_privileges(args.USER, args.GROUP)
 
     # must be be set before calling daemon.start
     daemon.pidfile = args.PIDFILE
@@ -464,5 +465,14 @@ if __name__ == "__main__":
     conf = config(config_file)
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
+
+    # Load all plugins of 'protocol' category.
+    global database
+    database = Database()
+
+    if args.USER:
+        drop_privileges(args.USER, args.GROUP)
+
+
     commands[args.command]()
 
