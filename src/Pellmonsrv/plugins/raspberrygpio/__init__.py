@@ -82,9 +82,15 @@ def root(request, response):
         if x == 'count':
             response.put(int(count[0]))
         else:
-            response.put('what?')
+            try:
+                if x[0] == 'count':
+                    count[0] = int(x[1])
+                    response.put('OK')
+                else:
+                    response.put('what?')
+            except:
+                response.put('error')
         x=request.get()
-    response.put('quitting')
 
 class raspberry_gpio(protocols):
     def __init__(self):
@@ -122,11 +128,19 @@ class raspberry_gpio(protocols):
                     return str(i['value'])
 
     def setItem(self, item, value):
-        for i in itemList:
-            if i['name'] == item:
-                i['value'] = value
-                return 'OK'
-        return['error']
+        if item == 'feeder_rev':
+            self.request.put(('count', value))
+            try:
+                r = self.response.get(5)
+            except:
+                r='timeout'
+            return str(r)
+        else:
+            for i in itemList:
+                if i['name'] == item:
+                    i['value'] = value
+                    return 'OK'
+            return['error']
 
     def getDataBase(self):
         l=[]
