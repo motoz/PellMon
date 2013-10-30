@@ -1,7 +1,7 @@
-SUBDIRS = scottecom raspberry_gpio
+SUBDIRS = scottecom raspberrygpio
 
 nobase_dist_plugins_DATA = \
 	scottecom.yapsy-plugin \
-	raspberry_gpio
+	raspberrygpio.yapsy-plugin
 
 pluginsdir = $(libdir)/Pellmonsrv/plugins

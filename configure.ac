@@ -28,6 +28,7 @@ src/Pellmonsrv/Makefile \
 src/Pellmonsrv/yapsy/Makefile \
 src/Pellmonsrv/plugins/Makefile \
 src/Pellmonsrv/plugins/scottecom/Makefile \
+src/Pellmonsrv/plugins/raspberrygpio/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 
