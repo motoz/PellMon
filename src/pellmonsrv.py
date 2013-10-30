@@ -64,6 +64,10 @@ class Database(object):
                 except Exception as e:
                     print e
                     logger.info('Plugin %s init failed'%plugin.name)
+    def terminate(self):
+        for p in self.protocols:
+            p.plugin_object.deactivate()
+            logger.info('deactivated %s'%p.name)
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -78,18 +82,18 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
-        return database.items[param].getItem()
+        return conf.database.items[param].getItem()
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return database.items[param].setItem(value)
+        return conf.database.items[param].setItem(value)
 
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
         db=[]
-        for plugin in database.protocols:
+        for plugin in conf.database.protocols:
             db = db + plugin.plugin_object.getDataBase()
         db.sort()
         return db
@@ -98,7 +102,7 @@ class MyDBUSService(dbus.service.Object):
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
         db=[]
-        for plugin in database.protocols:
+        for plugin in conf.database.protocols:
             db = db + plugin.plugin_object.GetFullDB(tags)
         return db
 
@@ -118,7 +122,7 @@ def pollThread():
                 else:
                     itemlist.append('U')
             else:
-                itemlist.append(database.items[data['name']].getItem())
+                itemlist.append(conf.database.items[data['name']].getItem())
         s=':'.join(itemlist)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
@@ -126,7 +130,7 @@ def pollThread():
         logger.debug('   Trying Z01...')
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            database.items['oxygen_regulation'].getItem()
+            conf.database.items['oxygen_regulation'].getItem()
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
 
@@ -180,6 +184,8 @@ def db_copy_thread():
 
 def sigterm_handler(signum, frame):
     """Handles SIGTERM, waits for the database copy on shutdown if it is in a ramdisk"""
+    logger.info('stop')
+    conf.database.terminate()
     if conf.polling: 
         if conf.nvdb != conf.db:   
             copy_db('store')
@@ -221,6 +227,12 @@ class MyDaemon(Daemon):
 
         logger.info('starting pelletMonitor')
 
+        # Load all plugins of 'protocol' category.
+        conf.database = Database()
+
+        if conf.USER:
+            drop_privileges(conf.USER, conf.GROUP)
+
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()    
@@ -250,10 +262,6 @@ class MyDaemon(Daemon):
                 ht = threading.Timer(conf.db_store_interval, db_copy_thread)
                 ht.setDaemon(True)
                 ht.start()
-
-        # Load all plugins of 'protocol' category.
-#        global database
-#        database = Database()
 
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
@@ -466,12 +474,10 @@ if __name__ == "__main__":
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
 
-    # Load all plugins of 'protocol' category.
-    global database
-    database = Database()
-
     if args.USER:
-        drop_privileges(args.USER, args.GROUP)
+        conf.USER = args.USER
+    if args.GROUP:
+        conf.GROUP = args.GROUP
 
 
     commands[args.command]()

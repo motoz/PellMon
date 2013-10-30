@@ -36,7 +36,8 @@ itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',         
 import signal
 import sys
 def signal_handler(signal, frame):
-        sys.exit(0)
+    GPIO.cleanup()
+    sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -98,8 +99,9 @@ class raspberry_gpio(protocols):
 
     def deactivate(self):
         protocols.deactivate(self)
-        self.q.put('quit')
+        self.request.put('quit')
         self.p.join()
+        GPIO.cleanup()
 
     def getItem(self, item):
         if item == 'feeder_rev':
@@ -112,8 +114,8 @@ class raspberry_gpio(protocols):
             rev = float(self.getItem('feeder_rev'))
             capacity = int(self.getItem('feeder_capacity'))
             rp6m = int(self.getItem('feeder_rp6m'))
-            time_per_rev = (rp6m / 360.0)
-            return str(int(rev * time_per_rev))
+            time_per_rev = (360.0 / rp6m)
+            return str(int(rev / time_per_rev))
         else:
             for i in itemList:
                 if i['name'] == item:
