@@ -121,7 +121,7 @@ class raspberry_gpio(protocols):
             capacity = int(self.getItem('feeder_capacity'))
             rp6m = int(self.getItem('feeder_rp6m'))
             time_per_rev = (360.0 / rp6m)
-            return str(int(rev / time_per_rev))
+            return str(int(rev * time_per_rev))
         else:
             for i in itemList:
                 if i['name'] == item:
