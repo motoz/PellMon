@@ -1,0 +1,9 @@
+[Core]
+Name = TestPlugin
+Module = testplugin
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = Just for testing the plugin interface

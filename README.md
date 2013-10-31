@@ -26,6 +26,8 @@ optional arguments:
                         Full path to config file
   -D {SESSION,SYSTEM}, --DBUS {SESSION,SYSTEM}
                         which bus to use, SESSION is default
+  -p PLUGINDIR, --PLUGINDIR PLUGINDIR
+                        Full path to plugin directory
 </pre>
 
 ###pellmonweb.py:

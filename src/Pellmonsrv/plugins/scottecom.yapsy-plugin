@@ -1,0 +1,9 @@
+[Core]
+Name = ScotteCom
+Module = scottecom
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = A plugin for communication with a NBE scotte/woody/bio comfort pellet burner

@@ -28,11 +28,11 @@ from cherrypy.lib import caching
 from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
-from web import *
+from Pellmonweb import *
 from time import time
 import threading
 import sys
-from web import __file__ as webpath
+from Pellmonweb import __file__ as webpath
 import argparse
 import pwd
 import grp
@@ -208,7 +208,7 @@ class PellMonWebb:
             "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
-                RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
+                RrdGraphString1=RrdGraphString1+"DEF:%s="%ds_names[key]+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, ds_names[key], colorsDict[key], value)
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -301,6 +301,18 @@ class PellMonWebb:
                     paramlist.append(item)
                 if item['type'] == 'W':
                     commandlist.append(item)
+                try:
+                    a = item['longname']
+                except:
+                    item['longname'] = item['name']
+                try:
+                    a = item['unit']
+                except:
+                    item['unit'] = ''
+                try:
+                    a = item['description']
+                except:
+                    item['description'] = ''
 
                 params[item['name']] = ' '
                 if args.has_key(item['name']):
@@ -457,6 +469,12 @@ for key, value in colors:
 
 # Get the names of the polled data
 polldata = parser.items("pollvalues")
+# Get the names of the polled data
+rrd_ds_names = parser.items("rrd_ds_names")
+ds_names = {}
+for key, value in rrd_ds_names:
+    ds_names[key] = value
+
 credentials = parser.items('authentication')
 logfile = parser.get('conf', 'logfile')
 
