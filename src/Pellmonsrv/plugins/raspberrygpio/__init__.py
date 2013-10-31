@@ -118,10 +118,16 @@ class raspberry_gpio(protocols):
                 return str('timeout') 
         elif item == 'feeder_time':
             rev = float(self.getItem('feeder_rev'))
-            capacity = int(self.getItem('feeder_capacity'))
             rp6m = int(self.getItem('feeder_rp6m'))
             time_per_rev = (360.0 / rp6m)
             return str(int(rev * time_per_rev))
+        elif item == 'feeder_rev_capacity':
+            capacity = float(self.getItem('feeder_capacity'))
+            rp6m = float(self.getItem('feeder_rp6m'))
+            return str(capacity / rp6m)
+        elif item == 'feeder_rpm':
+            rp6m = int(self.getItem('feeder_rp6m'))
+            return str(rp6m / 6.0)
         else:
             for i in itemList:
                 if i['name'] == item:
