@@ -115,6 +115,12 @@ class Dbus_handler:
         else:
             raise DbusNotConnected("server not running")
 
+    def getMenutags(self):
+        if self.notify:
+            return self.notify.getMenutags()
+        else:
+            raise DbusNotConnected("server not running")
+
 class PellMonWebb:
     def __init__(self):
         self.logview = LogViewer(logfile)
@@ -332,7 +338,8 @@ class PellMonWebb:
                         except:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
+            tags = dbus.getMenutags()
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags)
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 

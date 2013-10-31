@@ -33,6 +33,8 @@ itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',         
           {'name':'feeder_time',          'longname':'feeder time',                'type':'R',   'unit':'s',      'value': 0    }
         ]
 
+Menutags = ['test']
+
 import signal
 import sys
 def signal_handler(signal, frame):
@@ -156,5 +158,8 @@ class raspberry_gpio(protocols):
 
     def GetFullDB(self, tags):
         return itemList
+
+    def getMenutags(self):
+        return Menutags
 
 

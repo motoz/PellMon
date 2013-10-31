@@ -106,6 +106,14 @@ class MyDBUSService(dbus.service.Object):
             db = db + plugin.plugin_object.GetFullDB(tags)
         return db
 
+    @dbus.service.method('org.pellmon.int')
+    def getMenutags(self):
+        """Get list of all tags that make up the menu"""
+        menutags=[]
+        for plugin in conf.database.protocols:
+            menutags = menutags + plugin.plugin_object.getMenutags()
+        return menutags
+
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')

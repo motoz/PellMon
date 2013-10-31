@@ -53,3 +53,5 @@ class protocols(IPlugin):
         """Callback from plugin when a changed setting value is detected"""
         self.glob['settings_changed'](item, oldvalue, newvalue)
 
+    def getMenutags(self):
+        return []
