@@ -31,9 +31,16 @@ itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',         
           
           {'name':'feeder_rev',           'longname':'feeder revolution count',    'type':'R/W', 'unit':' ',      'value': 0,    'min':'0', 'max':'-'    },
           {'name':'feeder_time',          'longname':'feeder time',                'type':'R',   'unit':'s',      'value': 0    }
-        ]
+         ]
 
-Menutags = ['test']
+itemTags = {'feeder_rev_capacity' : ['All', 'raspberryGPIO'],
+            'feeder_rpm' :          ['All', 'raspberryGPIO'],
+            'feeder_capacity' :     ['All','raspberryGPIO', 'Basic'],
+            'feeder_rp6m' :         ['All','raspberryGPIO', 'Basic'],
+            'feeder_rev' :          ['All''raspberryGPIO', 'Basic'],
+            'feeder_time' :         ['All','raspberryGPIO'],
+           }
+Menutags = ['raspberryGPIO']
 
 import signal
 import sys
@@ -157,7 +164,14 @@ class raspberry_gpio(protocols):
         return l
 
     def GetFullDB(self, tags):
-        return itemList
+
+        def match(requiredtags, existingtags):
+            for rt in requiredtags:
+                if not rt in existingtags:
+                    return False
+            return True
+            
+        return [item for item in itemList if match(tags, itemTags[item['name']]) ]
 
     def getMenutags(self):
         return Menutags
