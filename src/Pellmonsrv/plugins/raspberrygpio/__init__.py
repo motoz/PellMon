@@ -19,27 +19,35 @@
 
 from Pellmonsrv.plugin_categories import protocols
 from multiprocessing import Process, Queue
-from threading import Thread
+from threading import Thread 
 import RPi.GPIO as GPIO
 from time import time, sleep
 
-itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',            'type':'R',   'unit':'g'   ,   'value': 5.56 },
-          {'name':'feeder_rpm',           'longname':'feeder rpm'                , 'type':'R',   'unit':'/60s',   'value': 30   },
+itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',       'type':'R',   'unit':'g'   ,   'value': 5.56 },
+          {'name':'feeder_rpm',           'longname':'feeder rpm',            'type':'R',   'unit':'/60s',   'value': 30   },
           
-          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',      'type':'R/W', 'unit':'g/360s', 'value': 1000, 'min':'0', 'max':'5000' },
-          {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',       'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
+          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity', 'type':'R/W', 'unit':'g/360s', 'value': 1000, 'min':'0', 'max':'5000' },
+          {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',  'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
           
-          {'name':'feeder_rev',           'longname':'feeder revolution count',    'type':'R/W', 'unit':' ',      'value': 0,    'min':'0', 'max':'-'    },
-          {'name':'feeder_time',          'longname':'feeder time',                'type':'R',   'unit':'s',      'value': 0    }
+          {'name':'feeder_rev',           'longname':'feeder rev count',      'type':'R/W', 'unit':' ',      'value': 0,    'min':'0', 'max':'-'    },
+          {'name':'feeder_time',          'longname':'feeder time',           'type':'R',   'unit':'s',      'value': 0    }
          ]
 
 itemTags = {'feeder_rev_capacity' : ['All', 'raspberryGPIO'],
             'feeder_rpm' :          ['All', 'raspberryGPIO'],
-            'feeder_capacity' :     ['All','raspberryGPIO', 'Basic'],
-            'feeder_rp6m' :         ['All','raspberryGPIO', 'Basic'],
-            'feeder_rev' :          ['All''raspberryGPIO', 'Basic'],
-            'feeder_time' :         ['All','raspberryGPIO'],
+            'feeder_capacity' :     ['All', 'raspberryGPIO', 'Basic'],
+            'feeder_rp6m' :         ['All', 'raspberryGPIO', 'Basic'],
+            'feeder_rev' :          ['All', 'raspberryGPIO', 'Basic'],
+            'feeder_time' :         ['All', 'raspberryGPIO'],
            }
+
+itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution',
+                    'feeder_rpm' :          'Feeder screw rotation speed',
+                    'feeder_capacity' :     'Grams fed in 360 seconds',
+                    'feeder_rp6m' :         'Feeder screw revolutions in 360 seconds',
+                    'feeder_rev' :          'Feeder screw revolutions count',
+                    'feeder_time' :         'Feeder screw run time'}
+
 Menutags = ['raspberryGPIO']
 
 import signal
@@ -69,7 +77,6 @@ def root(request, response):
                 global oldstate     
                 if currentstate == 0 and oldstate == 1:
                     count[0] += 1
-                    print count[0]
                 state = 0
             else:
                  sleep(0.05)
@@ -167,12 +174,15 @@ class raspberry_gpio(protocols):
 
         def match(requiredtags, existingtags):
             for rt in requiredtags:
-                if not rt in existingtags:
+                if rt != '' and not rt in existingtags:
                     return False
             return True
             
-        return [item for item in itemList if match(tags, itemTags[item['name']]) ]
-
+        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
+        for item in items:
+            item['description'] = itemDescriptions[item['name']]
+        return items
+        
     def getMenutags(self):
         return Menutags
 
