@@ -22,6 +22,8 @@ from multiprocessing import Process, Queue
 from threading import Thread 
 import RPi.GPIO as GPIO
 from time import time, sleep
+from ConfigParser import ConfigParser
+from os import path
 
 itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',       'type':'R',   'unit':'g'   ,   'value': 5.56 },
           {'name':'feeder_rpm',           'longname':'feeder rpm',            'type':'R',   'unit':'/60s',   'value': 30   },
@@ -118,6 +120,12 @@ class raspberry_gpio(protocols):
         self.response = Queue()
         self.p = Process(target=root, args=(self.request, self.response))
         self.p.start()
+        self.valuestore = ConfigParser()
+        self.valuestore.add_section('values')
+        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
+        for item in itemList:
+            self.valuestore.set('values', item['name'], item['value'])
+        self.valuestore.read(self.valuesfile)
 
     def deactivate(self):
         protocols.deactivate(self)
@@ -147,7 +155,7 @@ class raspberry_gpio(protocols):
         else:
             for i in itemList:
                 if i['name'] == item:
-                    return str(i['value'])
+                    return str(self.valuestore.get('values', item))
 
     def setItem(self, item, value):
         if item == 'feeder_rev':
@@ -161,6 +169,10 @@ class raspberry_gpio(protocols):
             for i in itemList:
                 if i['name'] == item:
                     i['value'] = value
+                    self.valuestore.set('values', item, str(value))
+                    f = open(self.valuesfile, 'w')
+                    self.valuestore.write(f)
+                    f.close()
                     return 'OK'
             return['error']
 
