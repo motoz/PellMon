@@ -33,6 +33,7 @@ import pwd, grp
 from Pellmonsrv.yapsy.PluginManager import PluginManager
 from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
+import subprocess
 
 class Database(object):
     def __init__(self):
@@ -130,7 +131,18 @@ def pollThread():
                 else:
                     itemlist.append('U')
             else:
-                itemlist.append(conf.database.items[data['name']].getItem())
+                value = conf.database.items[data['name']].getItem()
+                # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
+                # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
+                # To prevent this we write an undefined value before an update that is less than the previous
+                if 'COUNTER' in data['ds_type']:
+                    try:
+                        if int(value) < int(conf.lastupdate[data['name']]):
+                            value = 'U'
+                    except:
+                        pass
+                itemlist.append(value)
+                conf.lastupdate[data['name']] = value
         s=':'.join(itemlist)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
@@ -248,15 +260,6 @@ class MyDaemon(Daemon):
         DBusGMainLoop(set_as_default=True)
         myservice = MyDBUSService(conf.dbus)
 
-        # Create SIGTERM signal handler
-        signal.signal(signal.SIGTERM, sigterm_handler)
-
-        # Create poll_interval periodic signal handler
-        signal.signal(signal.SIGALRM, periodic_signal_handler)
-        logger.debug('created signalhandler')
-        signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
-        logger.debug('started timer')
-        
         # Create RRD database if does not exist
         if conf.polling:
             if not os.path.exists(conf.nvdb):
@@ -271,9 +274,26 @@ class MyDaemon(Daemon):
                 ht.setDaemon(True)
                 ht.start()
 
+            # Get the latest values for all data sources in the database
+            s = subprocess.check_output(['rrdtool', 'lastupdate', conf.db])
+            l=s.split('\n')
+            items = l[0].split()
+            values = l[2].split()
+            values = values[1::]
+            conf.lastupdate = dict(zip(items, values))
+
+        # Create SIGTERM signal handler
+        signal.signal(signal.SIGTERM, sigterm_handler)
+
+        # Create poll_interval periodic signal handler
+        signal.signal(signal.SIGALRM, periodic_signal_handler)
+        logger.debug('created signalhandler')
+        signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
+        logger.debug('started timer')
+
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
-        
+
         # glib main loop has quit, this should not happen
         logger.info("ending, what??")
         
