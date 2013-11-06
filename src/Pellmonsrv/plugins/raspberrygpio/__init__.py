@@ -24,6 +24,7 @@ import RPi.GPIO as GPIO
 from time import time, sleep
 from ConfigParser import ConfigParser
 from os import path
+import os, grp, pwd
 
 itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',       'type':'R',   'unit':'g'   ,   'value': 5.56 },
           {'name':'feeder_rpm',           'longname':'feeder rpm',            'type':'R',   'unit':'/60s',   'value': 30   },
@@ -126,6 +127,15 @@ class raspberry_gpio(protocols):
         for item in itemList:
             self.valuestore.set('values', item['name'], item['value'])
         self.valuestore.read(self.valuesfile)
+        f = open(self.valuesfile, 'w')
+        self.valuestore.write(f)
+        f.close()
+	try:
+            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
+            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
+            os.chown(self.valuesfile, uid, gid)
+        except:
+            pass
 
     def deactivate(self):
         protocols.deactivate(self)
