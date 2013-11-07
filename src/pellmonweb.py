@@ -156,7 +156,7 @@ class PellMonWebb:
     def image(self, **args):
         if not polling:
             return None
-        if len(colorsdict) == 0:
+        if len(colorsDict) == 0:
             return None
             
         try:
