@@ -19,7 +19,7 @@
 
 from Pellmonsrv.plugin_categories import protocols
 from multiprocessing import Process, Queue
-from threading import Thread 
+from threading import Thread, Timer
 import RPi.GPIO as GPIO
 from time import time, sleep
 from ConfigParser import ConfigParser
@@ -33,7 +33,8 @@ itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',       't
           {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',  'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
           
           {'name':'feeder_rev',           'longname':'feeder rev count',      'type':'R/W', 'unit':' ',      'value': 0,    'min':'0', 'max':'-'    },
-          {'name':'feeder_time',          'longname':'feeder time',           'type':'R',   'unit':'s',      'value': 0    }
+          {'name':'feeder_time',          'longname':'feeder time',           'type':'R',   'unit':'s',      'value': 0    },
+          {'name':'power_kW',             'longname':'power',                 'type':'R',   'unit':'kW',     'value': 0    }, 
          ]
 
 itemTags = {'feeder_rev_capacity' : ['All', 'raspberryGPIO'],
@@ -42,6 +43,7 @@ itemTags = {'feeder_rev_capacity' : ['All', 'raspberryGPIO'],
             'feeder_rp6m' :         ['All', 'raspberryGPIO', 'Basic'],
             'feeder_rev' :          ['All', 'raspberryGPIO', 'Basic'],
             'feeder_time' :         ['All', 'raspberryGPIO'],
+            'power_kW' :            ['All', 'raspberryGPIO'],
            }
 
 itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution',
@@ -49,7 +51,8 @@ itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution
                     'feeder_capacity' :     'Grams fed in 360 seconds',
                     'feeder_rp6m' :         'Feeder screw revolutions in 360 seconds',
                     'feeder_rev' :          'Feeder screw revolutions count',
-                    'feeder_time' :         'Feeder screw run time'}
+                    'feeder_time' :         'Feeder screw run time',
+                    'power_kW' :            'Power calculated from fed pellet mass/time'}
 
 Menutags = ['raspberryGPIO']
 
@@ -114,6 +117,8 @@ def root(request, response):
 class raspberry_gpio(protocols):
     def __init__(self):
         protocols.__init__(self)
+        self.timelist=[]
+        self.power = 0
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
@@ -130,12 +135,16 @@ class raspberry_gpio(protocols):
         f = open(self.valuesfile, 'w')
         self.valuestore.write(f)
         f.close()
-	try:
+        try:
             uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
             gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
+
+        t = Timer(5, self.calc_thread)
+        t.setDaemon(True)
+        t.start()
 
     def deactivate(self):
         protocols.deactivate(self)
@@ -162,6 +171,8 @@ class raspberry_gpio(protocols):
         elif item == 'feeder_rpm':
             rp6m = int(self.getItem('feeder_rp6m'))
             return str(rp6m / 6.0)
+        elif item == 'power_kW':
+            return str(self.power)
         else:
             for i in itemList:
                 if i['name'] == item:
@@ -208,4 +219,26 @@ class raspberry_gpio(protocols):
     def getMenutags(self):
         return Menutags
 
+    def calc_thread(self):
+    """ Calculate last 5 minutes mean power """
+        p1 = int(self.getItem('feeder_time'))
+        t1 = time()
+        self.timelist.append((p1,t1))
+        if self.timelist[-1][1] - self.timelist[0][1] > 300:
+            self.timelist = self.timelist[1:]
+        last = self.timelist[0][0]
+        sum = 0
+        for t in self.timelist:
+             try:
+                 v = int(t[0])
+             except:
+                 v = 0
+             if v > last:
+                 sum += (v - last)
+             last = v
+        capacity = float(self.getItem('feeder_capacity')) / 360
+        self.power = sum * capacity * 12 * 4.8 * 0.9 / 1000
 
+        t = Timer(5, self.calc_thread)
+        t.setDaemon(True)
+        t.start()
