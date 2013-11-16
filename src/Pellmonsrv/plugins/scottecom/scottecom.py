@@ -146,7 +146,7 @@ class scottecom(protocols):
             value = self.protocol.getItem(param)
             if param in self.dbvalues:
                 if not value==self.dbvalues[param]:
-                    self.settings_changed(param, self.dbvalues[item], value)
+                    self.settings_changed(param, self.dbvalues[param], value)
             self.dbvalues[param] = value
         # run this thread again after 30 seconds
         ht = threading.Timer(30, self.alarm_pollthread, args=(alarms,))
