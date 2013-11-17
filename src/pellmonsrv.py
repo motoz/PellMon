@@ -33,6 +33,7 @@ import pwd, grp
 from Pellmonsrv.yapsy.PluginManager import PluginManager
 from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
+import subprocess
 
 class Database(object):
     def __init__(self):
@@ -62,7 +63,12 @@ class Database(object):
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
+                    print e
                     logger.info('Plugin %s init failed'%plugin.name)
+    def terminate(self):
+        for p in self.protocols:
+            p.plugin_object.deactivate()
+            logger.info('deactivated %s'%p.name)
 
 class MyDBUSService(dbus.service.Object):
     """Publish an interface over the DBUS system bus"""
@@ -77,18 +83,18 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
-        return database.items[param].getItem()
+        return conf.database.items[param].getItem()
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return database.items[param].setItem(value)
+        return conf.database.items[param].setItem(value)
 
     @dbus.service.method('org.pellmon.int')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
         db=[]
-        for plugin in database.protocols:
+        for plugin in conf.database.protocols:
             db = db + plugin.plugin_object.getDataBase()
         db.sort()
         return db
@@ -97,9 +103,17 @@ class MyDBUSService(dbus.service.Object):
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
         db=[]
-        for plugin in database.protocols:
+        for plugin in conf.database.protocols:
             db = db + plugin.plugin_object.GetFullDB(tags)
         return db
+
+    @dbus.service.method('org.pellmon.int')
+    def getMenutags(self):
+        """Get list of all tags that make up the menu"""
+        menutags=[]
+        for plugin in conf.database.protocols:
+            menutags = menutags + plugin.plugin_object.getMenutags()
+        return menutags
 
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
@@ -117,7 +131,18 @@ def pollThread():
                 else:
                     itemlist.append('U')
             else:
-                itemlist.append(database.items[data['name']].getItem())
+                value = conf.database.items[data['name']].getItem()
+                # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
+                # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
+                # To prevent this we write an undefined value before an update that is less than the previous
+                if 'COUNTER' in data['ds_type']:
+                    try:
+                        if int(value) < int(conf.lastupdate[data['name']]):
+                            value = 'U'
+                    except:
+                        pass
+                itemlist.append(value)
+                conf.lastupdate[data['name']] = value
         s=':'.join(itemlist)
         os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
     except IOError as e:
@@ -125,7 +150,7 @@ def pollThread():
         logger.debug('   Trying Z01...')
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            database.items['oxygen_regulation'].getItem()
+            conf.database.items['oxygen_regulation'].getItem()
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
 
@@ -179,6 +204,8 @@ def db_copy_thread():
 
 def sigterm_handler(signum, frame):
     """Handles SIGTERM, waits for the database copy on shutdown if it is in a ramdisk"""
+    logger.info('stop')
+    conf.database.terminate()
     if conf.polling: 
         if conf.nvdb != conf.db:   
             copy_db('store')
@@ -220,6 +247,12 @@ class MyDaemon(Daemon):
 
         logger.info('starting pelletMonitor')
 
+        # Load all plugins of 'protocol' category.
+        conf.database = Database()
+
+        if conf.USER:
+            drop_privileges(conf.USER, conf.GROUP)
+
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()    
@@ -227,15 +260,6 @@ class MyDaemon(Daemon):
         DBusGMainLoop(set_as_default=True)
         myservice = MyDBUSService(conf.dbus)
 
-        # Create SIGTERM signal handler
-        signal.signal(signal.SIGTERM, sigterm_handler)
-
-        # Create poll_interval periodic signal handler
-        signal.signal(signal.SIGALRM, periodic_signal_handler)
-        logger.debug('created signalhandler')
-        signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
-        logger.debug('started timer')
-        
         # Create RRD database if does not exist
         if conf.polling:
             if not os.path.exists(conf.nvdb):
@@ -250,13 +274,26 @@ class MyDaemon(Daemon):
                 ht.setDaemon(True)
                 ht.start()
 
-        # Load all plugins of 'protocol' category.
-        global database
-        database = Database()
+            # Get the latest values for all data sources in the database
+            s = subprocess.check_output(['rrdtool', 'lastupdate', conf.db])
+            l=s.split('\n')
+            items = l[0].split()
+            values = l[2].split()
+            values = values[1::]
+            conf.lastupdate = dict(zip(items, values))
+
+        # Create SIGTERM signal handler
+        signal.signal(signal.SIGTERM, sigterm_handler)
+
+        # Create poll_interval periodic signal handler
+        signal.signal(signal.SIGALRM, periodic_signal_handler)
+        logger.debug('created signalhandler')
+        signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
+        logger.debug('started timer')
 
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
-        
+
         # glib main loop has quit, this should not happen
         logger.info("ending, what??")
         
@@ -321,6 +358,7 @@ class config:
             self.db_store_interval = 3600
 
         # create logger
+        global logger
         logger = logging.getLogger('pellMon')
         loglevel = parser.get('conf', 'loglevel')
         loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
@@ -454,7 +492,6 @@ if __name__ == "__main__":
         os.chown(dbdir, uid, gid)
         if os.path.isfile(dbfile):
             os.chown(dbfile, uid, gid)
-        drop_privileges(args.USER, args.GROUP)
 
     # must be be set before calling daemon.start
     daemon.pidfile = args.PIDFILE
@@ -464,5 +501,12 @@ if __name__ == "__main__":
     conf = config(config_file)
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
+
+    if args.USER:
+        conf.USER = args.USER
+    if args.GROUP:
+        conf.GROUP = args.GROUP
+
+
     commands[args.command]()
 

@@ -77,6 +77,9 @@ class scottecom(protocols):
         params.sort()
         return params
 
+    def getMenutags(self):
+        return menus.getMenutags()
+
     def GetFullDB(self, tags):
         """Get list of all data/parameter/command items"""
         l=[]

@@ -29,30 +29,11 @@
         <div class="col-md-2">
             <div class="navbar navbar-default">
                 <ul class="nav nav-pills nav-stacked">
+                %for tag in tags:
                     <li class="">
-                        <a href="/parameters/All">All</a>
+                        <a href="/parameters/${tag}">${tag}</a>
                     </li>
-    		        <li class="">
-    			        <a href="/parameters/Blower">Blower</a>
-    		        </li>
-    		        <li class="">
-    			        <a href="/parameters/Feeder">Feeder</a>
-    		        </li>
-    		        <li class="">
-    			        <a href="/parameters/Cleaning">Cleaning</a>
-    		        </li>
-    		        <li class="">
-    			        <a href="/parameters/Overview">Overview</a>
-    		        </li>
-    		        <li class="">
-    			        <a href="/parameters/Ignition" >Ignition</a>
-    		        </li>
-    		        <li class="">
-    			        <a href="/parameters/Oxygen">Oxygen</a>
-    		        </li>
-    		        <li class="">
-    			        <a href="/parameters/Temps">Temperature</a>
-    		        </li>
+                %endfor
                 </ul>
             </div>
 
