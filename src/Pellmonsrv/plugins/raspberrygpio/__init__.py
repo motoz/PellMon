@@ -220,7 +220,7 @@ class raspberry_gpio(protocols):
         return Menutags
 
     def calc_thread(self):
-    """ Calculate last 5 minutes mean power """
+        """ Calculate last 5 minutes mean power """
         p1 = int(self.getItem('feeder_time'))
         t1 = time()
         self.timelist.append((p1,t1))
