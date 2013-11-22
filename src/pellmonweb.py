@@ -240,7 +240,30 @@ class PellMonWebb:
             # The width passed to rrdtool does not include the sidebars
             graphWidth = str(int(maxWidth))
 
-            consumption_file = '-'
+            consumption_file = '-' # Output to stdout
+
+            # Draw one bar:
+            # CDEF:rate=            # compute feeder_time rate * feeder_consumption for selected timespan
+            # TIME,endtime, LE,     # push 1 if TIME is before endtime else push 0
+            # TIME,starttime, GT,   # push 1 if TIME is after starttime else push 0
+            # feeder_time,0, IF,    # push 0 before starttime, push from DEF:feeder_time after starttime
+            # 0, IF,                # push back above result before endtime, then push 0 
+                                    # the stack now has feeder_time (rate) between starttime and endtime, otherwise zero
+            # feeder_capacity, *,   # Multiply with DEF:feeder_capacity (which is for 360 seconds, and in grams)
+            # 360000, /             # and divide by 360 to get capacity per second, and also by 1000 to get result in kg
+            
+            # VDEF:tot=rate,TOTAL   # tot = integration of the CDEF:rate, ie. get value for consumption between start and endtimes
+            
+            # CDEF:total=           # make a CDEF out of the VDEF:tot value by 'tricking' rrd;
+            # feeder_time,POP,tot   # push from any DEF, pop the values, then push new values from the VDEF
+            
+            # CDEF:barchart=        # and finally...
+            # TIME,endtime,LE,      # where time is between endtime
+            # TIME,starttime,GT,    # and starttime
+            # total,0,IF,           # push calculated total 
+            # 0,IF                  # else push zero
+            # AREA:barchart#ffffff" # draw an area below it      
+            # Repeat for every bar            
             RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
