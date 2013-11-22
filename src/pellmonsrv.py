@@ -328,16 +328,18 @@ class config:
         # Optional rrd data type definitions
         rrd_ds_types = parser.items("rrd_ds_types")
 
+        # Make a list of data to poll, in the order they appear in the rrd database
         self.pollData = []
-        ds_names = {}
         ds_types = {}
+        pollItems = {}
+        for key, value in polldata:
+            pollItems[key] = value
         for key, value in rrd_ds_names:
-            ds_names[key] = value
             ds_types[key] = "DS:%s:GAUGE:%u:U:U"
         for key, value in rrd_ds_types:
             ds_types[key] = value
-        for key, value in polldata:
-            self.pollData.append({'name':value, 'ds_name':ds_names[key], 'ds_type':ds_types[key]})
+        for key, value in rrd_ds_names:
+            self.pollData.append({'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
 
         # The RRD database
         try:
