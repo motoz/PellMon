@@ -1,14 +1,25 @@
 PellMon
 =======
 
-Bio comfort / scotte / woody pellet burner - communication, setting and monitoring
+PellMon is logging, monitoring and configuration daemon for pellet burners. It uses plugins to communicate
+with a pellet burner. Two plugins are included, ScotteCom and RaspberryGPIO. ScotteCom uses a serial
+interface to communicate with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It provides access to 
+most configuration parameters and measurement data. The RaspberryGPIO plugin uses the hardware gpio on a raspberry pi 
+single board computer to count feeder auger revolutions and calculates burner power and pellet consumption. The plugin 
+system makes it easy to add custom plugins for extended functionality. 
+
+PellMon is also a webserver and a webapplication. It serves a responsive mobile friendly webapp with a graph of
+selected measurement values, bar charts with calculated pellet consumption, event log and parameter settings. 
+
+PellMon also has a command line interface to access all data provided by the plugins, for easy integration in other
+systems. 
 
 ####Contains:
 
 ###pellmonsrv.py:
 Communication daemon. Implements a DBUS interface for reading and writing setting values and reading of measurement data. Optionally handles logging of measurement data to an RRD database. 
 <pre>
-usage: pellmonsrv.py [-h] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-D {SESSION,SYSTEM}]
+usage: pellmonsrv.py [-h] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-D {SESSION,SYSTEM}] [-p PLUGINDIR]
                   {debug,start,stop,restart}
 
 positional arguments:
@@ -26,6 +37,8 @@ optional arguments:
                         Full path to config file
   -D {SESSION,SYSTEM}, --DBUS {SESSION,SYSTEM}
                         which bus to use, SESSION is default
+  -p PLUGINDIR, --PLUGINDIR PLUGINDIR
+                        Full path to plugin directory
 </pre>
 
 ###pellmonweb.py:

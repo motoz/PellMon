@@ -1,4 +1,26 @@
 
+[enabled_plugins]
+# List all plugins to enable pxx = PluginName
+# Enable the ScotteCom plugin to communicate with a NBE scotty/woody/biocomfort pellet burner
+p01 = ScotteCom
+# The Testplugin is a plugin template that does nothing useful
+#p02 = TestPlugin
+
+[plugin_ScotteCom]
+# The settings in this section are passed to the ScotteCom plugin
+
+# Serial port device name, eg. /dev/ttyUSB0
+# Remove to run with dummy data for testing
+serialport = /dev/ttyUSB0
+
+# Chip version string or 'auto'
+chipversion = auto
+
+[plugin_TestPlugin]
+# Items in sections named as "plugin_xxx" are passed to a plugin named "xxx"
+# This plugin adds the items listed as dummy parameters
+plugindata1 = 123
+
 [conf]
 # Full path to the rrd database, if it does not exist it is created
 # Remove if you don't want data polling 
@@ -13,14 +35,6 @@ database = @localstatedir@/lib/pellmon/rrd.db
 # If persistent_db is in use the database is copied to 
 # persistent_db every db_store_interval seconds
 db_store_interval = 7200
-
-# Serial port device name, eg. /dev/ttyUSB0
-# Remove to run with dummy data for testing
-serialport = /dev/ttyUSB0
-
-# Chip version string or 'auto'
-chipversion = auto
-
 # Full path to the logfile
 logfile = @localstatedir@/log/pellmon/pellmon.log
 
@@ -37,15 +51,45 @@ pollinterval = 30
 # username = password, for webinterface
 testuser = 12345
 
+[rrd_ds_names]
+# These are the datasource names used when creating the rrd database,
+# "dxx = datasource name". The left value (dxx) is used to match the
+# datasource names to the actual data to write to it, in the 
+# pollvalues section. The datasource names can be anything, but 
+# the defaults are the same as the data item names in the pollvalues section 
+# The rrd database is created with the datasources in the order they appear here.
+# Delete or rename the rrd database file after adding/removing ds-names
+# or use some other method to add the new ds-name to the existing rrd database
+d01 = power_kW
+d02 = boiler_temp
+d03 = chute_temp
+d04 = light
+d05 = oxygen_desired
+d06 = oxygen
+d07 = power
+d08 = smoke_temp
+d09 = feeder_time
+d10 = feeder_capacity
+d11 = _logtick
+
+[rrd_ds_types]
+# Optional rrd data source type definitions for the datasource names in the 
+# rrd_ds-names section. If no type is defined for a datasource name the 
+# default type is used, "DS:%s:GAUGE:%u:U:U", where %s is replaced with the 
+# datasource name and %u is replaced with 4*pollinterval
+d09 = DS:%s:COUNTER:%u:U:U
+d11 = DS:%s:COUNTER:%u:U:U
+
 [pollvalues]
-# Data values to poll and write to the rrd database
-# Delete or rename the rrd database file after adding/removing items
-# or use some other method to add the new dataset to the existing rrd database
-# dataSetName = parameter/data name
-# The datasets are created and updated in the order they are defined here
-# Data names starting with underscore are handled by special cases in the code,
-# they are not included in the normal data polling routine. In general 
-# underscored names are written as undefined
+# Data values to write to the rrd database.
+# "dxx = parameter/data name"
+# The data names are read from the protocol plugins with the getItem method
+# and written to the rrd database ds-name that has a matching "dxx".
+# Data names starting with an underscore are handled by special cases in the code,
+# eg. _logtick is updated whenever a protocol reports that an "event" has occured.
+# In general underscored names are written as undefined, so they can be used to 
+# write "spare" ds-names in an rrd database, to avoid having to recreate the rrd
+# when more sensors are added. 
 d01 = power_kW
 d02 = boiler_temp
 d03 = chute_temp
@@ -60,16 +104,9 @@ d10 = feeder_capacity
 # It is used to draw a tickmark in the graph
 d11 = _logtick
 
-[rrd_datasources]
-# optional rrd data source definition for the datasets in the pollvalues section
-# default is DS:%s:GAUGE:%u:U:U where %s is replaced with the data/parameter name
-# and %u is replaced with 4*pollinterval
-d09 = DS:%s:COUNTER:%u:U:U
-d11 = DS:%s:COUNTER:%u:U:U
-
 [graphcolors]
-# To add a dataSetName from the pollvalues section to the graph, set
-# dataSetName = #hexcolorvalue
+# To add a ds-name from the rrd-database to the graph, set
+# dxx = #hexcolorvalue
 d01 = #FF0000
 d02 = #00FF00
 d03 = #0000FF

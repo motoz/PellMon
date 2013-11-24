@@ -18,7 +18,9 @@
 """
 from datamenu import dataBaseTags
 
-Menutags = ('Basic', 'All', 'Settings', 'Measurements', 'Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Cleaning', 'Temps')
+Menutags = ['Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Cleaning', 'Temps'] 
+Tags = ['Basic', 'All', 'Settings', 'Measurements']
+Alltags = Tags+Menutags
 
 def getDbWithTags(wantedtags):
     params=[]
@@ -26,7 +28,7 @@ def getDbWithTags(wantedtags):
         paramtags=[]
         for i in range(0,len(tags)):
             if tags[i]=='X':
-                paramtags.append(Menutags[i])
+                paramtags.append(Alltags[i])
         accepted=True
         for tag in wantedtags:
             if tag=='':

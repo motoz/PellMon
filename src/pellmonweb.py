@@ -28,15 +28,15 @@ from cherrypy.lib import caching
 from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
-from web import *
+from Pellmonweb import *
 from time import time
 import threading
 import sys
-from web import __file__ as webpath
+from Pellmonweb import __file__ as webpath
 import argparse
 import pwd
 import grp
-from tempfile import NamedTemporaryFile
+import subprocess
 
 class DbusNotConnected(Exception):
     pass
@@ -115,6 +115,12 @@ class Dbus_handler:
         else:
             raise DbusNotConnected("server not running")
 
+    def getMenutags(self):
+        if self.notify:
+            return self.notify.getMenutags()
+        else:
+            raise DbusNotConnected("server not running")
+
 class PellMonWebb:
     def __init__(self):
         self.logview = LogViewer(logfile)
@@ -150,6 +156,9 @@ class PellMonWebb:
     def image(self, **args):
         if not polling:
             return None
+        if len(colorsDict) == 0:
+            return None
+            
         try:
             timeChoice = args['timeChoice']
             timeChoice = timeChoices.index(timeChoice)
@@ -197,8 +206,7 @@ class PellMonWebb:
         graphTimeEnd=str(time)
 
         #Build the command string to make a graph from the database
-        fd=NamedTemporaryFile(suffix='.png')
-        graph_file=fd.name
+        graph_file='-'
         if int(graphWidth)>500:
             rightaxis = '--right-axis 1:0'
         else:
@@ -209,11 +217,12 @@ class PellMonWebb:
             "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
-                RrdGraphString1=RrdGraphString1+"DEF:%s="%key+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (value, key, colorsDict[key], value)
-        RrdGraphString1=RrdGraphString1+">>/dev/null"
-        os.system(RrdGraphString1)
+                RrdGraphString1=RrdGraphString1+"DEF:%s="%value+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (ds_names[key], value, colorsDict[key], value)
+        print RrdGraphString1
+        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(fd, content_type='image/png')
+        return serve_fileobj(cmd.stdout)
 
     @cherrypy.expose
     def consumption(self, **args):
@@ -231,8 +240,30 @@ class PellMonWebb:
             # The width passed to rrdtool does not include the sidebars
             graphWidth = str(int(maxWidth))
 
-            fd=NamedTemporaryFile(suffix='.png')
-            consumption_file=fd.name
+            consumption_file = '-' # Output to stdout
+
+            # Draw one bar:
+            # CDEF:rate=            # compute feeder_time rate * feeder_consumption for selected timespan
+            # TIME,endtime, LE,     # push 1 if TIME is before endtime else push 0
+            # TIME,starttime, GT,   # push 1 if TIME is after starttime else push 0
+            # feeder_time,0, IF,    # push 0 before starttime, push from DEF:feeder_time after starttime
+            # 0, IF,                # push back above result before endtime, then push 0 
+                                    # the stack now has feeder_time (rate) between starttime and endtime, otherwise zero
+            # feeder_capacity, *,   # Multiply with DEF:feeder_capacity (which is for 360 seconds, and in grams)
+            # 360000, /             # and divide by 360 to get capacity per second, and also by 1000 to get result in kg
+            
+            # VDEF:tot=rate,TOTAL   # tot = integration of the CDEF:rate, ie. get value for consumption between start and endtimes
+            
+            # CDEF:total=           # make a CDEF out of the VDEF:tot value by 'tricking' rrd;
+            # feeder_time,POP,tot   # push from any DEF, pop the values, then push new values from the VDEF
+            
+            # CDEF:barchart=        # and finally...
+            # TIME,endtime,LE,      # where time is between endtime
+            # TIME,starttime,GT,    # and starttime
+            # total,0,IF,           # push calculated total 
+            # 0,IF                  # else push zero
+            # AREA:barchart#ffffff" # draw an area below it      
+            # Repeat for every bar            
             RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
             RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
             for h in range(0,24):
@@ -241,10 +272,10 @@ class PellMonWebb:
                 RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
 
             RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"24h consumption %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
-            RrdGraphString1=RrdGraphString1+" >>/dev/null"
-            os.system(RrdGraphString1)
+            cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+            cmd.wait()
             cherrypy.response.headers['Pragma'] = 'no-cache'
-            return serve_fileobj(fd, content_type='image/png')
+            return serve_fileobj(cmd.stdout)
 
     @cherrypy.expose
     @require() #requires valid login
@@ -303,6 +334,18 @@ class PellMonWebb:
                     paramlist.append(item)
                 if item['type'] == 'W':
                     commandlist.append(item)
+                try:
+                    a = item['longname']
+                except:
+                    item['longname'] = item['name']
+                try:
+                    a = item['unit']
+                except:
+                    item['unit'] = ''
+                try:
+                    a = item['description']
+                except:
+                    item['description'] = ''
 
                 params[item['name']] = ' '
                 if args.has_key(item['name']):
@@ -319,7 +362,8 @@ class PellMonWebb:
                         except:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1)
+            tags = dbus.getMenutags()
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags)
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -459,6 +503,12 @@ for key, value in colors:
 
 # Get the names of the polled data
 polldata = parser.items("pollvalues")
+# Get the names of the polled data
+rrd_ds_names = parser.items("rrd_ds_names")
+ds_names = {}
+for key, value in rrd_ds_names:
+    ds_names[key] = value
+
 credentials = parser.items('authentication')
 logfile = parser.get('conf', 'logfile')
 

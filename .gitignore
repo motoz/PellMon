@@ -15,3 +15,9 @@ src/web/Makefile.in
 *.log
 *.conf
 *.db
+Makefile
+config.status
+pellmonsrv
+pellmonweb
+*.tar.gz
+

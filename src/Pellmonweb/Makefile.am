@@ -4,7 +4,7 @@ web_PYTHON = \
 	logview.py \
 	__init__.py 
 
-webdir = $(pythondir)/web
+webdir = $(pythondir)/Pellmonweb
 
 nobase_dist_foohtml_DATA = \
 	media/js/spin.js \
@@ -42,5 +42,5 @@ nobase_dist_foohtml_DATA = \
 	html/login.html \
 	html/logview.html
 
-foohtmldir = $(pythondir)/web
+foohtmldir = $(pythondir)/Pellmonweb
 

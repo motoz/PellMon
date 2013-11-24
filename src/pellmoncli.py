@@ -113,16 +113,15 @@ def cli(args):
     
 if __name__ == "__main__":
 
-    try:
-        # Connect to pellmonsrv on the dbus system bus
-        d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-        notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-        version=getItem('version')
-    except:
+    # Connect to pellmonsrv on the dbus system bus
+    d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
+    version=getItem('version')
+    if version == 'error':
         # if that fails try the session bus instead
-        d = Gio.bus_get_sync(Gio.BusType.SESSION, None)
-        notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    
+        e = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        notify = Gio.DBusProxy.new_sync(e, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
+
     # create the top-level parser
     parser = argparse.ArgumentParser(prog='pellmoncli')
 
