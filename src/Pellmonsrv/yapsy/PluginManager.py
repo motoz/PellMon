@@ -97,7 +97,7 @@ class PluginManager(object):
 	def __init__(self, 
 				 categories_filter={"Default":IPlugin}, 
 				 directories_list=[os.path.dirname(__file__)], 
-				 plugin_info_ext="yapsy-plugin"):
+				 plugin_info_ext="pellmon-plugin"):
 		"""
 		Initialize the mapping of the categories and set the list of
 		directories where plugins may be. This can also be set by
@@ -370,7 +370,7 @@ class PluginManagerDecorator(object):
 				 # create a default PluginManager
 				 categories_filter={"Default":IPlugin}, 
 				 directories_list=[os.path.dirname(__file__)], 
-				 plugin_info_ext="yapsy-plugin"):
+				 plugin_info_ext="pellmon-plugin"):
 		"""
 		Mimics the PluginManager's __init__ method and wraps an
 		instance of this class into this decorator class.
