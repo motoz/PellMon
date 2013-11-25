@@ -21,6 +21,11 @@ chipversion = auto
 # This plugin adds the items listed as dummy parameters
 plugindata1 = 123
 
+[plugin_CustomAlarms]
+alarm1_item = boiler_temp
+alarm1_comparator = <
+alarm1_level = 55
+
 [conf]
 # Full path to the rrd database, if it does not exist it is created
 # Remove if you don't want data polling 
