@@ -1,10 +1,18 @@
 
 [enabled_plugins]
+
 # List all plugins to enable pxx = PluginName
 # Enable the ScotteCom plugin to communicate with a NBE scotty/woody/biocomfort pellet burner
 p01 = ScotteCom
-# The Testplugin is a plugin template that does nothing useful
-#p02 = TestPlugin
+
+# CustomAlarms lets you define limits and actions for data items
+#p02 = CustomAlarms
+
+# RaspberryGPIO works only on a raspberry pi
+#p03 = RaspberryGPIO
+
+# Testplugin is a plugin template that does nothing useful
+#p99 = TestPlugin
 
 [plugin_ScotteCom]
 # The settings in this section are passed to the ScotteCom plugin
@@ -22,9 +30,22 @@ chipversion = auto
 plugindata1 = 123
 
 [plugin_CustomAlarms]
+# Define an alarm by creating four parameters:
+# xxx_item = item to read
+# xxx_comparator = >|>=|<|<=|==|!=
+# xxx_level = level to compare against
+# xxx_status = item to hold the result of the comparision, 1=True, 0=False
+# optional:
+# xxx_enum = TrueText|FalseText
+# xxx_action_true = email,log
+# xxx_action_false = email,log
+
+# example: 
 alarm1_item = boiler_temp
-alarm1_comparator = <
-alarm1_level = 55
+alarm1_comparator = >
+alarm1_level = 90
+alarm1_status = boiler_temp_supervision
+alarm1_enum = Boiler temperature too high|OK
 
 [conf]
 # Full path to the rrd database, if it does not exist it is created

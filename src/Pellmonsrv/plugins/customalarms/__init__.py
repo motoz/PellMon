@@ -18,8 +18,14 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from threading import Thread, Timer
+from ConfigParser import ConfigParser
+from os import path
+import os, grp, pwd
 
 itemList=[]
+itemTags={}
+Menutags = ['CustomAlarms']
 
 class alarmplugin(protocols):
     def __init__(self):
@@ -29,6 +35,27 @@ class alarmplugin(protocols):
         protocols.activate(self, conf, glob)
         for key, value in self.conf.iteritems():
             itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'', 'type':'R/W'})
+            itemTags[key] = ['All', 'CustomAlarms']
+
+        self.valuestore = ConfigParser()
+        self.valuestore.add_section('values')
+        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
+        for item in itemList:
+            self.valuestore.set('values', item['name'], item['value'])
+        self.valuestore.read(self.valuesfile)
+        f = open(self.valuesfile, 'w')
+        self.valuestore.write(f)
+        f.close()
+        try:
+            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
+            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
+            os.chown(self.valuesfile, uid, gid)
+        except:
+            pass
+
+        t = Timer(5, self.poll_thread)
+        t.setDaemon(True)
+        t.start()
 
     def getItem(self, item):
         for i in itemList:
@@ -39,6 +66,10 @@ class alarmplugin(protocols):
         for i in itemList:
             if i['name'] == item:
                 i['value'] = value
+                self.valuestore.set('values', item, str(value))
+                f = open(self.valuesfile, 'w')
+                self.valuestore.write(f)
+                f.close()
                 return 'OK'
         return['error']
 
@@ -49,4 +80,22 @@ class alarmplugin(protocols):
         return l
 
     def GetFullDB(self, tags):
-        return itemList
+
+        def match(requiredtags, existingtags):
+            for rt in requiredtags:
+                if rt != '' and not rt in existingtags:
+                    return False
+            return True
+            
+        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
+        for item in items:
+            item['description'] = ''
+        return items
+        
+    def getMenutags(self):
+        return Menutags
+
+    def poll_thread(self):
+        t = Timer(5, self.poll_thread)
+        t.setDaemon(True)
+        t.start()

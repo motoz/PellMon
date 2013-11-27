@@ -250,9 +250,12 @@ class MyDaemon(Daemon):
         # Load all plugins of 'protocol' category.
         conf.database = Database()
 
-        if conf.USER:
-            drop_privileges(conf.USER, conf.GROUP)
-
+        try:
+            if conf.USER:
+                drop_privileges(conf.USER, conf.GROUP)
+        except:
+            pass
+            
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()    
