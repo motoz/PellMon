@@ -26,6 +26,7 @@ import os, grp, pwd
 itemList=[]
 itemTags={}
 Menutags = ['CustomAlarms']
+alarms = {}
 
 class alarmplugin(protocols):
     def __init__(self):
@@ -35,8 +36,25 @@ class alarmplugin(protocols):
         protocols.activate(self, conf, glob)
         for key, value in self.conf.iteritems():
             itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'', 'type':'R/W'})
-            itemTags[key] = ['All', 'CustomAlarms']
+            itemTags[key] = ['All', 'CustomAlarms', 'Basic']
+            try:
+                alarm_name = key.split('_')[0]
+                if not alarms.has_key(alarm_name):
+                    alarms[alarm_name] = {}
+                alarm_data = key.split('_')[1]
+                if alarm_data == 'item':
+                    Menutags.append(alarm_name)
+                if alarm_data == 'status':
+                    itemList.append({'name':value, 'value':0, 'unit':'', 'type':'R'})
+                    itemTags[value] = ['All', 'CustomAlarms', 'Basic']
 
+                if alarm_data in ['item','comparator','level','status']:
+                    if not alarms.has_key(alarm_name):
+                        alarms[alarm_name] = {}
+                    alarms[alarm_name][alarm_data] = value
+            except Exception,e:
+                logger.info(str(e))
+            itemTags[key].append(alarm_name)
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
