@@ -114,6 +114,31 @@ class alarmplugin(protocols):
         return Menutags
 
     def poll_thread(self):
+        for name, data in alarms.items():
+            value = float(self.glob['conf'].database.items[data['item']].getItem())
+            comparator = self.getItem(name+'_comparator')
+            level = float(self.getItem(name+'_level'))
+            alarm = 0
+            if comparator == '<':
+                if value < level:
+                    alarm = 1
+            elif comparator == '<=':
+                if value <= level:
+                    alarm = 1
+            elif comparator == '>':
+                print 'hej'
+                if value > level:
+                    alarm = 1
+            elif comparator == '>=':
+                if value >= level:
+                    alarm = 1
+            elif comparator == '==':
+                if value == level:
+                    alarm = 1
+            elif comparator == '!=':
+                if value != level:
+                    alarm = 1
+            self.setItem(data['status'], alarm)
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)
         t.start()
