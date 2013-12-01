@@ -144,9 +144,9 @@ class alarmplugin(protocols):
                 try:
                     enum = self.getItem(name+'_enum').split('|')
                     if alarm:
-                        self.settings_changed(name, enum[1], enum[0], 'alarm')
-                    else:
                         self.settings_changed(name, enum[0], enum[1], 'alarm')
+                    else:
+                        self.settings_changed(name, enum[1], enum[0], 'alarm')
                 except:
                     self.settings_changed(name, oldState, alarm, 'alarm')
         t = Timer(5, self.poll_thread)
