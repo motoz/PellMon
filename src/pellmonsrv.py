@@ -154,13 +154,26 @@ def pollThread():
         except IOError as e:
             logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
 
-def settings_changed(item, oldvalue, newvalue):
+def handle_settings_changed(item, oldvalue, newvalue, itemtype):
     """ Called by the protocols when they detect that a setting has changed """
-    logline = 'Parameter %s changed from %s to %s'%(item, oldvalue, newvalue)
-    logger.info(logline)
-    conf.tickcounter=int(time.time())
-    if conf.email and 'parameter' in conf.emailconditions:
-        sendmail(logline)
+    if itemtype == 'parameter':
+        logline = """Parameter '%s' changed from '%s' to '%s'"""%(item, oldvalue, newvalue)
+        logger.info(logline)
+        conf.tickcounter=int(time.time())
+        if conf.email and 'parameter' in conf.emailconditions:
+            sendmail(logline)
+    if itemtype == 'mode':
+        logline = """'%s' changed from '%s' to '%s'"""%(item, oldvalue, newvalue)
+        logger.info(logline)
+        conf.tickcounter=int(time.time())
+        if conf.email and 'mode' in conf.emailconditions:
+            sendmail(logline)
+    if itemtype == 'alarm':
+        logline = """'%s' state went from '%s' to '%s'"""%(item, oldvalue, newvalue)
+        logger.info(logline)
+        conf.tickcounter=int(time.time())
+        if conf.email and 'alarm' in conf.emailconditions:
+            sendmail(logline)
 
 def periodic_signal_handler(signum, frame):
     """Periodic signal handler. Start pollThread to do the work"""

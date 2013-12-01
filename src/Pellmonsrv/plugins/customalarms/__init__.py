@@ -126,7 +126,6 @@ class alarmplugin(protocols):
                 if value <= level:
                     alarm = 1
             elif comparator == '>':
-                print 'hej'
                 if value > level:
                     alarm = 1
             elif comparator == '>=':
@@ -138,7 +137,18 @@ class alarmplugin(protocols):
             elif comparator == '!=':
                 if value != level:
                     alarm = 1
-            self.setItem(data['status'], alarm)
+            status_item = self.getItem(name+'_status')
+            oldState  = self.getItem(status_item)
+            if alarm != oldState:
+                self.setItem(status_item, alarm)
+                try:
+                    enum = self.getItem(name+'_enum').split('|')
+                    if alarm:
+                        self.settings_changed(name, enum[1], enum[0], 'alarm')
+                    else:
+                        self.settings_changed(name, enum[0], enum[1], 'alarm')
+                except:
+                    self.settings_changed(name, oldState, alarm, 'alarm')
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)
         t.start()

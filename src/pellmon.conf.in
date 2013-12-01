@@ -36,20 +36,18 @@ plugindata1 = 123
 # xxx_level = level to compare against
 # xxx_status = item to hold the result of the comparision, 1=True, 0=False
 # optional:
-# xxx_enum = TrueText|FalseText
-# xxx_action_true = email,log
-# xxx_action_false = email,log
+# xxx_enum = FalseText|TrueText
 
 # example: 
 alarm1_item = boiler_temp
 alarm1_comparator = >
 alarm1_level = 90
 alarm1_status = boiler_temp_supervision
-alarm1_enum = Boiler temperature too high|OK
+alarm1_enum = OK|Boiler temperature too high
 
 [conf]
 # Full path to the rrd database, if it does not exist it is created
-# Remove if you don't want data polling 
+# Remove if you do not want data polling 
 database = @localstatedir@/lib/pellmon/rrd.db
 
 # Full path to the optional persistent rrd database. It is copied

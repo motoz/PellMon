@@ -49,9 +49,9 @@ class protocols(IPlugin):
         """Callback to send mail message"""
         glob['sendmail'](msg)
 
-    def settings_changed(self, item, oldvalue, newvalue):
+    def settings_changed(self, item, oldvalue, newvalue, itemtype='parameter'):
         """Callback from plugin when a changed setting value is detected"""
-        self.glob['settings_changed'](item, oldvalue, newvalue)
+        self.glob['handle_settings_changed'](item, oldvalue, newvalue, itemtype)
 
     def getMenutags(self):
         return []
