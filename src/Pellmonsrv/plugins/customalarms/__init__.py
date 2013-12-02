@@ -35,10 +35,28 @@ class alarmplugin(protocols):
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
         for key, value in self.conf.iteritems():
-            itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'', 'type':'R/W'})
-            itemTags[key] = ['All', 'CustomAlarms', 'Basic']
             try:
                 alarm_name = key.split('_')[0]
+                alarm_data = key.split('_')[1]
+                if alarm_data == 'status':
+                    alarm_type = 'R'
+                    description = 'The name of the parameter that has the status for this alarm'
+                elif alarm_data == 'comparator':
+                    alarm_type = 'R/W'
+                    description = 'Allowed values: >|>=|<|<=|==|!='
+                elif alarm_data == 'level':
+                    alarm_type = 'R/W'
+                    description = 'compare against this value'
+                elif alarm_data == 'item':
+                    alarm_type = 'R/W'
+                    description = 'Parameter to read from'
+                elif alarm_data == 'enum':
+                    alarm_type = 'R/W'
+                    description = 'set to: alarm OFF text|alarm ON text'
+
+                itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'', 'type':alarm_type, 'description':description})
+                itemTags[key] = ['All', 'CustomAlarms', 'Basic']
+
                 if not alarms.has_key(alarm_name):
                     alarms[alarm_name] = {}
                 alarm_data = key.split('_')[1]
@@ -76,20 +94,21 @@ class alarmplugin(protocols):
         t.start()
 
     def getItem(self, item):
-        for i in itemList:
-            if i['name'] == item:
-                return i['value']
+        try:
+            value = self.valuestore.get('values', item)
+            return value
+        except:
+            return 'error'
 
     def setItem(self, item, value):
-        for i in itemList:
-            if i['name'] == item:
-                i['value'] = value
-                self.valuestore.set('values', item, str(value))
-                f = open(self.valuesfile, 'w')
-                self.valuestore.write(f)
-                f.close()
-                return 'OK'
-        return['error']
+        try:
+            self.valuestore.set('values', item, str(value))
+            f = open(self.valuesfile, 'w')
+            self.valuestore.write(f)
+            f.close()
+            return 'OK'
+        except:
+            return 'error'
 
     def getDataBase(self):
         l=[]
@@ -106,8 +125,6 @@ class alarmplugin(protocols):
             return True
             
         items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        for item in items:
-            item['description'] = ''
         return items
         
     def getMenutags(self):
@@ -115,7 +132,8 @@ class alarmplugin(protocols):
 
     def poll_thread(self):
         for name, data in alarms.items():
-            value = float(self.glob['conf'].database.items[data['item']].getItem())
+            item = self.getItem(name+'_item')
+            value = float(self.glob['conf'].database.items[item].getItem())
             comparator = self.getItem(name+'_comparator')
             level = float(self.getItem(name+'_level'))
             alarm = 0
@@ -139,7 +157,7 @@ class alarmplugin(protocols):
                     alarm = 1
             status_item = self.getItem(name+'_status')
             oldState  = self.getItem(status_item)
-            if alarm != oldState:
+            if str(alarm) != oldState:
                 self.setItem(status_item, alarm)
                 try:
                     enum = self.getItem(name+'_enum').split('|')
