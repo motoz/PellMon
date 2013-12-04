@@ -45,6 +45,12 @@ alarm1_level = 90
 alarm1_status = boiler_temp_supervision
 alarm1_enum = OK|Boiler temperature too high
 
+alarm2_item = chute_temp
+alarm2_comparator = >
+alarm2_level = 45
+alarm2_status = boiler_temp_supervision
+alarm2_enum = OK|Chute temperature too high
+
 [conf]
 # Full path to the rrd database, if it does not exist it is created
 # Remove if you do not want data polling 
