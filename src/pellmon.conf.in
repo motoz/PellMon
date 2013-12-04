@@ -1,10 +1,18 @@
 
 [enabled_plugins]
+
 # List all plugins to enable pxx = PluginName
 # Enable the ScotteCom plugin to communicate with a NBE scotty/woody/biocomfort pellet burner
 p01 = ScotteCom
-# The Testplugin is a plugin template that does nothing useful
-#p02 = TestPlugin
+
+# CustomAlarms lets you define limits and actions for data items
+#p02 = CustomAlarms
+
+# RaspberryGPIO works only on a raspberry pi
+#p03 = RaspberryGPIO
+
+# Testplugin is a plugin template that does nothing useful
+#p99 = TestPlugin
 
 [plugin_ScotteCom]
 # The settings in this section are passed to the ScotteCom plugin
@@ -21,9 +29,31 @@ chipversion = auto
 # This plugin adds the items listed as dummy parameters
 plugindata1 = 123
 
+[plugin_CustomAlarms]
+# Define an alarm by creating four parameters:
+# xxx_item = item to read
+# xxx_comparator = >|>=|<|<=|==|!=
+# xxx_level = level to compare against
+# xxx_status = item to hold the result of the comparision, 1=True, 0=False
+# optional:
+# xxx_enum = FalseText|TrueText
+
+# example: 
+alarm1_item = boiler_temp
+alarm1_comparator = >
+alarm1_level = 90
+alarm1_status = boiler_temp_supervision
+alarm1_enum = OK|Boiler temperature too high
+
+alarm2_item = chute_temp
+alarm2_comparator = >
+alarm2_level = 45
+alarm2_status = boiler_temp_supervision
+alarm2_enum = OK|Chute temperature too high
+
 [conf]
 # Full path to the rrd database, if it does not exist it is created
-# Remove if you don't want data polling 
+# Remove if you do not want data polling 
 database = @localstatedir@/lib/pellmon/rrd.db
 
 # Full path to the optional persistent rrd database. It is copied

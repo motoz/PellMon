@@ -122,8 +122,8 @@ class Consumption(object):
         RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-31556952s "%(now,now)
         RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
         for h in range(0,12):
-            start=(now-h*(86400*30)-(86400*30))
-            end=(now-h*(86400*30))
+            start=(now-h*2628000-2628000)
+            end=(now-h*2628000)
             RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
 
         RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,12,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"last year\: %.1lf kg\" GPRINT:aver:\"average %.2lf kg/month\" "
