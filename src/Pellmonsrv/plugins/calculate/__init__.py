@@ -28,22 +28,27 @@ itemTags={}
 itemValues={}
 Menutags = ['Calculate']
 
-class alarmplugin(protocols):
+class calculateplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
+
         for key, value in self.conf.iteritems():
             try:
                 calc_name = key.split('_')[0]
                 calc_data = key.split('_')[1]
-                itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R/W', 'description':''})
-                itemTags[key] = ['All', 'CustomAlarms', 'Basic']
-            except Exception,e:
-           
-                print (str(e))
-            itemTags[key].append(calc_name)
+                if calc_data == 'calc':
+                    itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R/W', 'description':''})           
+                elif calc_data == 'read':
+                    itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})       
+                    itemList.append({'name':value, 'value':'', 'calc_item':calc_name+'_calc', 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})  
+                    itemTags[value] = ['All', 'Calculate', 'Basic']       
+                itemTags[key] = ['All', 'Calculate', 'Basic']
+                itemTags[key].append(calc_name)
+            except Exception,e: 
+                print e
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
@@ -62,19 +67,88 @@ class alarmplugin(protocols):
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
-
-        t = Timer(5, self.poll_thread)
-        t.setDaemon(True)
-        t.start()
-
-    def getItem(self, item):
+            
+    def execute(self, itemName):
         try:
-            return str(itemValues[item])
+            calc = self.getItem(itemName)
+            stack=[]
+            for c in calc.split(';'):
+                if c=='DIV':
+                    q = float(stack.pop())
+                    d = float(stack.pop())
+                    stack.append(str(d/q))
+                elif c=='MUL':
+                    d = float(stack.pop())
+                    q = float(stack.pop())
+                    stack.append(str(d*q))
+                elif c=='ADD':
+                    d = float(stack.pop())
+                    q = float(stack.pop())
+                    stack.append(str(d+q))
+                elif c=='SUB':
+                    d = float(stack.pop())
+                    q = float(stack.pop())
+                    stack.append(str(q-d))
+                elif c=='GET':
+                    item = stack.pop()
+                    value = self.glob['conf'].database.items[item].getItem()
+                    stack.append(value)   
+                elif c=='SET':
+                    item = stack.pop()
+                    value = stack.pop()
+                    result = self.glob['conf'].database.items[item].setItem(value)
+                    stack.append(result)   
+                elif c=='>':
+                    item2 = stack.pop()
+                    item1 = stack.pop()
+                    stack.append(str(int(item1 > item2)))   
+                elif c=='<':
+                    item2 = stack.pop()
+                    item1 = stack.pop()
+                    stack.append(str(int(item1 < item2)))  
+                elif c=='==':
+                    item2 = stack.pop()
+                    item1 = stack.pop()
+                    stack.append(str(int(item1 == item2)))  
+                elif c=='!=':
+                    item2 = stack.pop()
+                    item1 = stack.pop()
+                    stack.append(str(int(item1 != item2))) 
+                elif c=='IF':
+                    itemFalse = stack.pop()
+                    itemTrue = stack.pop()
+                    itemCheck = int(stack.pop())
+                    if itemCheck:
+                        stack.append(itemTrue)
+                    else:
+                        stack.append(itemFalse)   
+                elif c=='EXEC':
+                    calc_item = stack.pop()
+                    stack.append(self.execute(calc_item))   
+                elif c=='POP':
+                    stack.pop()
+                else:
+                    stack.append(c)
+            return stack.pop() 
         except:
-            try:
-                return self.valuestore.get('values', item)
-            except:
-                return 'error'
+            return 'error'
+        
+    def getItem(self, itemName):
+        for i in itemList:
+            if i['name'] == itemName:
+                item = i
+                try:
+                    calc_item = item['calc_item']
+                    return self.execute(calc_item)
+                except:
+                    try:
+                        return str(itemValues[itemName])
+                    except:
+                        try:
+                            value = self.valuestore.get('values', itemName)
+                            return value
+                        except:
+                            return 'error'
 
     def setItem(self, item, value):
         try:
@@ -110,13 +184,6 @@ class alarmplugin(protocols):
         
     def getMenutags(self):
         return Menutags
-
-    def poll_thread(self):
-        """Calculations are done in this thread""" 
-        try:
-            pass     
-        except:
-            pass
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)
         t.start()
