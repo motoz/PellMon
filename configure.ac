@@ -31,6 +31,7 @@ src/Pellmonsrv/plugins/testplugin/Makefile \
 src/Pellmonsrv/plugins/scottecom/Makefile \
 src/Pellmonsrv/plugins/raspberrygpio/Makefile \
 src/Pellmonsrv/plugins/customalarms/Makefile \
+src/Pellmonsrv/plugins/calculate/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 
