@@ -52,9 +52,9 @@ alarm2_status = boiler_temp_supervision
 alarm2_enum = OK|Chute temperature too high
 
 [plugin_Calculate]
+# This plugin implements a simple stack engine. 
 # xxx_calc = operator|value;operator|value;...
 # xxx_read = item name to read to execute the calculation and retrive the result 
-# This plugin implements a simple stack engine. 
 # 'value' pushes the value to the stack, 'operator' pops one or several values,
 # executes a calculation on it/them and pushes the result back to the stack
 # Operators can be: ADD, SUB, MUL, DIV, GET, SET, EXEC, >, <, ==, !=, IF, POP
@@ -64,8 +64,9 @@ alarm2_enum = OK|Chute temperature too high
 # and then the value to evaluate. Ex: 0;123;456;IF will leave '456' on the stack, while 1;123;456 will 
 # leave '123' on the stack
 # EXEC pops a calculate item name, gets its value, executes it and pushes the result
+# POP discards one value from the stack
 
-# example get boiler temperature divided by two from the item named 'half_boiler_temp'
+# example: get boiler temperature divided by two from an item named 'half_boiler_temp'
 calc1_calc = boiler_temp;GET;2;DIV
 calc1_read = half_boiler_temp
 
