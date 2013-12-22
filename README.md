@@ -121,3 +121,10 @@ rrdtool, python-serial, python-cherrypy3, python-dbus, python-mako, python-gobje
 <pre>
 autoconf
 </pre>
+
+##Plugin specific dependencies:
+### OWFS
+<pre>
+owfs python-ownet
+</pre>
+
