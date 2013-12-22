@@ -1,6 +1,6 @@
+############################################################################################
 
 [enabled_plugins]
-
 # List all plugins to enable pxx = PluginName
 # Enable the ScotteCom plugin to communicate with a NBE scotty/woody/biocomfort pellet burner
 p01 = ScotteCom
@@ -14,8 +14,13 @@ p01 = ScotteCom
 # The calculate plugin lets you calculate your own data from existing data items
 #p04 = Calculate
 
+# The OWFS plugin connects to a running owfs server on localhost:4304 to read onewire devices
+#p05 = OWFS
+
 # Testplugin is a plugin template that does nothing useful
 #p99 = TestPlugin
+
+############################################################################################
 
 [plugin_ScotteCom]
 # The settings in this section are passed to the ScotteCom plugin
@@ -72,6 +77,14 @@ alarm2_enum = OK|Chute temperature too high
 # example: get boiler temperature divided by two from an item named 'half_boiler_temp'
 calc1_calc = boiler_temp;GET;2;DIV
 calc1_read = half_boiler_temp
+
+[plugin_OWFS]
+# Data item name = owfs_path
+# This two reads the value and type from the fake sensor available in the default owfs configuration 
+owfstemp1 = 10.67C6697351FF/temperature
+owfstemp1_type = 10.67C6697351FF/type
+
+############################################################################################
 
 [conf]
 # Full path to the rrd database, if it does not exist it is created
@@ -167,6 +180,8 @@ d05 = #FF05FF
 d06 = #0101FF
 d07 = #207F20
 d08 = #2F2FFF
+
+############################################################################################
 
 [email]
 # Uncomment and set these for email on mode/alarm status changes

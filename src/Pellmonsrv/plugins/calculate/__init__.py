@@ -68,10 +68,9 @@ class calculateplugin(protocols):
         except:
             pass
             
-    def execute(self, itemName):
+    def execute(self, itemName, stack=[]):
         try:
             calc = self.getItem(itemName)
-            stack=[]
             for c in calc.split(';'):
                 if c=='DIV':
                     q = float(stack.pop())
@@ -124,7 +123,7 @@ class calculateplugin(protocols):
                         stack.append(itemFalse)   
                 elif c=='EXEC':
                     calc_item = stack.pop()
-                    stack.append(self.execute(calc_item))   
+                    stack.append(self.execute(calc_item, stack))   
                 elif c=='POP':
                     stack.pop()
                 else:
