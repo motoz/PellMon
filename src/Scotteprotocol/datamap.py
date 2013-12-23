@@ -125,11 +125,11 @@ dataBaseMap =  {
     'magazine_content'      :{('6.03','zzzz') : param (FrameZ05, 25,    0,    'F04',   0,  9999) },
 
     'comp_clean_interval':  { ('6.03','zzzz') : param (FrameZ05, 18,    0,    'L00',   0,   999) },
-    'comp_clean_time':      { ('6.03','6.69') : param (FrameZ05, 19,    0,    'L01',   0,    10) },
-    'comp_clean_time':      { ('6.69','zzzz') : param (FrameZ05, 19,    1,    'L01',   1,   900) },
+    'comp_clean_time':      { ('6.03','6.69') : param (FrameZ05, 19,    0,    'L01',   0,    10),
+                              ('6.69','zzzz') : param (FrameZ05, 19,    1,    'L01',   1,   900) },
     'comp_clean_blower':    { ('6.03','zzzz') : param (FrameZ05, 20,    0,    'L02',   0,   100) },
-    'comp_clean_wait':      { ('6.12','6.69') : param (FrameZ05, 29,    0,    'L03',   0,   300) },
-    'comp_clean_wait':      { ('6.69','zzzz') : param (FrameZ05, 29,    0,    'L03',   0,   900) },
+    'comp_clean_wait':      { ('6.12','6.69') : param (FrameZ05, 29,    0,    'L03',   0,   300),
+                              ('6.69','zzzz') : param (FrameZ05, 29,    0,    'L03',   0,   900) },
 
     'blower_corr_mid':      { ('4.99','zzzz') : param (FrameZ05, 21,    0,    'M00',  50,   150) },
 
