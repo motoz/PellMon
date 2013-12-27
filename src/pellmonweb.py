@@ -230,7 +230,8 @@ class PellMonWebb:
              return None
         if consumption_graph:
             #Build the command string to make a graph from the database
-            now=int(time())/3600*3600
+            now = int(time())
+            now1h=now/3600*3600
 
             if not cherrypy.request.params.get('maxWidth'):
                 maxWidth = '440'; # Default bootstrap 3 grid size
@@ -264,14 +265,35 @@ class PellMonWebb:
             # 0,IF                  # else push zero
             # AREA:barchart#ffffff" # draw an area below it      
             # Repeat for every bar            
+
             RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
-            RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
-            for h in range(0,24):
-                start=(now-h*3600-3600)
-                end=(now-h*3600)
+            RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE:end=%u:start=%u-86400s DEF:b=%s:feeder_capacity:AVERAGE:end=%u:start=%u-86400s DEF:b1h=%s:feeder_capacity:AVERAGE"%(db,now,now1h,db,now,now1h,db)
+
+            h=27
+            start=(now1h-23*3600-3600)
+            end=(now1h-23*3600)
+            part = 1
+            RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,"#d6e4e9")
+            h=23
+            part = 1
+            start=(now-23*3600-3600)
+            RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,"#4891b6")
+
+            for h in range(0,23):
+                start=(now1h-h*3600-3600)
+                end=(now1h-h*3600)
                 RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
 
-            RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"24h consumption %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
+            h=25
+            start=now1h
+            end=now
+            if now-now1h > 120:
+                part=3600/(float(now)-now1h-40)
+                RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,"#d6e4e9")
+                h=26
+                RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,"#4891b6")
+
+            RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b1h,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=b1h,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"24h consumption %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
             cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
             cmd.wait()
             cherrypy.response.headers['Pragma'] = 'no-cache'
