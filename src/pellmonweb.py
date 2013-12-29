@@ -218,7 +218,6 @@ class PellMonWeb:
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%value+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (ds_names[key], value, colorsDict[key], value)
-        print RrdGraphString1
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -233,8 +232,9 @@ class PellMonWeb:
                 maxWidth = '440'; # Default bootstrap 3 grid size
             else:
                 maxWidth = cherrypy.request.params.get('maxWidth')
-
-            RrdGraphString = make_barchart_string(db, time(), 3600, 24, '-', maxWidth, '24h consumption', 'kg/h')
+            now = int(time())
+            align = now/3600*3600
+            RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h')
             cmd = subprocess.Popen(RrdGraphString, shell=True, stdout=subprocess.PIPE)
             cmd.wait()
             cherrypy.response.headers['Pragma'] = 'no-cache'

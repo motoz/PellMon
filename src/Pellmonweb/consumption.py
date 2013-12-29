@@ -24,15 +24,16 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from time import time,localtime
 from tempfile import NamedTemporaryFile
+import subprocess
 
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
 
-def make_barchart_string(db, end, div, bars, out='-', width=440, tot_txt='total', avg_unit='', tot_unit='kg'):
+def make_barchart_string(db, end, align, div, bars, out='-', width=440, tot_txt='total', avg_unit='', tot_unit='kg'):
     #Build the command string to make a graph from the database
     now = int(end)
     div = int(div)
-    now1h=now/div*div
+    now1h=int(align)
 
     # The width passed to rrdtool does not include the sidebars
     graphWidth = str(int(width))
@@ -63,7 +64,7 @@ def make_barchart_string(db, end, div, bars, out='-', width=440, tot_txt='total'
     # Repeat for every bar            
 
     RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-%us "%(now,now,div*bars)
-    RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE:end=%u:start=%u-86400s DEF:b=%s:feeder_capacity:AVERAGE:end=%u:start=%u-86400s DEF:b1h=%s:feeder_capacity:AVERAGE"%(db,now,now1h,db,now,now1h,db)
+    RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE:end=%u:start=%u DEF:b=%s:feeder_capacity:AVERAGE:end=%u:start=%u DEF:b1h=%s:feeder_capacity:AVERAGE"%(db,now,now1h-div*bars,db,now,now1h-div*bars,db)
 
     h=bars+3
     start=(now1h-(bars-1)*div-div)
@@ -73,7 +74,7 @@ def make_barchart_string(db, end, div, bars, out='-', width=440, tot_txt='total'
     h=bars-1
     part = 1
     start=(now-(bars-1)*div-div)
-    RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,"#4891b6")
+    RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,("#61c4f6","#4891b6")[h%2])
 
     for h in range(0,bars-1):
         start=(now1h-h*div-div)
@@ -107,113 +108,50 @@ class Consumption(object):
         return tmpl.render(username=cherrypy.session.get('_cp_username'))
     
     @cherrypy.expose
-    def consumption24h(self):    
+    def consumption24h(self):
         if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(self.db), 'consumption24h.png')
+        now=int(time())
+        align=now/3600*3600
+        RrdGraphString = make_barchart_string(self.db, now, align, 3600, 24, '-', 550, '24h consumption', 'kg/h')
+        cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        now=int(time())/3600*3600
-    
-        fd=NamedTemporaryFile(suffix='.png')
-        graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-86400s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
-        for h in range(0,24):
-            start=(now-h*3600-3600)
-            end=(now-h*3600)
-            RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
+        return serve_fileobj(cmd.stdout)
 
-        RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"last 24h\: %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
-        RrdGraphString1=RrdGraphString1+" >>/dev/null"
-        os.system(RrdGraphString1)        
-        return serve_fileobj(fd, content_type='image/png')
     @cherrypy.expose
-    def consumption7d(self):    
+    def consumption7d(self):
         if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(self.db), 'consumption7d.png')
+        now=int(time())
+        align=int(now)/86400*86400-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        RrdGraphString = make_barchart_string(self.db, now, align, 86400, 7, '-', 550, 'last week', 'kg/day')
+        cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        t=time()
-        now=int(time())/86400*86400-(localtime(t).tm_hour-int(t)%86400/3600)*3600
-        
-        fd=NamedTemporaryFile(suffix='.png')
-        graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-604800s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
-        for h in range(0,7):
-            start=(now-h*86400-86400)
-            end=(now-h*86400)
-            RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
-
-        RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,7,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"last week\: %.1lf kg\" GPRINT:aver:\"average %.2lf kg/day\" "
-        RrdGraphString1=RrdGraphString1+" >>/dev/null"
-        os.system(RrdGraphString1)        
-        return serve_fileobj(fd, content_type='image/png')
+        return serve_fileobj(cmd.stdout)
 
     @cherrypy.expose
     def consumption1m(self):    
         if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(self.db), 'consumption1m.png')
+        now = int(time())
+        align=int(now+4*86400)/(86400*7)*(86400*7)-(localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+        RrdGraphString = make_barchart_string(self.db, time(), align, 86400*7, 8, '-', 550, 'last two months', 'kg/week')
+        cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        t=time()
-        now=int(time()+4*86400)/(86400*7)*(86400*7)-(localtime(t).tm_hour-int(t)%86400/3600)*3600 -4*86400
-        
-        fd=NamedTemporaryFile(suffix='.png')
-        graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-4838400s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(self.db,self.db)
-        for h in range(0,8):
-            start=(now-h*(86400*7)-(86400*7))
-            end=(now-h*(86400*7))
-            RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
-
-        RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,8,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"last two month\: %.1lf kg\" GPRINT:aver:\"average %.2lf kg/week\" "
-        RrdGraphString1=RrdGraphString1+" >>/dev/null"
-        os.system(RrdGraphString1)        
-        return serve_fileobj(fd, content_type='image/png')
+        return serve_fileobj(cmd.stdout)
         
     @cherrypy.expose
     def consumption1y(self):    
         if not self.polling:
              return None
-        graph_file = os.path.join(os.path.dirname(self.db), 'consumption1y.png')
+        now = int(time())
+        align=now/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        RrdGraphString = make_barchart_string(self.db, now, align, 2628000, 12, '-', 550, 'last year', 'kg/month')
+        cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        cherrypy.response.headers['Pragma'] = 'no-cache'
-        now=time()
-        now1m=int(now)/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
-
-        fd=NamedTemporaryFile(suffix='.png')
-        graph_file=fd.name
-        RrdGraphString1="rrdtool graph "+graph_file+" --right-axis 1:0 --right-axis-format %%1.1lf --width 460 --height 300 --end %u --start %u-31556952s "%(now,now)
-        RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE:start=%u-31536000s:end=%u DEF:b=%s:feeder_capacity:AVERAGE:start=%u-31536000s:end=%u DEF:b1m=%s:feeder_capacity:AVERAGE"%(self.db, now1m, now, self.db, now1m, now, self.db)
-
-        start=(now1m-11*2628000-2628000)
-        end=(now1m-11*2628000)
-        h=14
-        part=1
-        RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,"#d6e4e9")
-        start=(now-11*2628000-2628000)
-        h=15
-        RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,"#4891b6")
-
-        for h in range(0,11):
-            start=(now1m-h*2628000-2628000)
-            end=(now1m-h*2628000)
-            RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
-
-        start=now1m
-        end=now
-        h=12
-        part=float(2628000) / (now-now1m)
-        RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,"#d6e4e9")
-        h=13
-        part=1
-        RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF,%f,* AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,part,h,"#4891b6")
-
-        RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b1m,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=b1m,POP,tot,12,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"last year\: %.1lf kg\" GPRINT:aver:\"average %.2lf kg/month\" "
-        RrdGraphString1=RrdGraphString1+" >>/dev/null"
-        os.system(RrdGraphString1)        
-        return serve_fileobj(fd, content_type='image/png')
-    
+        return serve_fileobj(cmd.stdout)
 
