@@ -121,7 +121,7 @@ class Dbus_handler:
         else:
             raise DbusNotConnected("server not running")
 
-class PellMonWebb:
+class PellMonWeb:
     def __init__(self):
         self.logview = LogViewer(logfile)
         self.auth = AuthController(credentials)
@@ -218,7 +218,6 @@ class PellMonWebb:
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%value+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (ds_names[key], value, colorsDict[key], value)
-        print RrdGraphString1
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -229,50 +228,14 @@ class PellMonWebb:
         if not polling:
              return None
         if consumption_graph:
-            #Build the command string to make a graph from the database
-            now=int(time())/3600*3600
-
             if not cherrypy.request.params.get('maxWidth'):
                 maxWidth = '440'; # Default bootstrap 3 grid size
             else:
                 maxWidth = cherrypy.request.params.get('maxWidth')
-
-            # The width passed to rrdtool does not include the sidebars
-            graphWidth = str(int(maxWidth))
-
-            consumption_file = '-' # Output to stdout
-
-            # Draw one bar:
-            # CDEF:rate=            # compute feeder_time rate * feeder_consumption for selected timespan
-            # TIME,endtime, LE,     # push 1 if TIME is before endtime else push 0
-            # TIME,starttime, GT,   # push 1 if TIME is after starttime else push 0
-            # feeder_time,0, IF,    # push 0 before starttime, push from DEF:feeder_time after starttime
-            # 0, IF,                # push back above result before endtime, then push 0 
-                                    # the stack now has feeder_time (rate) between starttime and endtime, otherwise zero
-            # feeder_capacity, *,   # Multiply with DEF:feeder_capacity (which is for 360 seconds, and in grams)
-            # 360000, /             # and divide by 360 to get capacity per second, and also by 1000 to get result in kg
-            
-            # VDEF:tot=rate,TOTAL   # tot = integration of the CDEF:rate, ie. get value for consumption between start and endtimes
-            
-            # CDEF:total=           # make a CDEF out of the VDEF:tot value by 'tricking' rrd;
-            # feeder_time,POP,tot   # push from any DEF, pop the values, then push new values from the VDEF
-            
-            # CDEF:barchart=        # and finally...
-            # TIME,endtime,LE,      # where time is between endtime
-            # TIME,starttime,GT,    # and starttime
-            # total,0,IF,           # push calculated total 
-            # 0,IF                  # else push zero
-            # AREA:barchart#ffffff" # draw an area below it      
-            # Repeat for every bar            
-            RrdGraphString1="rrdtool graph "+consumption_file+" --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u-86400s "%(now,now)
-            RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE "%(db,db)
-            for h in range(0,24):
-                start=(now-h*3600-3600)
-                end=(now-h*3600)
-                RrdGraphString1=RrdGraphString1+" CDEF:aa%u=TIME,%u,LE,TIME,%u,GT,a,0,IF,0,IF,b,*,360000,/ VDEF:va%u=aa%u,TOTAL CDEF:ca%u=a,POP,va%u CDEF:aaa%u=TIME,%u,LE,TIME,%u,GT,ca%u,0,IF,0,IF AREA:aaa%u%s"%(h,end,start,h,h,h,h,h,end,start,h,h,("#61c4f6","#4891b6")[h%2])
-
-            RrdGraphString1=RrdGraphString1+" CDEF:cons=a,b,*,360,/,1000,/ VDEF:tot=cons,TOTAL CDEF:avg=a,POP,tot,24,/ VDEF:aver=avg,MAXIMUM GPRINT:tot:\"24h consumption %.1lf kg\" GPRINT:aver:\"average %.2lf kg/h\" "
-            cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+            now = int(time())
+            align = now/3600*3600
+            RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h')
+            cmd = subprocess.Popen(RrdGraphString, shell=True, stdout=subprocess.PIPE)
             cmd.wait()
             cherrypy.response.headers['Pragma'] = 'no-cache'
             return serve_fileobj(cmd.stdout)
@@ -550,7 +513,7 @@ cherrypy.config.update(global_conf)
 
 if __name__=="__main__":
 
-    cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
+    cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
     if hasattr(engine, "signal_handler"):
         engine.signal_handler.subscribe()
     if hasattr(engine, "console_control_handler"):
@@ -565,12 +528,12 @@ if __name__=="__main__":
     else:
         engine.block()
 
-#    cherrypy.quickstart(PellMonWebb(), config=app_conf)
+#    cherrypy.quickstart(PellMonWeb(), config=app_conf)
 
 else:
     # The dbus main_loop thread can't be started before double fork to daemon, the
     # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
     cherrypy.engine.subscribe('start', dbus.setup, 90)
     dbus = Dbus_handler('SYSTEM')
-    cherrypy.tree.mount(PellMonWebb(), '/', config=app_conf)
+    cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
 
