@@ -7,6 +7,7 @@ var refreshTimer = null,
 $(function() {
 	refreshGraph();
 	refreshConsumption();
+	refreshSilolevel();
 });
 
 /**
@@ -29,6 +30,7 @@ var getMaxWidth = function() {
 var refreshAll = function() {
 	refreshGraph();
 	refreshConsumption();
+	refreshSilolevel();
 }
 
 var refreshGraph = function() {
@@ -48,6 +50,13 @@ var refreshConsumption = function() {
 		maxWidth = getMaxWidth();
 
 	consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+}
+
+var refreshSilolevel = function() {
+	var silolevel = $('#silolevel'),
+		maxWidth = getMaxWidth();
+
+	silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var startImageRefresh = function() {
