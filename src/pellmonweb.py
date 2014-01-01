@@ -234,7 +234,6 @@ class PellMonWeb:
             reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
             reset_time = mktime(reset_time.timetuple())
         except:
-            print 'hej'
             return None
             
         if not cherrypy.request.params.get('maxWidth'):

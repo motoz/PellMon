@@ -17,6 +17,10 @@ p01 = ScotteCom
 # The OWFS plugin connects to a running owfs server on localhost:4304 to read onewire devices
 #p05 = OWFS
 
+# The SiloLevel plugin adds parameters for silo fill up level and silo fill up date.
+# When present PellmonWeb displays a graph with calculated silo level from fill up time to present time
+p06 = SiloLevel
+
 # Testplugin is a plugin template that does nothing useful
 #p99 = TestPlugin
 
