@@ -29,7 +29,7 @@ from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
 from Pellmonweb import *
-from time import time
+from time import time, mktime
 import threading
 import sys
 from Pellmonweb import __file__ as webpath
@@ -37,6 +37,7 @@ import argparse
 import pwd
 import grp
 import subprocess
+from datetime import datetime
 
 class DbusNotConnected(Exception):
     pass
@@ -218,6 +219,40 @@ class PellMonWeb:
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
                 RrdGraphString1=RrdGraphString1+"DEF:%s="%value+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (ds_names[key], value, colorsDict[key], value)
+        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        cmd.wait()
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return serve_fileobj(cmd.stdout)
+
+    @cherrypy.expose
+    def silolevel(self, **args):
+        if not polling:
+             return None
+        try:
+            reset_level=dbus.getItem('silo_reset_level')
+            reset_time=dbus.getItem('silo_reset_time')
+            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
+            reset_time = mktime(reset_time.timetuple())
+        except:
+            return None
+            
+        if not cherrypy.request.params.get('maxWidth'):
+            maxWidth = '440'; # Default bootstrap 3 grid size
+        else:
+            maxWidth = cherrypy.request.params.get('maxWidth')
+        now=int(time())
+        start=int(reset_time)
+        RrdGraphString1=  "rrdtool graph - --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, now,start)   
+        RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
+        RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
+        #RrdGraphString1+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
+        #RrdGraphString1+=" CDEF:a2=t,%u,GT,tt,%u,LE,3000,0,IF,0,IF"%(start+864000*7,start+864000*7)
+        #RrdGraphString1+=" CDEF:s1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start, start, reset_level)
+        RrdGraphString1+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
+        RrdGraphString1+=" CDEF:s=a,b,*,360000,/,i,*" 
+        RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
+        RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
+        print RrdGraphString1
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
