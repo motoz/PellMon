@@ -22,7 +22,8 @@ from threading import Thread, Timer
 from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
-from time import time
+from time import time, datetime
+from datetime import datetime
 
 itemList=[{'name':'silo_reset_level',  'longname':'reset silo level',
            'type':'R/W',   'unit':'kg'   ,   'value':'0', 'min':'0', 'max':'50000'},
@@ -83,7 +84,9 @@ class silolevelplugin(protocols):
                 self.valuestore.write(f)
                 f.close()
                 if item=='silo_reset_level':
-                    self.setItem('silo_reset_time', str(int(time())) )
+                    d = datetime.fromtimestamp(time())
+                    s = d.strftime('%d/%m/%y %H:%M')
+                    self.setItem('silo_reset_time', s)
                 return 'OK'
         except Exception,e:
             return 'error'

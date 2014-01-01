@@ -29,7 +29,7 @@ from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
 from Pellmonweb import *
-from time import time
+from time import time, mktime
 import threading
 import sys
 from Pellmonweb import __file__ as webpath
@@ -37,6 +37,7 @@ import argparse
 import pwd
 import grp
 import subprocess
+from datetime import datetime
 
 class DbusNotConnected(Exception):
     pass
@@ -230,6 +231,8 @@ class PellMonWeb:
         try:
             reset_level=dbus.getItem('silo_reset_level')
             reset_time=dbus.getItem('silo_reset_time')
+            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
+            reset_time = mktime(reset_time.timetuple())
         except:
             print 'hej'
             return None
@@ -245,7 +248,8 @@ class PellMonWeb:
         RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
         #RrdGraphString1+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
         #RrdGraphString1+=" CDEF:a2=t,%u,GT,tt,%u,LE,3000,0,IF,0,IF"%(start+864000*7,start+864000*7)
-        RrdGraphString1+=" CDEF:s1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start, start, reset_level)
+        #RrdGraphString1+=" CDEF:s1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start, start, reset_level)
+        RrdGraphString1+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
         RrdGraphString1+=" CDEF:s=a,b,*,360000,/,i,*" 
         RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
         RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
