@@ -107,6 +107,8 @@ class silolevelplugin(protocols):
             
         items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
         items.sort(key = lambda k:k['name'])
+        for item in items:
+            item['description'] = itemDescriptions[item['name']]
         return items
         
     def getMenutags(self):
