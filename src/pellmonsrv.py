@@ -318,6 +318,7 @@ class config:
     def __init__(self, filename):
         # Load the configuration file
         parser = ConfigParser.ConfigParser()
+        parser.optionxform=str
         parser.read(filename)
 
         # Get the enabled plugins list

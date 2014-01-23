@@ -8,7 +8,7 @@ p01 = ScotteCom
 # CustomAlarms lets you define limits and actions for data items
 #p02 = CustomAlarms
 
-# RaspberryGPIO works only on a raspberry pi
+# RaspberryGPIO provides IO, counters and a tachometer. Works only on a raspberry pi
 #p03 = RaspberryGPIO
 
 # The calculate plugin lets you calculate your own data from existing data items
@@ -20,6 +20,9 @@ p01 = ScotteCom
 # The SiloLevel plugin adds parameters for silo fill up level and silo fill up date.
 # When present PellmonWeb displays a graph with calculated silo level from fill up time to present time
 p06 = SiloLevel
+
+# PelletCalc calculates feeder_time and power from feeder auger revolution count  
+#p07 = PelletCalc
 
 # Testplugin is a plugin template that does nothing useful
 #p99 = TestPlugin
@@ -63,6 +66,15 @@ alarm2_level = 45
 alarm2_status = boiler_temp_supervision
 alarm2_enum = OK|Chute temperature too high
 
+[plugin_RaspberryGPIO]
+# xxx_function = input|output|counter|tachometer
+# xxx_item = item name for pin
+# xxx_pin = board pin number
+# Actually only one single counter is supported for now...
+gpio22_function = counter
+gpio22_item = counter1
+gpio22_pin = 15
+
 [plugin_Calculate]
 # This plugin implements a simple stack engine. 
 # xxx_calc = operator|value;operator|value;...
@@ -87,6 +99,9 @@ calc1_read = half_boiler_temp
 # This two reads the value and type from the fake sensor available in the default owfs configuration 
 owfstemp1 = 10.67C6697351FF/temperature
 owfstemp1_type = 10.67C6697351FF/type
+
+[plugin_PelletCalc]
+# counter = item name to read feeder auger rev count from
 
 ############################################################################################
 

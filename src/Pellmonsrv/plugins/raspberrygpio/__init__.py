@@ -26,38 +26,13 @@ from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 
-itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',       'type':'R',   'unit':'g'   ,   'value': 5.56 },
-          {'name':'feeder_rpm',           'longname':'feeder rpm',            'type':'R',   'unit':'/60s',   'value': 30   },
-          
-          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity', 'type':'R/W', 'unit':'g/360s', 'value': 1000, 'min':'0', 'max':'5000' },
-          {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',  'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
-          
-          {'name':'feeder_rev',           'longname':'feeder rev count',      'type':'R/W', 'unit':' ',      'value': 0,    'min':'0', 'max':'-'    },
-          {'name':'feeder_time',          'longname':'feeder time',           'type':'R',   'unit':'s',      'value': 0    },
-          {'name':'power_kW',             'longname':'power',                 'type':'R',   'unit':'kW',     'value': 0    }, 
-         ]
-
-itemTags = {'feeder_rev_capacity' : ['All', 'raspberryGPIO'],
-            'feeder_rpm' :          ['All', 'raspberryGPIO'],
-            'feeder_capacity' :     ['All', 'raspberryGPIO', 'Basic'],
-            'feeder_rp6m' :         ['All', 'raspberryGPIO', 'Basic'],
-            'feeder_rev' :          ['All', 'raspberryGPIO', 'Basic'],
-            'feeder_time' :         ['All', 'raspberryGPIO'],
-            'power_kW' :            ['All', 'raspberryGPIO'],
-           }
-
-itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution',
-                    'feeder_rpm' :          'Feeder screw rotation speed',
-                    'feeder_capacity' :     'Grams fed in 360 seconds',
-                    'feeder_rp6m' :         'Feeder screw revolutions in 360 seconds',
-                    'feeder_rev' :          'Feeder screw revolutions count',
-                    'feeder_time' :         'Feeder screw run time',
-                    'power_kW' :            'Power calculated from fed pellet mass/time'}
-
+itemList=[]
+itemTags = {}
 Menutags = ['raspberryGPIO']
 
 import signal
 import sys
+
 def signal_handler(signal, frame):
     GPIO.cleanup()
     sys.exit(0)
@@ -67,7 +42,7 @@ signal.signal(signal.SIGINT, signal_handler)
 last_edge = 0
 oldstate = 1
 
-def root(request, response):
+def root(request, response, itemList):
     def edge_callback(channel):
         global last_edge
         last_edge = time()
@@ -88,16 +63,25 @@ def root(request, response):
                  sleep(0.05)
 
     signal.signal(signal.SIGINT, signal_handler)
-    count = [0]
-    GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.add_event_detect(26, GPIO.FALLING, callback=edge_callback)
-    global ev
-    from threading import Event
-    ev = Event()
-    t = Thread(target=filter_thread)
-    t.setDaemon(True)
-    t.start()
+    for item in itemList:
+        if item['function'] == 'counter':
+            pin = item['pin']
+            count = [0]
+            GPIO.setmode(GPIO.BOARD)
+            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.add_event_detect(pin, GPIO.FALLING, callback=edge_callback)
+            global ev
+            from threading import Event
+            ev = Event()
+            t = Thread(target=filter_thread)
+            t.setDaemon(True)
+            t.start()
+        elif item['function'] == 'tachometer':
+            pass
+        elif item['function'] == 'input':
+            pass
+        elif item['function'] == 'output':
+            pass
 
     x = request.get()
     while not x=='quit':
@@ -117,34 +101,33 @@ def root(request, response):
 class raspberry_gpio(protocols):
     def __init__(self):
         protocols.__init__(self)
-        self.timelist=[]
         self.power = 0
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
+        self.pin2index={}
+        self.name2index={}
+        for key,value in self.conf.iteritems():
+            try:
+                pin_name = key.split('_')[0]
+                pin_data = key.split('_')[1]
+                if not self.pin2index.has_key(pin_name):
+                    itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R/W', 'description':''})
+                    self.pin2index[pin_name] = len(itemList)-1
+                if pin_data == 'function':
+                    itemList[self.pin2index[pin_name]]['function'] = value
+                elif pin_data == 'item':
+                    itemList[self.pin2index[pin_name]]['name'] = value
+                    itemTags[value] = ['All', 'raspberryGPIO', 'Basic']
+                    self.name2index[value]=len(itemList)-1
+                elif pin_data == 'pin':
+                    itemList[self.pin2index[pin_name]]['pin'] = int(value)
+            except Exception,e:
+                logger.info(str(e))
         self.request = Queue()
         self.response = Queue()
-        self.p = Process(target=root, args=(self.request, self.response))
+        self.p = Process(target=root, args=(self.request, self.response, itemList))
         self.p.start()
-        self.valuestore = ConfigParser()
-        self.valuestore.add_section('values')
-        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
-        for item in itemList:
-            self.valuestore.set('values', item['name'], item['value'])
-        self.valuestore.read(self.valuesfile)
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
-        try:
-            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-            os.chown(self.valuesfile, uid, gid)
-        except:
-            pass
-
-        t = Timer(5, self.calc_thread)
-        t.setDaemon(True)
-        t.start()
 
     def deactivate(self):
         protocols.deactivate(self)
@@ -153,48 +136,26 @@ class raspberry_gpio(protocols):
         GPIO.cleanup()
 
     def getItem(self, item):
-        if item == 'feeder_rev':
-            self.request.put('count')
-            try:
-                return str(self.response.get(0.2))
-            except:
-                return str('timeout') 
-        elif item == 'feeder_time':
-            rev = float(self.getItem('feeder_rev'))
-            rp6m = int(self.getItem('feeder_rp6m'))
-            time_per_rev = (360.0 / rp6m)
-            return str(int(rev * time_per_rev))
-        elif item == 'feeder_rev_capacity':
-            capacity = float(self.getItem('feeder_capacity'))
-            rp6m = float(self.getItem('feeder_rp6m'))
-            return str(capacity / rp6m)
-        elif item == 'feeder_rpm':
-            rp6m = int(self.getItem('feeder_rp6m'))
-            return str(rp6m / 6.0)
-        elif item == 'power_kW':
-            return str(self.power)
+        if self.name2index.has_key(item):
+            if itemList[self.name2index[item]]['function'] == 'counter':
+                self.request.put('count')
+                try:
+                    return str(self.response.get(0.2))
+                except:
+                    return str('timeout') 
         else:
-            for i in itemList:
-                if i['name'] == item:
-                    return str(self.valuestore.get('values', item))
+            return 'error'
 
     def setItem(self, item, value):
-        if item == 'feeder_rev':
-            self.request.put(('count', value))
-            try:
-                r = self.response.get(5)
-            except:
-                r='timeout'
-            return str(r)
+        if self.name2index.has_key(item):
+            if itemList[self.name2index[item]]['function'] == 'counter':
+                self.request.put(('count', value))
+                try:
+                    r = self.response.get(5)
+                except:
+                    r='timeout'
+                return str(r)
         else:
-            for i in itemList:
-                if i['name'] == item:
-                    i['value'] = value
-                    self.valuestore.set('values', item, str(value))
-                    f = open(self.valuesfile, 'w')
-                    self.valuestore.write(f)
-                    f.close()
-                    return 'OK'
             return['error']
 
     def getDataBase(self):
@@ -213,32 +174,10 @@ class raspberry_gpio(protocols):
             
         items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
         for item in items:
-            item['description'] = itemDescriptions[item['name']]
+            item['description'] = ''
         return items
         
     def getMenutags(self):
         return Menutags
 
-    def calc_thread(self):
-        """ Calculate last 5 minutes mean power """
-        p1 = int(self.getItem('feeder_time'))
-        t1 = time()
-        self.timelist.append((p1,t1))
-        if self.timelist[-1][1] - self.timelist[0][1] > 300:
-            self.timelist = self.timelist[1:]
-        last = self.timelist[0][0]
-        sum = 0
-        for t in self.timelist:
-             try:
-                 v = int(t[0])
-             except:
-                 v = 0
-             if v > last:
-                 sum += (v - last)
-             last = v
-        capacity = float(self.getItem('feeder_capacity')) / 360
-        self.power = sum * capacity * 12 * 4.8 * 0.9 / 1000
 
-        t = Timer(5, self.calc_thread)
-        t.setDaemon(True)
-        t.start()
