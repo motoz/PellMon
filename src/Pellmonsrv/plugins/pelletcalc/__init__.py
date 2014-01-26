@@ -24,6 +24,7 @@ from time import time, sleep
 from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
+import sys
 
 itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': 5.56 },
           {'name':'feeder_rpm',           'longname':'feeder rpm',               'type':'R',   'unit':'/60s',   'value': 30   },
@@ -55,9 +56,8 @@ itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution
 
 Menutags = ['pelletCalc']
 
-import sys
 
-class raspberry_gpio(protocols):
+class pelletcalc(protocols):
     def __init__(self):
         protocols.__init__(self)
         self.timelist=[]
