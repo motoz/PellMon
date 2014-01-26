@@ -25,6 +25,7 @@ from time import time, sleep
 from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
+import mmap
 
 itemList=[]
 itemTags = {}
@@ -41,6 +42,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 last_edge = 0
 oldstate = 1
+
 
 def root(request, response, itemList):
     def edge_callback(channel):
@@ -62,12 +64,45 @@ def root(request, response, itemList):
             else:
                  sleep(0.05)
 
+    def timer():
+        m.seek(4)
+        s =  m.read(8)
+        o = 0
+        for c in range(0,7):
+            o += ord(s[c])<<(8*c)
+        return o
+
+    def tacho_callback(channel):
+        global last_time
+        global buf
+        global index
+        global f
+        global lapse
+        time = timer()
+        timediff = time - last_time
+        last_time = time
+        buf[index] = timediff
+        if index == 4:
+            index = 0
+        else:
+            index += 1
+        lapse += timediff
+        l = buf
+        l.sort()
+        s = l[2]
+        if s>1:
+            f1 = 1/float(s) * 1000000 * 60
+            f=(f + f1) / 2
+        else:
+            f=0
+
+    GPIO.setmode(GPIO.BOARD)
+
     signal.signal(signal.SIGINT, signal_handler)
     for item in itemList:
         if item['function'] == 'counter':
             pin = item['pin']
             count = [0]
-            GPIO.setmode(GPIO.BOARD)
             GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.add_event_detect(pin, GPIO.FALLING, callback=edge_callback)
             global ev
@@ -76,8 +111,25 @@ def root(request, response, itemList):
             t = Thread(target=filter_thread)
             t.setDaemon(True)
             t.start()
+            
         elif item['function'] == 'tachometer':
-            pass
+            pin = item['pin']
+            mem = open ('/dev/mem','r')
+            global m 
+            m = mmap.mmap(mem.fileno(), 4096, mmap.MAP_SHARED, mmap.PROT_READ, offset=0x20003000)
+            GPIO.setup(pin, GPIO.IN)
+            global f
+            f = 0
+            global buf
+            buf = [0,0,0,0,0]
+            global index
+            index = 0
+            global last_time
+            last_time=timer()
+            global lapse
+            lapse = 0
+            GPIO.add_event_detect(pin, GPIO.FALLING, callback=tacho_callback)
+
         elif item['function'] == 'input':
             pass
         elif item['function'] == 'output':
@@ -85,11 +137,13 @@ def root(request, response, itemList):
 
     x = request.get()
     while not x=='quit':
-        if x == 'count':
+        if x == 'tachometer':
+            response.put(int(f))
+        elif x == 'counter':
             response.put(int(count[0]))
         else:
             try:
-                if x[0] == 'count':
+                if x[0] == 'counter':
                     count[0] = int(x[1])
                     response.put('OK')
                 else:
@@ -137,12 +191,15 @@ class raspberry_gpio(protocols):
 
     def getItem(self, item):
         if self.name2index.has_key(item):
-            if itemList[self.name2index[item]]['function'] == 'counter':
-                self.request.put('count')
+            function =itemList[self.name2index[item]]['function']
+            if function in['counter', 'tachometer']:
+                self.request.put(function)
                 try:
                     return str(self.response.get(0.2))
                 except:
                     return str('timeout') 
+            else:
+                return 'error'
         else:
             return 'error'
 
