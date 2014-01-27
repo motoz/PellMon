@@ -26,58 +26,64 @@ from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 import mmap
+import signal
+import sys
+from threading import Event
 
 itemList=[]
 itemTags = {}
 Menutags = ['raspberryGPIO']
 
-import signal
-import sys
 
 def signal_handler(signal, frame):
+    """ GPIO needs cleaning up on exit """
     GPIO.cleanup()
     sys.exit(0)
 
-signal.signal(signal.SIGINT, signal_handler)
+class root(Process):
+    """GPIO needs root, so we fork off this process before the server drops privileges"""
+    def __init__(self, request, response, itemList):
+        super (root, self).__init__()
+        self.last_time = 0
+        self.buf = [0,0,0,0,0]
+        self.index = 0
+        self.f = 0
+        self.lapse = 0
+        self.request = request
+        self.response = response
+        self.itemList = itemList
+        self.ev = Event()
+        self.last_edge = 0
+        self.count = []
 
-last_edge = 0
-oldstate = 1
+    def edge_callback(self, channel):
+    """Called by RpiGPIO interrupt handle on """
+        self.last_edge = time()
+        self.ev.set()
 
-
-def root(request, response, itemList):
-    def edge_callback(channel):
-        global last_edge
-        last_edge = time()
-        ev.set()
-
-    def filter_thread():
+    def filter_thread(self):
+    """Handle debounce filtering of the inputs"""
         while True:
-            global event
-            ev.wait()
+            self.ev.wait()
             if time() - last_edge > 0.1:
-                ev.clear()
+                self.ev.clear()
                 currentstate = GPIO.input(26)
-                global oldstate     
-                if currentstate == 0 and oldstate == 1:
-                    count[0] += 1
-                state = 0
+                if currentstate == 0:
+                    self.count[0] += 1
             else:
                  sleep(0.05)
 
-    def timer():
-        m.seek(4)
-        s =  m.read(8)
+    def timer(self):
+    """Read the 64bit freerunning megaherz timer of the broadcom chip"""
+        self.m.seek(4)
+        s =  self.m.read(8)
         o = 0
         for c in range(0,7):
             o += ord(s[c])<<(8*c)
         return o
 
-    def tacho_callback(channel):
-        global last_time
-        global buf
-        global index
-        global f
-        global lapse
+    def tacho_callback(self, channel):
+    """Called by falling edge interrupt on the tachometer input to calculate rpm"""
         time = timer()
         timediff = time - last_time
         last_time = time
@@ -92,65 +98,55 @@ def root(request, response, itemList):
         s = l[2]
         if s>1:
             f1 = 1/float(s) * 1000000 * 60
-            f=(f + f1) / 2
+            self.f=(f + f1) / 2
         else:
-            f=0
+            self.f=0
 
-    GPIO.setmode(GPIO.BOARD)
+    def run(self):
+        GPIO.setmode(GPIO.BOARD)
+        signal.signal(signal.SIGINT, signal_handler)
 
-    signal.signal(signal.SIGINT, signal_handler)
-    for item in itemList:
-        if item['function'] == 'counter':
-            pin = item['pin']
-            count = [0]
-            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(pin, GPIO.FALLING, callback=edge_callback)
-            global ev
-            from threading import Event
-            ev = Event()
-            t = Thread(target=filter_thread)
-            t.setDaemon(True)
-            t.start()
-            
-        elif item['function'] == 'tachometer':
-            pin = item['pin']
-            mem = open ('/dev/mem','r')
-            global m 
-            m = mmap.mmap(mem.fileno(), 4096, mmap.MAP_SHARED, mmap.PROT_READ, offset=0x20003000)
-            GPIO.setup(pin, GPIO.IN)
-            global f
-            f = 0
-            global buf
-            buf = [0,0,0,0,0]
-            global index
-            index = 0
-            global last_time
-            last_time=timer()
-            global lapse
-            lapse = 0
-            GPIO.add_event_detect(pin, GPIO.FALLING, callback=tacho_callback)
+        for item in itemList:
+            if item['function'] == 'counter':
+                pin = item['pin']
+                self.count = [0]
+                GPIO.setup(pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+                GPIO.add_event_detect(pin, GPIO.FALLING, callback = self.edge_callback)
+                t = Thread(target=self.filter_thread)
+                t.setDaemon(True)
+                t.start()
+                
+            elif item['function'] == 'tachometer':
+                pin = item['pin']
+                mem = open ('/dev/mem','r')
+                self.m = mmap.mmap(mem.fileno(), 4096, mmap.MAP_SHARED, mmap.PROT_READ, offset=0x20003000)
+                GPIO.setup(pin, GPIO.IN)
+                self.last_time= self.timer()
+                self.lapse = 0
+                GPIO.add_event_detect(pin, GPIO.FALLING, callback = self.tacho_callback)
 
-        elif item['function'] == 'input':
-            pass
-        elif item['function'] == 'output':
-            pass
-
-    x = request.get()
-    while not x=='quit':
-        if x == 'tachometer':
-            response.put(int(f))
-        elif x == 'counter':
-            response.put(int(count[0]))
-        else:
-            try:
-                if x[0] == 'counter':
-                    count[0] = int(x[1])
-                    response.put('OK')
-                else:
-                    response.put('what?')
-            except:
-                response.put('error')
-        x=request.get()
+            elif item['function'] == 'input':
+                pass
+            elif item['function'] == 'output':
+                pass
+                
+        """Wait for a request command"""
+        x = self.request.get()
+        while not x=='quit':
+            if x == 'tachometer':
+                self.response.put(int(self.f))
+            elif x == 'counter':
+                self.response.put(int(self.count[0]))
+            else:
+                try:
+                    if x[0] == 'counter':
+                        self.count[0] = int(x[1])
+                        self.response.put('OK')
+                    else:
+                        self.response.put('what?')
+                except:
+                    response.put('error')
+            x=self.request.get()
 
 class raspberry_gpio(protocols):
     def __init__(self):
@@ -166,10 +162,12 @@ class raspberry_gpio(protocols):
                 pin_name = key.split('_')[0]
                 pin_data = key.split('_')[1]
                 if not self.pin2index.has_key(pin_name):
-                    itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R/W', 'description':''})
+                    itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})
                     self.pin2index[pin_name] = len(itemList)-1
                 if pin_data == 'function':
                     itemList[self.pin2index[pin_name]]['function'] = value
+                    if value == 'counter':
+                        itemList[self.pin2index[pin_name]]['type'] = 'R/W'
                 elif pin_data == 'item':
                     itemList[self.pin2index[pin_name]]['name'] = value
                     itemTags[value] = ['All', 'raspberryGPIO', 'Basic']
@@ -178,15 +176,16 @@ class raspberry_gpio(protocols):
                     itemList[self.pin2index[pin_name]]['pin'] = int(value)
             except Exception,e:
                 logger.info(str(e))
+        signal.signal(signal.SIGINT, signal_handler)
         self.request = Queue()
         self.response = Queue()
-        self.p = Process(target=root, args=(self.request, self.response, itemList))
-        self.p.start()
+        self.root = root(self.request, self.response, itemList)
+        self.root.start()
 
     def deactivate(self):
         protocols.deactivate(self)
         self.request.put('quit')
-        self.p.join()
+        self.root.join()
         GPIO.cleanup()
 
     def getItem(self, item):
@@ -206,7 +205,7 @@ class raspberry_gpio(protocols):
     def setItem(self, item, value):
         if self.name2index.has_key(item):
             if itemList[self.name2index[item]]['function'] == 'counter':
-                self.request.put(('count', value))
+                self.request.put(('counter', value))
                 try:
                     r = self.response.get(5)
                 except:
@@ -222,13 +221,11 @@ class raspberry_gpio(protocols):
         return l
 
     def GetFullDB(self, tags):
-
         def match(requiredtags, existingtags):
             for rt in requiredtags:
                 if rt != '' and not rt in existingtags:
                     return False
             return True
-            
         items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
         for item in items:
             item['description'] = ''
