@@ -57,12 +57,12 @@ class root(Process):
         self.count = []
 
     def edge_callback(self, channel):
-    """Called by RpiGPIO interrupt handle on """
+        """Called by RpiGPIO interrupt handle on """
         self.last_edge = time()
         self.ev.set()
 
     def filter_thread(self):
-    """Handle debounce filtering of the inputs"""
+        """Handle debounce filtering of the inputs"""
         while True:
             self.ev.wait()
             if time() - last_edge > 0.1:
@@ -74,7 +74,7 @@ class root(Process):
                  sleep(0.05)
 
     def timer(self):
-    """Read the 64bit freerunning megaherz timer of the broadcom chip"""
+        """Read the 64bit freerunning megaherz timer of the broadcom chip"""
         self.m.seek(4)
         s =  self.m.read(8)
         o = 0
@@ -83,22 +83,22 @@ class root(Process):
         return o
 
     def tacho_callback(self, channel):
-    """Called by falling edge interrupt on the tachometer input to calculate rpm"""
-        time = timer()
-        timediff = time - last_time
-        last_time = time
-        buf[index] = timediff
-        if index == 4:
-            index = 0
+        """Called by falling edge interrupt on the tachometer input to calculate rpm"""
+        time = self.timer()
+        timediff = time - self.last_time
+        self.last_time = time
+        self.buf[self.index] = timediff
+        if self.index == 4:
+            self.index = 0
         else:
-            index += 1
-        lapse += timediff
-        l = buf
+            self.index += 1
+        self.lapse += timediff
+        l = self.buf
         l.sort()
         s = l[2]
         if s>1:
             f1 = 1/float(s) * 1000000 * 60
-            self.f=(f + f1) / 2
+            self.f=(self.f + f1) / 2
         else:
             self.f=0
 
