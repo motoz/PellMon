@@ -95,10 +95,24 @@ calc1_calc = boiler_temp;GET;2;DIV
 calc1_read = half_boiler_temp
 
 [plugin_OWFS]
-# Data item name = owfs_path
-# This two reads the value and type from the fake sensor available in the default owfs configuration 
-owfstemp1 = 10.67C6697351FF/temperature
-owfstemp1_type = 10.67C6697351FF/type
+# xxx_item = item name for the owfs sensor value
+# xxx_path = [server:]path[:port], default server:port is localhost:4304
+# optional:
+# when the type is set to COUNTER the owfs path is polled cyclically and the item incremented on every 0->1 transition
+# xxx_type = R|R/W|COUNTER, default is R
+# xxx_latch = path, when using a ds2406 as input/counter, use this to make use of it's latch
+
+# examples:
+# read the temperature value from the fake sensor available in the default owfs configuration 
+owfs1_item = faketemp
+owfs1_path = 10.67C6697351FF/temperature
+
+# use a ds2460 as counter with support for the input latch
+# owfs2_item = ds2460count
+# owfs2_path = uncached/12.8D3E7D000000/sensed.A
+# owfs2_type = COUNTER
+# owfs2_latch = uncached/12.8D3E7D000000/latch.A
+
 
 [plugin_PelletCalc]
 # counter = item name to read feeder auger rev count from

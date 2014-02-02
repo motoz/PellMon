@@ -20,7 +20,13 @@
 from Pellmonsrv.plugin_categories import protocols
 from ConfigParser import ConfigParser
 from os import path
-import ownet
+import traceback
+import sys
+
+# This is needed to find the local module ownet_fix
+import os, sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import ownet_fix as ownet
 
 itemList=[]
 itemTags={}
@@ -32,27 +38,70 @@ class owfsplugin(protocols):
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
-
-        self.sensors = {}
-        self.attributes = {}
+        self.ow2index={}
+        self.name2index={}
+        self.sensors={}
+        #self.attributes = {}
         for key, value in self.conf.iteritems():
-            itempath = path.dirname(value)
-            itemattribute = path.basename(value)
-            itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})           
-            itemTags[key] = ['All', 'OWFS', 'Basic']
-            self.sensors[key] = ownet.Sensor(itempath, 'localhost', 4304)
-            self.attributes[key] = itemattribute
+            port = 4304
+            server = 'localhost'
+            ow_name = key.split('_')[0]
+            ow_data = key.split('_')[1]
+
+            if not self.ow2index.has_key(ow_name):
+                itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})
+                self.ow2index[ow_name] = len(itemList)-1
+            if ow_data == 'item':
+                itemList[self.ow2index[ow_name]]['name'] = value
+                itemTags[value] = ['All', 'OWFS', 'Basic']
+                self.name2index[value]=self.ow2index[ow_name]
+
+            if ow_data == 'path':
+                val = value.split('::')
+                if len(val) == 2:
+                    server = val[0]
+                    val[0] = val[1]
+                val = val[0].split(':')
+                if len(val) == 2:
+                    port = val[1]
+                owpath = val[0]
+
+                itempath = path.dirname(owpath)
+                itemattribute = path.basename(owpath)
+                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                itemList[self.ow2index[ow_name]]['owname'] = itemattribute
+            if ow_data == 'type' and value in ['R','R/W','COUNTER']:
+                itemList[self.ow2index[ow_name]]['type'] = value
 
     def getItem(self, itemName):
         try:
-            return self.sensors[itemName].temperature
-        except AttributeError:
-            try:
-                s = self.sensors[itemName]
-                attr = s._connection.read(object.__getattribute__(s, '_attrs')[self.attributes[itemName]])
-                return str(attr)
-            except:
+            sensor = self.sensors[self.name2index[itemName]]
+            name = itemList[self.name2index[itemName]]['owname']
+            name = name.replace('.','_')
+            attr =  getattr(sensor, name)
+            while attr == None:
+                attr =  getattr(sensor, name)
+            return str(attr)
+        except Exception, e:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
+            return str(e)
+
+    def setItem(self, itemName, value):
+        try:
+            index = self.name2index[itemName]
+            if itemList[index]['type'] == 'R/W':
+                sensor = self.sensors[self.name2index[itemName]]
+                name = itemList[self.name2index[itemName]]['owname']
+                name = name.replace('.','_')
+                setattr(sensor, name, value)
+                return 'OK'
+            else:
                 return 'error'
+        except Exception, e:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
+            return str(e)
 
     def getDataBase(self):
         l=[]
