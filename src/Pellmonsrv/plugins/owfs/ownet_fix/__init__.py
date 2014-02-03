@@ -280,9 +280,7 @@ class Sensor(object):
         # only reference it if it's already been added.
         if hasattr(self, '_attrs'):
             if name in self._attrs:
-                print 'wire', name, value
                 self._connection.write(self._attrs[name], value)
-                print 'back'
             else:
                 self.__dict__[name] = value
         else:

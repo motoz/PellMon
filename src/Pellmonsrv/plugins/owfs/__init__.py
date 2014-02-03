@@ -22,10 +22,11 @@ from ConfigParser import ConfigParser
 from os import path
 import traceback
 import sys
+from threading import Thread, Timer
+from time import time, sleep
 
 # This is needed to find the local module ownet_fix
-import os, sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(path.dirname(path.abspath(__file__)))
 import ownet_fix as ownet
 
 itemList=[]
@@ -41,7 +42,9 @@ class owfsplugin(protocols):
         self.ow2index={}
         self.name2index={}
         self.sensors={}
-        #self.attributes = {}
+        self.latches={}
+        self.counters=[]
+
         for key, value in self.conf.iteritems():
             port = 4304
             server = 'localhost'
@@ -49,8 +52,9 @@ class owfsplugin(protocols):
             ow_data = key.split('_')[1]
 
             if not self.ow2index.has_key(ow_name):
-                itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})
+                itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R', 'description':'', 'function':'input'})
                 self.ow2index[ow_name] = len(itemList)-1
+                
             if ow_data == 'item':
                 itemList[self.ow2index[ow_name]]['name'] = value
                 itemTags[value] = ['All', 'OWFS', 'Basic']
@@ -63,25 +67,53 @@ class owfsplugin(protocols):
                     val[0] = val[1]
                 val = val[0].split(':')
                 if len(val) == 2:
-                    port = val[1]
+                    port = int(val[1])
                 owpath = val[0]
 
                 itempath = path.dirname(owpath)
                 itemattribute = path.basename(owpath)
-                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, int(port))
+                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
                 itemList[self.ow2index[ow_name]]['owname'] = itemattribute
-            if ow_data == 'type' and value in ['R','R/W','COUNTER']:
+
+            if ow_data == 'type' and value == 'COUNTER':
+                itemList[self.ow2index[ow_name]]['function'] = 'COUNTER'
+                itemList[self.ow2index[ow_name]]['value'] = 0
+                itemList[self.ow2index[ow_name]]['last_i'] = 0
+                itemList[self.ow2index[ow_name]]['toggle'] = 0
+                t = Timer(5, self.counter_thread, args=(self.ow2index[ow_name],))
+                t.setDaemon(True)
+                t.start()
+
+            if ow_data == 'latch':
+                val = value.split('::')
+                if len(val) == 2:
+                    server = val[0]
+                    val[0] = val[1]
+                val = val[0].split(':')
+                if len(val) == 2:
+                    port = int(val[1])
+                owpath = val[0]
+                itempath = path.dirname(owpath)
+                itemattribute = path.basename(owpath)
+                self.latches[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                itemList[self.ow2index[ow_name]]['owlatch'] = itemattribute
+
+            if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
 
     def getItem(self, itemName):
         try:
-            sensor = self.sensors[self.name2index[itemName]]
-            name = itemList[self.name2index[itemName]]['owname']
-            name = name.replace('.','_')
-            attr =  getattr(sensor, name)
-            while attr == None:
+            item = itemList[self.name2index[itemName]]
+            if item['function'] == 'COUNTER':
+                return str(item['value'])
+            else:
+                sensor = self.sensors[self.name2index[itemName]]
+                name = itemList[self.name2index[itemName]]['owname']
+                name = name.replace('.','_')
                 attr =  getattr(sensor, name)
-            return str(attr)
+                while attr == None:
+                    attr =  getattr(sensor, name)
+                return str(attr)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
@@ -102,6 +134,42 @@ class owfsplugin(protocols):
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
             return str(e)
+
+    def counter_thread(self, counter):
+        try:
+            item = itemList[counter]
+            l = 0
+            if self.latches.has_key(counter):
+                sensor = self.latches[counter]
+                lname = item['owlatch'].replace('.','_')
+                attr =  getattr(sensor, lname)
+                while attr == None:
+                    attr =  getattr(sensor, lname)
+                setattr(sensor, lname, 0)
+                l = attr
+
+            if l == 1:
+                sensor = self.sensors[counter]
+                iname = item['owname'].replace('.','_')
+                attr =  getattr(sensor, iname)
+                while attr == None:
+                    attr =  getattr(sensor, iname)
+                i = attr
+
+                if i == item['last_i']:
+                    item['value'] += 1
+                    item['toggle'] = 0
+                else:
+                    item['toggle'] += 1
+                    if item['toggle'] == 2:
+                        item['last_i'] = i
+                        item['value'] +=1
+                        item['toggle'] = 0
+        except Exception, e:
+            print str(e)
+        t = Timer(5, self.counter_thread, args=(counter,))
+        t.setDaemon(True)
+        t.start()
 
     def getDataBase(self):
         l=[]
