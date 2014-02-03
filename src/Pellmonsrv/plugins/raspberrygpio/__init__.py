@@ -45,10 +45,9 @@ class root(Process):
     def __init__(self, request, response, itemList):
         super (root, self).__init__()
         self.last_time = 0
-        self.buf = [0,0,0,0,0]
+        self.buf = [0]*500
         self.index = 0
         self.f = 0
-        self.lapse = 0
         self.request = request
         self.response = response
         self.itemList = itemList
@@ -88,19 +87,10 @@ class root(Process):
         timediff = time - self.last_time
         self.last_time = time
         self.buf[self.index] = timediff
-        if self.index == 4:
+        if self.index == 499:
             self.index = 0
         else:
             self.index += 1
-        self.lapse += timediff
-        l = self.buf
-        l.sort()
-        s = l[2]
-        if s>1:
-            f1 = 1/float(s) * 1000000 * 60
-            self.f=(self.f + f1) / 2
-        else:
-            self.f=0
 
     def run(self):
         GPIO.setmode(GPIO.BOARD)
@@ -122,7 +112,6 @@ class root(Process):
                 self.m = mmap.mmap(mem.fileno(), 4096, mmap.MAP_SHARED, mmap.PROT_READ, offset=0x20003000)
                 GPIO.setup(pin, GPIO.IN)
                 self.last_time= self.timer()
-                self.lapse = 0
                 GPIO.add_event_detect(pin, GPIO.FALLING, callback = self.tacho_callback)
 
             elif item['function'] == 'input':
@@ -134,6 +123,30 @@ class root(Process):
         x = self.request.get()
         while not x=='quit':
             if x == 'tachometer':
+                buf = list(self.buf)
+                index = self.index
+                i = index
+                lapse = 0
+                while i>0 and lapse < 10500000:
+                    lapse += buf[i]
+                    i-= 1
+                b = buf[i:index] 
+                i = 499
+                if lapse < 10500000:
+                    while i>index and lapse < 10500000:
+                        lapse += buf[i]
+                        i-=1
+                    b += buf[i:500]
+                b.sort()
+                l = len(b)-1
+                if l>30:
+                    s = b[20]
+                else:
+                    s = b[0]
+                if s>1:
+                    self.f = 1/float(s) * 1000000 * 60
+                else:
+                    self.f=0
                 self.response.put(int(self.f))
             elif x == 'counter':
                 self.response.put(int(self.count[0]))

@@ -147,7 +147,7 @@ def pollThread():
                 itemlist.append(value)
                 conf.lastupdate[data['name']] = value
         s=':'.join(itemlist)
-        os.system("/usr/bin/rrdtool update "+conf.db+" N:"+s)
+        os.system("/usr/bin/rrdtool update "+conf.db+" %u:"%(int(time.time())/10*10)+s)
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
