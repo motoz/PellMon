@@ -1,18 +1,34 @@
 PellMon
 =======
 
-PellMon is logging, monitoring and configuration daemon for pellet burners. It uses plugins to communicate
-with a pellet burner. Two plugins are included, ScotteCom and RaspberryGPIO. ScotteCom uses a serial
-interface to communicate with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It provides access to 
-most configuration parameters and measurement data. The RaspberryGPIO plugin uses the hardware gpio on a raspberry pi 
-single board computer to count feeder auger revolutions and calculates burner power and pellet consumption. The plugin 
-system makes it easy to add custom plugins for extended functionality. 
+PellMon is logging, monitoring and configuration solution for pellet burners. It consists of a backend server daemon, which
+uses RRDtool as a logging database, and a frontend daemon providing a responsive mobile friendly web based user interface. 
+Additionally there is a command line tool for interfacing with the server. PellMon can communicate directly with a supported
+pellet burner, or it can use a feeder-auger revolution counter as base for pellet consumption calculation.
 
-PellMon is also a webserver and a webapplication. It serves a responsive mobile friendly webapp with a graph of
-selected measurement values, bar charts with calculated pellet consumption, event log and parameter settings. 
+PellMon uses plugins to provide data about your burner. The most fully featured plugin is ScotteCom, which enables communication 
+with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It gives you access to almost all configuration parameters 
+and measurement data, and also handles logging of alarms and mode/setting changes.
 
-PellMon also has a command line interface to access all data provided by the plugins, for easy integration in other
-systems. 
+The plugin system makes it easy to add custom plugins for extended functionality, a 'template' plugin is provided as an example
+along with the other preinstalled plugins:
+
+PelletCalc. Provides a calculated power value and pellet consumption from a feeder auger counter.
+
+RaspberryPi. Gives access to inputs and outputs on the raspberry pi single board computer. One input can be configured
+as a counter to provide a base for pellet consumption calculation. It also provides general I/O, and a tachometer input that can be used
+to measure the blower speed, by interfacing to the blowers tacho output or by using an optical detector.
+
+OWFS. Communicates with an owserver, and can be used to read onewire sensors, for instance temperature. It can also use a 
+onewire input (ds2460 based) to count feeder auger revolutions for use with the PelletCalc plugin. 
+
+CustomAlarms. Create an unlimited number of limits to watch on available data, optionally send email when a limit is exceeded.
+
+Calculate. Provides editable expressions that calcualates new values based on the existing data.
+
+SiloLevel. Uses rrdtool to calculate and graph the pellet silo level from the fill-up time to current time. 
+
+Plugin decumentation is int the configuration file.
 
 ####Contains:
 
@@ -61,7 +77,7 @@ optional arguments:
 </pre>
 ###pellmoncli.py:
 
-Interactive command line client with tab completion. Reading and writeing of setting values, and reading of measurement data.
+Interactive command line client with tab completion. Reading and writing of setting values, and reading of measurement data.
 <pre>
 usage: pellmoncli.py [-h] {get,set,list,i}
 </pre>
@@ -120,11 +136,5 @@ rrdtool, python-serial, python-cherrypy3, python-dbus, python-mako, python-gobje
 ##Build dependencies:
 <pre>
 autoconf
-</pre>
-
-##Plugin specific dependencies:
-### OWFS
-<pre>
-owfs python-ownet
 </pre>
 
