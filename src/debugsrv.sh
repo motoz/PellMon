@@ -1,2 +1,2 @@
-./pellmonsrv.py -U pellmonsrv -C pellmon.conf -D SYSTEM debug
+./pellmonsrv.py -U pellmonsrv -C /etc/pellmon/pellmon.conf -D SYSTEM debug
 

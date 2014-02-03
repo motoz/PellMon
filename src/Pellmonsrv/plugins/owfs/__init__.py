@@ -68,7 +68,7 @@ class owfsplugin(protocols):
 
                 itempath = path.dirname(owpath)
                 itemattribute = path.basename(owpath)
-                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, int(port))
                 itemList[self.ow2index[ow_name]]['owname'] = itemattribute
             if ow_data == 'type' and value in ['R','R/W','COUNTER']:
                 itemList[self.ow2index[ow_name]]['type'] = value

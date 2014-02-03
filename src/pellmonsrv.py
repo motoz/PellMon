@@ -63,7 +63,7 @@ class Database(object):
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
-                    print e
+                    print str(e)
                     logger.info('Plugin %s init failed'%plugin.name)
     def terminate(self):
         for p in self.protocols:
@@ -83,7 +83,10 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
-        return conf.database.items[param].getItem()
+        if param == 'pellmonsrv_version':
+            return '0.0.0'
+        else:
+            return conf.database.items[param].getItem()
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
