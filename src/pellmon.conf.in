@@ -1,4 +1,6 @@
 ############################################################################################
+# Enable plugins
+############################################################################################
 
 [enabled_plugins]
 # List all plugins to enable pxx = PluginName
@@ -27,6 +29,8 @@ p06 = SiloLevel
 # Testplugin is a plugin template that does nothing useful
 #p99 = TestPlugin
 
+############################################################################################
+# Plugin configuration 
 ############################################################################################
 
 [plugin_ScotteCom]
@@ -59,12 +63,6 @@ alarm1_comparator = >
 alarm1_level = 90
 alarm1_status = boiler_temp_supervision
 alarm1_enum = OK|Boiler temperature too high
-
-alarm2_item = chute_temp
-alarm2_comparator = >
-alarm2_level = 45
-alarm2_status = boiler_temp_supervision
-alarm2_enum = OK|Chute temperature too high
 
 [plugin_RaspberryGPIO]
 # xxx_function = input|output|counter|tachometer
@@ -100,7 +98,7 @@ calc1_read = half_boiler_temp
 # optional:
 # when the type is set to COUNTER the owfs path is polled cyclically and the item incremented on every 0->1 transition
 # xxx_type = R|R/W|COUNTER, default is R
-# xxx_latch = path, when using a ds2406 as input/counter, use this to make use of it's latch
+# xxx_latch = path, make use of the latch when using a ds2406 as input/counter
 
 # examples:
 # read the temperature value from the fake sensor available in the default owfs configuration 
@@ -117,6 +115,8 @@ owfs1_path = 10.67C6697351FF/temperature
 [plugin_PelletCalc]
 # counter = item name to read feeder auger rev count from
 
+############################################################################################
+# Pellmonsrv configuration 
 ############################################################################################
 
 [conf]
@@ -202,20 +202,6 @@ d10 = feeder_capacity
 # It is used to draw a tickmark in the graph
 d11 = _logtick
 
-[graphcolors]
-# To add a ds-name from the rrd-database to the graph, set
-# dxx = #hexcolorvalue
-d01 = #FF0000
-d02 = #00FF00
-d03 = #0000FF
-d04 = #FFFF00
-d05 = #FF05FF
-d06 = #0101FF
-d07 = #207F20
-d08 = #2F2FFF
-
-############################################################################################
-
 [email]
 # Uncomment and set these for email on mode/alarm status changes
 # Uses TLS, this works for gmail:
@@ -227,3 +213,29 @@ d08 = #2F2FFF
 #subject=PellMon status
 # Send email when any of these change
 #conditions=alarm,mode,parameter
+
+
+############################################################################################
+# Pellmonweb configuration
+############################################################################################
+
+[graphcolors]
+# To add a ds-name from the rrd-database to the graph, set
+# dxx = #hexcolorvalue, 
+# where dxx matches the [pollvalues] and [rrd_ds_names] sections
+d01 = #FF0000
+d02 = #00FF00
+d03 = #0000FF
+d04 = #FFFF00
+d05 = #FF05FF
+d06 = #0101FF
+d07 = #207F20
+d08 = #2F2FFF
+
+[scaling]
+# add optional scaling to the plotlines before drawing the graph
+# The right axis will scale to match the scaled data, when there are
+# several different scales in use it will match the first selected
+# line in the order they appear here 
+# the offset is first subracted and the result is divided by the divisor
+# dxx = offset:divisor
