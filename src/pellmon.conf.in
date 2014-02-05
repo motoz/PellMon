@@ -94,7 +94,7 @@ calc1_read = half_boiler_temp
 
 [plugin_OWFS]
 # xxx_item = item name for the owfs sensor value
-# xxx_path = [server:]path[:port], default server:port is localhost:4304
+# xxx_path = [server::]path[:port], default server:port is localhost:4304
 # optional:
 # when the type is set to COUNTER the owfs path is polled cyclically and the item incremented on every 0->1 transition
 # xxx_type = R|R/W|COUNTER, default is R
