@@ -58,20 +58,20 @@ plugindata1 = 123
 # xxx_enum = FalseText|TrueText
 
 # example: 
-alarm1_item = boiler_temp
-alarm1_comparator = >
-alarm1_level = 90
-alarm1_status = boiler_temp_supervision
-alarm1_enum = OK|Boiler temperature too high
+#alarm1_item = boiler_temp
+#alarm1_comparator = >
+#alarm1_level = 90
+#alarm1_status = boiler_temp_supervision
+#alarm1_enum = OK|Boiler temperature too high
 
 [plugin_RaspberryGPIO]
-# xxx_function = input|output|counter|tachometer
+# xxx_function = input|latched_input|output|counter|tachometer
 # xxx_item = item name for pin
 # xxx_pin = board pin number
-# Actually only one single counter and one single tachometer is supported for now...
-gpio22_function = counter
-gpio22_item = counter1
-gpio22_pin = 15
+#example:
+#gpio22_function = counter
+#gpio22_item = counter1
+#gpio22_pin = 15
 
 [plugin_Calculate]
 # This plugin implements a simple stack engine. 

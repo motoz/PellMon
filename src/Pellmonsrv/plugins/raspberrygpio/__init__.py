@@ -19,7 +19,7 @@
 
 from Pellmonsrv.plugin_categories import protocols
 from multiprocessing import Process, Queue
-from threading import Thread, Timer, Event
+from threading import Thread, Timer, Event, Lock
 import RPi.GPIO as GPIO
 from time import time, sleep
 from ConfigParser import ConfigParser
@@ -38,6 +38,78 @@ def signal_handler(signal, frame):
     """ GPIO needs cleaning up on exit """
     GPIO.cleanup()
     sys.exit(0)
+
+class gpio_input(Thread):
+    def __init__(self, pin):
+        Thread.__init__(self)
+        self.pin = pin
+        self.ev = Event()
+        self.state = 0
+        GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+        GPIO.add_event_detect(self.pin, GPIO.FALLING, callback = self.edge_callback)
+        self.setDaemon(True)
+        self.start()
+        self.state = GPIO.input(self.pin)
+
+    def read(self):
+        return self.state
+
+    def edge_callback(self, channel):
+        """Called by RpiGPIO interrupt handle on """
+        self.last_edge = time()
+        self.ev.set()
+
+    def run(self):
+        """Handle debounce filtering of the inputs"""
+        while True:
+            self.ev.wait()
+            if time() - self.last_edge > 0.1:
+                self.ev.clear()
+                self.state = GPIO.input(self.pin)
+            else:
+                 sleep(0.05)
+
+class gpio_latched_input(Thread):
+    def __init__(self, pin):
+        Thread.__init__(self)
+        self.pin = pin
+        self.ev = Event()
+        self.state = 0
+        GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+        GPIO.add_event_detect(self.pin, GPIO.FALLING, callback = self.edge_callback)
+        self.setDaemon(True)
+        self.start()
+        self.last_read = GPIO.input(self.pin)
+        self.latched_state = self.last_read
+        self.current_state = self.last_read
+        self.mutex = Lock()
+
+    def read(self):
+        state = self.latched_state
+        self.mutex.acquire()
+        self.last_read = state
+        self.latched_state = self.current_state
+        self.mutex.release()
+        return state
+
+    def edge_callback(self, channel):
+        """Called by RpiGPIO interrupt handle on """
+        self.last_edge = time()
+        self.ev.set()
+
+    def run(self):
+        """Handle debounce filtering of the inputs"""
+        while True:
+            self.ev.wait()
+            if time() - self.last_edge > 0.1:
+                self.ev.clear()
+                self.mutex.acquire()
+                self.current_state = GPIO.input(self.pin)
+                if self.current_state != self.last_read:
+                    self.latched_state = self.current_state
+                self.mutex.release()
+            else:
+                 sleep(0.05)
 
 class gpio_counter(Thread):
     def __init__(self, pin):
@@ -165,7 +237,9 @@ class root(Process):
             elif item['function'] == 'tachometer':
                 self.pin[pin] = gpio_tachometer(pin)
             elif item['function'] == 'input':
-                pass
+                self.pin[pin] = gpio_input(pin)
+            elif item['function'] == 'latched_input':
+                self.pin[pin] = gpio_latched_input(pin)
             elif item['function'] == 'output':
                 pass
                 
@@ -178,7 +252,7 @@ class root(Process):
                 if req[0] == 'write':
                     self.response.put(self.pin[req[1]].write(req[2]))
             except:
-                response.put('error')
+                self.response.put('error')
             req=self.request.get()
 
 class raspberry_gpio(protocols):
@@ -225,7 +299,7 @@ class raspberry_gpio(protocols):
         if self.name2index.has_key(item):
             function = itemList[self.name2index[item]]['function']
             pin = itemList[self.name2index[item]]['pin']
-            if function in['counter', 'tachometer']:
+            if function in['counter', 'tachometer', 'input', 'latched_input', 'output']:
                 self.request.put(('read', pin))
                 try:
                     return str(self.response.get(0.2))
