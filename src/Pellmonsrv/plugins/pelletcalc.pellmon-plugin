@@ -1,0 +1,9 @@
+[Core]
+Name = PelletCalc
+Module = pelletcalc
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = Calculate feeder_time and power from feeder_capacity and feeder_rev 

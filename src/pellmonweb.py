@@ -209,16 +209,42 @@ class PellMonWeb:
         #Build the command string to make a graph from the database
         graph_file='-'
         if int(graphWidth)>500:
-            rightaxis = '--right-axis 1:0'
+            rightaxis = '--right-axis'
+            scalestr = ' 1:0'
+            for key,value in polldata:
+                if scale_data.has_key(key) and cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
+                    scale = scale_data[key].split(':')
+                    try:
+                        gain = float(scale[1])
+                        offset = -float(scale[0])
+                    except:
+                        gain = 1
+                        offset = 0
+                    print gain, offset
+                    scalestr = " %s:%s"%(str(gain),str(offset))
+                    break
+            rightaxis += scalestr
         else:
             rightaxis = ''
         RrdGraphString1 = "rrdtool graph "+ graph_file + ' --disable-rrdtool-tag' +\
-            " --lower-limit 0 %s --full-size-mode --width "%rightaxis + graphWidth + \
+            " --lower-limit 0 %s --full-size-mode --width "%rightaxis + graphWidth + " --right-axis-format %1.0lf "\
             " --height 400 --end now-" + graphTimeEnd + "s --start now-" + graphTimeStart + "s " + \
             "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
-                RrdGraphString1=RrdGraphString1+"DEF:%s="%value+db+":%s:AVERAGE LINE1:%s%s:\"%s\" "% (ds_names[key], value, colorsDict[key], value)
+                RrdGraphString1+="DEF:%s="%value+db+":%s:AVERAGE "%ds_names[key]
+                if scale_data.has_key(key):
+                    scale = scale_data[key].split(':')
+                    try:
+                        gain = float(scale[1])
+                        offset = float(scale[0])
+                    except:
+                        gain = 1
+                        offset = 0
+                    RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(value, value, offset, gain)    
+                    RrdGraphString1+="LINE1:%s_s%s:\"%s\" "% (value, colorsDict[key], value)
+                else:
+                    RrdGraphString1+="LINE1:%s%s:\"%s\" "% (value, colorsDict[key], value)
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -252,7 +278,6 @@ class PellMonWeb:
         RrdGraphString1+=" CDEF:s=a,b,*,360000,/,i,*" 
         RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
         RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
-        print RrdGraphString1
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -494,18 +519,34 @@ except ConfigParser.NoOptionError:
     db = ''
 
 # the colors to use when drawing the graph
-colors = parser.items('graphcolors')
-colorsDict = {}
-for key, value in colors:
-    colorsDict[key] = value
+try:
+    colors = parser.items('graphcolors')
+    colorsDict = {}
+    for key, value in colors:
+        colorsDict[key] = value
+except ConfigParser.NoSectionError:
+    colorsDict = {}
 
 # Get the names of the polled data
 polldata = parser.items("pollvalues")
-# Get the names of the polled data
-rrd_ds_names = parser.items("rrd_ds_names")
-ds_names = {}
-for key, value in rrd_ds_names:
-    ds_names[key] = value
+
+try:
+    # Get the names of the polled data
+    rrd_ds_names = parser.items("rrd_ds_names")
+    ds_names = {}
+    for key, value in rrd_ds_names:
+        ds_names[key] = value
+except ConfigParser.NoSectionError:
+    ds_names = {}
+
+try:
+    # Get the optional scales
+    scales = parser.items("scaling")
+    scale_data = {}
+    for key, value in scales:
+        scale_data[key] = value
+except ConfigParser.NoSectionError:
+    scale_data = {}
 
 credentials = parser.items('authentication')
 logfile = parser.get('conf', 'logfile')
