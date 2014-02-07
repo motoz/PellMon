@@ -217,6 +217,23 @@ class gpio_tachometer(Thread):
         while True:
             sleep(5)
 
+class gpio_output(object):
+    def __init__(self, pin):
+        self.pin = pin
+        self.value = 0
+        GPIO.setup(self.pin, GPIO.OUT)
+
+    def read(self):
+        return str(self.value)
+
+    def write(self, value):
+        if value == '0':
+            self.value = 0
+        else:
+            self.value = 1
+        GPIO.output(self.pin, self.value)
+        return 'OK'
+
 class root(Process):
     """GPIO needs root, so we fork off this process before the server drops privileges"""
     def __init__(self, request, response, itemList):
@@ -241,8 +258,8 @@ class root(Process):
             elif item['function'] == 'latched_input':
                 self.pin[pin] = gpio_latched_input(pin)
             elif item['function'] == 'output':
-                pass
-                
+                self.pin[pin] = gpio_output(pin)
+
         #Wait for a request 
         req = self.request.get()
         while not req=='quit':
@@ -273,7 +290,7 @@ class raspberry_gpio(protocols):
                     self.pin2index[pin_name] = len(itemList)-1
                 if pin_data == 'function':
                     itemList[self.pin2index[pin_name]]['function'] = value
-                    if value == 'counter':
+                    if value in ['counter', 'output']:
                         itemList[self.pin2index[pin_name]]['type'] = 'R/W'
                 elif pin_data == 'item':
                     itemList[self.pin2index[pin_name]]['name'] = value
@@ -312,7 +329,7 @@ class raspberry_gpio(protocols):
 
     def setItem(self, item, value):
         if self.name2index.has_key(item):
-            if itemList[self.name2index[item]]['function'] == 'counter':
+            if itemList[self.name2index[item]]['function'] in ['counter', 'output']:
                 pin = itemList[self.name2index[item]]['pin']
                 self.request.put(('write', pin, value))
                 try:
