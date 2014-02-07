@@ -55,3 +55,7 @@ class protocols(IPlugin):
 
     def getMenutags(self):
         return []
+    
+    def getGlobalItem(self, item):
+        """Get items from other plugins"""
+        return self.glob['conf'].database.items[item].getItem()

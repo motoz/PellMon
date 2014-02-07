@@ -1,4 +1,6 @@
 ############################################################################################
+# Enable plugins
+############################################################################################
 
 [enabled_plugins]
 # List all plugins to enable pxx = PluginName
@@ -8,7 +10,7 @@ p01 = ScotteCom
 # CustomAlarms lets you define limits and actions for data items
 #p02 = CustomAlarms
 
-# RaspberryGPIO works only on a raspberry pi
+# RaspberryGPIO provides IO, counters and a tachometer. Works only on a raspberry pi
 #p03 = RaspberryGPIO
 
 # The calculate plugin lets you calculate your own data from existing data items
@@ -21,9 +23,14 @@ p01 = ScotteCom
 # When present PellmonWeb displays a graph with calculated silo level from fill up time to present time
 p06 = SiloLevel
 
+# PelletCalc calculates feeder_time and power from feeder auger revolution count  
+#p07 = PelletCalc
+
 # Testplugin is a plugin template that does nothing useful
 #p99 = TestPlugin
 
+############################################################################################
+# Plugin configuration 
 ############################################################################################
 
 [plugin_ScotteCom]
@@ -51,17 +58,20 @@ plugindata1 = 123
 # xxx_enum = FalseText|TrueText
 
 # example: 
-alarm1_item = boiler_temp
-alarm1_comparator = >
-alarm1_level = 90
-alarm1_status = boiler_temp_supervision
-alarm1_enum = OK|Boiler temperature too high
+#alarm1_item = boiler_temp
+#alarm1_comparator = >
+#alarm1_level = 90
+#alarm1_status = boiler_temp_supervision
+#alarm1_enum = OK|Boiler temperature too high
 
-alarm2_item = chute_temp
-alarm2_comparator = >
-alarm2_level = 45
-alarm2_status = boiler_temp_supervision
-alarm2_enum = OK|Chute temperature too high
+[plugin_RaspberryGPIO]
+# xxx_function = input|latched_input|output|counter|tachometer
+# xxx_item = item name for pin
+# xxx_pin = board pin number
+#example:
+#gpio22_function = counter
+#gpio22_item = counter1
+#gpio22_pin = 15
 
 [plugin_Calculate]
 # This plugin implements a simple stack engine. 
@@ -83,11 +93,30 @@ calc1_calc = boiler_temp;GET;2;DIV
 calc1_read = half_boiler_temp
 
 [plugin_OWFS]
-# Data item name = owfs_path
-# This two reads the value and type from the fake sensor available in the default owfs configuration 
-owfstemp1 = 10.67C6697351FF/temperature
-owfstemp1_type = 10.67C6697351FF/type
+# xxx_item = item name for the owfs sensor value
+# xxx_path = [server::]path[:port], default server:port is localhost:4304
+# optional:
+# when the type is set to COUNTER the owfs path is polled cyclically and the item incremented on every 0->1 transition
+# xxx_type = R|R/W|COUNTER, default is R
+# xxx_latch = path, make use of the latch when using a ds2406 as input/counter
 
+# examples:
+# read the temperature value from the fake sensor available in the default owfs configuration 
+owfs1_item = faketemp
+owfs1_path = 10.67C6697351FF/temperature
+
+# use a ds2460 as counter with support for the input latch
+# owfs2_item = ds2460count
+# owfs2_path = uncached/12.8D3E7D000000/sensed.A
+# owfs2_type = COUNTER
+# owfs2_latch = uncached/12.8D3E7D000000/latch.A
+
+
+[plugin_PelletCalc]
+# counter = item name to read feeder auger rev count from
+
+############################################################################################
+# Pellmonsrv configuration 
 ############################################################################################
 
 [conf]
@@ -173,20 +202,6 @@ d10 = feeder_capacity
 # It is used to draw a tickmark in the graph
 d11 = _logtick
 
-[graphcolors]
-# To add a ds-name from the rrd-database to the graph, set
-# dxx = #hexcolorvalue
-d01 = #FF0000
-d02 = #00FF00
-d03 = #0000FF
-d04 = #FFFF00
-d05 = #FF05FF
-d06 = #0101FF
-d07 = #207F20
-d08 = #2F2FFF
-
-############################################################################################
-
 [email]
 # Uncomment and set these for email on mode/alarm status changes
 # Uses TLS, this works for gmail:
@@ -198,3 +213,29 @@ d08 = #2F2FFF
 #subject=PellMon status
 # Send email when any of these change
 #conditions=alarm,mode,parameter
+
+
+############################################################################################
+# Pellmonweb configuration
+############################################################################################
+
+[graphcolors]
+# To add a ds-name from the rrd-database to the graph, set
+# dxx = #hexcolorvalue, 
+# where dxx matches the [pollvalues] and [rrd_ds_names] sections
+d01 = #FF0000
+d02 = #00FF00
+d03 = #0000FF
+d04 = #FFFF00
+d05 = #FF05FF
+d06 = #0101FF
+d07 = #207F20
+d08 = #2F2FFF
+
+[scaling]
+# add optional scaling to the plotlines before drawing the graph
+# The right axis will scale to match the scaled data, when there are
+# several different scales in use it will match the first selected
+# line in the order they appear here 
+# the offset is first subracted and the result is divided by the divisor
+# dxx = offset:divisor

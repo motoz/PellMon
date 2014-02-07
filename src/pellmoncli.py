@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # Connect to pellmonsrv on the dbus system bus
     d = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
     notify = Gio.DBusProxy.new_sync(d, 0, None, 'org.pellmon.int', '/org/pellmon/int', 'org.pellmon.int', None)
-    version=getItem('version')
+    version=getItem('pellmonsrv_version')
     if version == 'error':
         # if that fails try the session bus instead
         e = Gio.bus_get_sync(Gio.BusType.SESSION, None)
