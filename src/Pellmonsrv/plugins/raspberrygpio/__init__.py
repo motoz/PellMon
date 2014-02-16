@@ -295,7 +295,7 @@ class raspberry_gpio(protocols):
                 elif pin_data == 'item':
                     itemList[self.pin2index[pin_name]]['name'] = value
                     itemTags[value] = ['All', 'raspberryGPIO', 'Basic']
-                    self.name2index[value]=len(itemList)-1
+                    self.name2index[value]=self.pin2index[pin_name]
                 elif pin_data == 'pin':
                     itemList[self.pin2index[pin_name]]['pin'] = int(value)
             except Exception,e:

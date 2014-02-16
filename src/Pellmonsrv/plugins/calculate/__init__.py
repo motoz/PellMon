@@ -22,11 +22,206 @@ from threading import Thread, Timer
 from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
+from logging import getLogger
+import traceback
+from time import sleep
+
+logger = getLogger('pellMon')
 
 itemList=[]
 itemTags={}
 itemValues={}
 Menutags = ['Calculate']
+gstore = {}
+
+class Calc():
+    def __init__(self, prog, glob, stack = []):
+        calc = prog.split(' ')
+        self.calc = [value for value in calc if value != '']
+        self.IP = 0
+        self.stack = []
+        if stack:
+            self.stack = stack
+        self.glob = glob
+        self.store = {}
+
+    def execute(self):
+        try:
+            c = self.calc[self.IP]
+        except:
+            raise ValueError('Expected operand')
+        if c=='/':
+            q = float(self.stack.pop())
+            d = float(self.stack.pop())
+            self.stack.append(str(d/q))
+        elif c == '*':
+            d = float(self.stack.pop())
+            q = float(self.stack.pop())
+            self.stack.append(str(d*q))
+        elif c=='+':
+            d = float(self.stack.pop())
+            q = float(self.stack.pop())
+            self.stack.append(str(d+q))
+        elif c=='-':
+            d = float(self.stack.pop())
+            q = float(self.stack.pop())
+            self.stack.append(str(q-d))
+        elif c=='get':
+            item = self.stack.pop()
+            value = self.glob['conf'].database.items[item].getItem()
+            self.stack.append(value)
+        elif c=='set':
+            item = self.stack.pop()
+            value = self.stack.pop()
+            result = self.glob['conf'].database.items[item].setItem(value)
+            self.stack.append(result)
+        elif c=='>':
+            item2 = self.stack.pop()
+            item1 = self.stack.pop()
+            self.stack.append(str(int(float(item1) > float(item2))))
+        elif c=='<':
+            item2 = self.stack.pop()
+            item1 = self.stack.pop()
+            self.stack.append(str(int(float(item1) < float(item2))))
+        elif c=='==':
+            item2 = self.stack.pop()
+            item1 = self.stack.pop()
+            self.stack.append(str(int(float(item1) == float(item2))))
+        elif c=='!=':
+            item2 = self.stack.pop()
+            item1 = self.stack.pop()
+            self.stack.append(str(int(float(item1) != float(item2))))
+        elif c=='?':
+            itemFalse = self.stack.pop()
+            itemTrue = self.stack.pop()
+            itemCheck = int(self.stack.pop())
+            if itemCheck:
+                self.stack.append(itemTrue)
+            else:
+                self.stack.append(itemFalse)
+        elif c=='exec':
+            name = self.stack.pop()
+            calc = self.glob['conf'].database.items[name].getItem()
+            prog = Calc(calc, self.glob)
+            prog.run()
+        elif c=='pop':
+            self.stack.pop()
+        elif c == 'dup':
+            self.stack.append(self.stack[-1])
+        elif c == 'sp':
+            self.stack.append(len(self.stack))
+        elif c == 'swap':
+            item1 = self.stack.pop()
+            item2 = self.stack.pop()
+            self.stack.append(item1)
+            self.stack.append(item2)
+        elif c=='max':
+            item1 = self.stack.pop()
+            item2 = self.stack.pop()
+            if float(item1) > float(item2):
+                self.stack.append(item1)
+            else:
+                self.stack.append(item2)
+        elif c=='min':
+            item1 = self.stack.pop()
+            item2 = self.stack.pop()
+            if float(item1) < float(item2):
+                self.stack.append(item1)
+            else:
+                self.stack.append(item2)
+        elif c == 'sto':
+            var = str(self.stack.pop())
+            self.store[var] = self.stack.pop()
+        elif c == 'del':
+            var = str(self.stack.pop())
+            if self.store.has_key(var):
+                del gstore[var]
+        elif c == 'def':
+            var = str(self.stack.pop())
+            value = self.stack.pop()
+            if not self.store.has_key(var):
+                self.store[var] = value
+        elif c == 'rcl':
+            var = str(self.stack.pop())
+            try:
+                self.stack.append(self.store[var])
+            except:
+                raise ValueError('no variable named %s'%var)
+        elif c == 'gsto':
+            var = str(self.stack.pop())
+            gstore[var] = self.stack.pop()
+        elif c == 'gdef':
+            var = str(self.stack.pop())
+            value = self.stack.pop()
+            if not gstore.has_key(var):
+                gstore[var] = value
+        elif c == 'gdel':
+            var = str(self.stack.pop())
+            if gstore.has_key(var):
+                del gstore[var]
+        elif c == 'grcl':
+            try:
+                var = str(self.stack.pop())
+                self.stack.append(gstore[var])
+            except:
+                raise ValueError('no global named %s'%var)
+        else:
+            self.stack.append(c)
+        self.IP += 1
+
+    def next(self):
+        try:
+            if self.IP == len(self.calc):
+                return 'STOP'
+            else:
+                return self.calc[self.IP]
+        except:
+            raise ValueError('Operand expected')
+
+    def skip(self, stop_on):
+        try:
+            while not self.next() in stop_on:
+                if self.next() == 'if':
+                    self.IP += 1
+                    self.skip(('end',))
+                self.IP += 1
+        except:
+            raise ValueError('missing %s'%('|').join(stop_on))
+
+    def run(self, stop_on = ('STOP',)):
+        try:
+            while not self.next() in stop_on: 
+                if self.next() == 'if':
+                    self.IP += 1
+                    self.run(('then',))
+                    result = self.stack.pop()
+                    if int(result):
+                        self.IP += 1
+                        self.run(('end','else'))
+                        if self.next() == 'else':
+                            self.skip(('end',))
+                        self.IP += 1
+                    else:
+                        self.IP += 1
+                        self.skip(('end','else'))
+                        if self.next() == 'else':
+                            self.IP += 1
+                            self.run(('end',))
+                        self.IP += 1
+                else:
+                    self.execute()
+            try:
+                return self.stack[-1]
+            except IndexError:
+                raise IndexError('No return value, stack is empty')
+        except Exception,e:
+            if self.IP < len(self.calc):
+                raise ValueError('\'%s\' at %u: %s '%(self.calc[self.IP], self.IP, str(e)))
+            else:
+                if stop_on != ('STOP',):
+                     raise ValueError('missing %s'%('|').join(stop_on)) 
+                raise ValueError('unexpected end of program, %s at %u'%(str(e),self.IP))
+
 
 class calculateplugin(protocols):
     def __init__(self):
@@ -34,134 +229,137 @@ class calculateplugin(protocols):
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
-
-        for key, value in self.conf.iteritems():
-            try:
-                calc_name = key.split('_')[0]
-                calc_data = key.split('_')[1]
-                if calc_data == 'calc':
-                    itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R/W', 'description':''})           
-                elif calc_data == 'read':
-                    itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})       
-                    itemList.append({'name':value, 'value':'', 'calc_item':calc_name+'_calc', 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})  
-                    itemTags[value] = ['All', 'Calculate', 'Basic']       
-                itemTags[key] = ['All', 'Calculate', 'Basic']
-                itemTags[key].append(calc_name)
-            except Exception,e: 
-                print e
-        self.valuestore = ConfigParser()
-        self.valuestore.add_section('values')
-        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
-        for item in itemList:
-            if item['type'] == 'R/W':
-                self.valuestore.set('values', item['name'], item['value'])
-            else:
-                itemValues[item['name']] = item['value']
-        self.valuestore.read(self.valuesfile)
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
+        self.calc2index={}
+        self.name2index={}
+        self.tasks = {}
         try:
-            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-            os.chown(self.valuesfile, uid, gid)
-        except:
-            pass
-            
-    def execute(self, itemName, stack=[]):
-        try:
-            calc = self.getItem(itemName)
-            for c in calc.split(';'):
-                if c=='DIV':
-                    q = float(stack.pop())
-                    d = float(stack.pop())
-                    stack.append(str(d/q))
-                elif c=='MUL':
-                    d = float(stack.pop())
-                    q = float(stack.pop())
-                    stack.append(str(d*q))
-                elif c=='ADD':
-                    d = float(stack.pop())
-                    q = float(stack.pop())
-                    stack.append(str(d+q))
-                elif c=='SUB':
-                    d = float(stack.pop())
-                    q = float(stack.pop())
-                    stack.append(str(q-d))
-                elif c=='GET':
-                    item = stack.pop()
-                    value = self.glob['conf'].database.items[item].getItem()
-                    stack.append(value)   
-                elif c=='SET':
-                    item = stack.pop()
-                    value = stack.pop()
-                    result = self.glob['conf'].database.items[item].setItem(value)
-                    stack.append(result)   
-                elif c=='>':
-                    item2 = stack.pop()
-                    item1 = stack.pop()
-                    stack.append(str(int(item1 > item2)))   
-                elif c=='<':
-                    item2 = stack.pop()
-                    item1 = stack.pop()
-                    stack.append(str(int(item1 < item2)))  
-                elif c=='==':
-                    item2 = stack.pop()
-                    item1 = stack.pop()
-                    stack.append(str(int(item1 == item2)))  
-                elif c=='!=':
-                    item2 = stack.pop()
-                    item1 = stack.pop()
-                    stack.append(str(int(item1 != item2))) 
-                elif c=='IF':
-                    itemFalse = stack.pop()
-                    itemTrue = stack.pop()
-                    itemCheck = int(stack.pop())
-                    if itemCheck:
-                        stack.append(itemTrue)
-                    else:
-                        stack.append(itemFalse)   
-                elif c=='EXEC':
-                    calc_item = stack.pop()
-                    stack.append(self.execute(calc_item, stack))   
-                elif c=='POP':
-                    stack.pop()
-                else:
-                    stack.append(c)
-            return stack.pop() 
-        except:
-            return 'error'
-        
-    def getItem(self, itemName):
-        for i in itemList:
-            if i['name'] == itemName:
-                item = i
+            for key, value in self.conf.iteritems():
                 try:
-                    calc_item = item['calc_item']
-                    return self.execute(calc_item)
-                except:
-                    try:
-                        return str(itemValues[itemName])
-                    except:
-                        try:
-                            value = self.valuestore.get('values', itemName)
-                            return value
-                        except:
-                            return 'error'
+                    calc_name = key.split('_')[0]
+                    calc_data = key.split('_')[1]
 
-    def setItem(self, item, value):
+                    if not self.calc2index.has_key(calc_name):
+                        itemList.append({'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})
+                        self.calc2index[calc_name] = len(itemList)-1
+
+                    if calc_data == 'prog':
+                        itemList[self.calc2index[calc_name]]['name'] = key 
+                        itemList[self.calc2index[calc_name]]['value'] = value 
+                        #itemList[self.calc2index[calc_name]]['type'] = 'R/W' 
+                        self.name2index[key] = self.calc2index[calc_name]
+                        itemTags[key] = ['All', 'Calculate']
+
+                    elif calc_data == 'readitem':
+                        itemList.append({'name':value, 'value':'', 'calc_item':calc_name+'_prog', 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':''})  
+                        itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'', 'type':'R', 'description':'Contains the item name to read to execute %s and retrieve the result'%calc_name})  
+                        itemTags[value] = ['All', 'Calculate', 'Basic']
+                        itemTags[key] = ['All', 'Calculate']
+                        self.name2index[value]=len(itemList)-2
+                        self.name2index[key]=len(itemList)-1
+
+                    elif calc_data == 'readwriteitem':
+                        itemList.append({'name':value, 'value':'', 'calc_item':calc_name+'_prog','min':'', 'max':'', 'unit':'', 'type':'R/W', 'description':''})
+                        itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'','type':'R', 'description':'Contains the item name to read to execute %s and retrieve the result'%calc_name})
+                        itemTags[value] = ['All', 'Calculate', 'Basic']                                                                                  
+                        itemTags[key] = ['All', 'Calculate']                                                                                             
+                        self.name2index[value]=len(itemList)-2                                                                                           
+                        self.name2index[key]=len(itemList)-1
+
+                    elif calc_data == 'writeitem':
+                        itemList.append({'name':value, 'value':'', 'calc_item':calc_name+'_prog','min':'', 'max':'', 'unit':'', 'type':'W', 'description':''})
+                        itemList.append({'name':key, 'value':value, 'min':'', 'max':'', 'unit':'','type':'R', 'description':'Contains the item name to read to execute %s and retrieve the result'%calc_name})
+                        itemTags[value] = ['All', 'Calculate', 'Basic']                                                                                  
+                        itemTags[key] = ['All', 'Calculate']                                                                                             
+                        self.name2index[value]=len(itemList)-2                                                                                           
+                        self.name2index[key]=len(itemList)-1
+
+                    elif calc_data == 'progtype':
+                        if value in ['R','R/W']:                                                                                                            
+                            itemList[self.calc2index[calc_name]]['type'] = value
+                        else:
+                           raise ValueError('unknown type %s in %s'%(value, key)) 
+
+                    elif calc_data == 'taskcycle':
+                        try:
+                            taskcycle = float(value)
+                            self.tasks[calc_name] = calcthread(taskcycle, calc_name+'_prog', self)
+                        except Exception, e:
+                            raise e #ValueError('%s has invalid task time %s'%(key, value))
+
+                except Exception,e: 
+                    logger.info(str(e))
+                    raise e
+            self.valuestore = ConfigParser()
+            self.valuestore.add_section('values')
+            self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
+            for item in itemList:
+                if item['type'] == 'R/W':
+                    self.valuestore.set('values', item['name'], item['value'])
+                else:
+                    itemValues[item['name']] = item['value']
+            self.valuestore.read(self.valuesfile)
+            f = open(self.valuesfile, 'w')
+            self.valuestore.write(f)
+            f.close()
+            try:
+                uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
+                gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
+                os.chown(self.valuesfile, uid, gid)
+            except:
+                pass
+        except Exception, e:
+            logger.info( str(e))
+            raise
+
+    def getItem(self, itemName):
+        if self.name2index.has_key(itemName):
+            item = itemList[self.name2index[itemName]]
+            try:
+                calc_item = item['calc_item']
+                if item['type'] in ['R','R/W']:
+                    prog = self.getItem(calc_item)
+                    try:
+                        calc = Calc(prog, self.glob)
+                        return calc.run()
+                    except Exception, e:
+                        calc = Calc(prog, self.glob)
+                        logger.info(calc_item+' error: '+str(e))
+                        return 'error'
+            except:
+                if item['type'] == 'R':
+                    return item['value']
+                else:
+                    try:
+                        value = self.valuestore.get('values', itemName)
+                        return value
+                    except:
+                        return 'error'
+
+    def setItem(self, itemname, value):
         try:
-            if itemValues.has_key(item):
-                itemValues[item] = value
+            item = itemList[self.name2index[itemname]]
+            calc_item = item['calc_item']
+            prog = self.getItem(calc_item)
+            try:
+                stack = [str(value)]
+                calc = Calc(prog, self.glob, stack=stack)
+                calc.run()
                 return 'OK'
-            else:
-                self.valuestore.set('values', item, str(value))
-                f = open(self.valuesfile, 'w')
-                self.valuestore.write(f)
-                f.close()
-                return 'OK'
-        except Exception,e:
-            return 'error'
+            except Exception, e:
+                calc = Calc(prog, self.glob)
+                logger.info(calc_item+' error: '+str(e))
+                return 'error'
+        except:  
+            try:
+                item = itemList[self.name2index[itemname]]
+                if item['type'] == 'R/W':
+                    self.valuestore.set('values', item['name'], str(value))
+                    f = open(self.valuesfile, 'w')
+                    self.valuestore.write(f)
+                    f.close()
+                    return 'OK'
+            except Exception,e:
+                return 'error'
 
     def getDataBase(self):
         l=[]
@@ -186,3 +384,20 @@ class calculateplugin(protocols):
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)
         t.start()
+
+class calcthread(Thread):
+    def __init__(self, cycle, progitem, plugin_object):
+        Thread.__init__(self)
+        self.cycle = cycle
+        self.setDaemon(True)
+        self.start()
+        self.progitem = progitem
+        self.plugin_object = plugin_object
+    def run(self):
+        while True:
+            try:
+                prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.glob)
+                prog.run()
+            except:
+                pass
+            sleep(self.cycle)
