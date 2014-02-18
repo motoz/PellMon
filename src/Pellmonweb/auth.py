@@ -127,10 +127,12 @@ class AuthController(object):
     
     def on_login(self, username):
         """Called on successful login"""
-    
+        cherrypy.log('Login from %s as username: %s'%(cherrypy.request.headers["Remote-Addr"], username))
+
     def on_logout(self, username):
         """Called on logout"""
-    
+        cherrypy.log('Logout from %s, username: %s'%(cherrypy.request.headers["Remote-Addr"], username))
+
     def get_loginform(self, username, msg="Enter login information", from_page="/"):
         from_page = escape(from_page, True)
         username = escape(username, True)
@@ -145,8 +147,10 @@ class AuthController(object):
             if (username,password) in self.credentials:
                 return None
             else:
+                cherrypy.log('Login failed from %s, username: %s, password: %s'%(cherrypy.request.headers["Remote-Addr"], username[:50], password[:50]))
                 return "Incorrect username or password."
         except:
+            cherrypy.log('Login failed from %s, username: %s, password: %s'%(cherrypy.request.headers["Remote-Addr"], username[:50], password[:50]))
             return "Incorrect username or password."
 
     @cherrypy.expose
