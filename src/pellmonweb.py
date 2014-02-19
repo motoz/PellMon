@@ -38,6 +38,7 @@ import pwd
 import grp
 import subprocess
 from datetime import datetime
+from cgi import escape
 
 class DbusNotConnected(Exception):
     pass
@@ -381,7 +382,7 @@ class PellMonWeb:
                     else:
                         # get parameter
                         try:
-                            values[parameterlist.index(item['name'])]=dbus.getItem(item['name'])
+                            values[parameterlist.index(item['name'])]=escape(dbus.getItem(item['name']))
                         except:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
@@ -447,7 +448,7 @@ def parameterReader(q):
     parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = dbus.getItem(item)
+            value = escape(dbus.getItem(item))
         except:
             value='error'
         q.put((item,value))
@@ -482,6 +483,8 @@ if __name__ == '__main__':
 
     engine = cherrypy.engine
 
+    config_file = args.CONFIG
+
     # Only daemonize if asked to.
 #    if daemonize:
     if args.DAEMONIZE:
@@ -493,11 +496,43 @@ if __name__ == '__main__':
         plugins.PIDFile(engine, pidfile).subscribe()
 
     if args.USER:
+        # Load the configuration file
+        if not os.path.isfile(config_file):
+            config_file = '/etc/pellmon.conf'
+        if not os.path.isfile(config_file):
+            config_file = '/usr/local/etc/pellmon.conf'
+        if not os.path.isfile(config_file):
+            print "config file not found"
+            sys.exit(1)
+        parser.read(config_file)
+
+        try:
+            accesslog = parser.get('weblog', 'accesslog')
+            logdir = os.path.dirname(accesslog)
+            if not os.path.isdir(logdir):
+                os.mkdir(logdir)
+            uid = pwd.getpwnam(args.USER).pw_uid
+            gid = grp.getgrnam(args.GROUP).gr_gid
+            os.chown(logdir, uid, gid)
+            if os.path.isfile(accesslog):
+                os.chown(accesslog, uid, gid)
+        except:
+            pass
+        try:
+            errorlog = parser.get('weblog', 'errorlog')
+            logdir = os.path.dirname(errorlog)
+            if not os.path.isdir(logdir):
+                os.mkdir(logdir)
+            uid = pwd.getpwnam(args.USER).pw_uid
+            gid = grp.getgrnam(args.GROUP).gr_gid
+            os.chown(logdir, uid, gid)
+            if os.path.isfile(errorlog):
+                os.chown(errorlog, uid, gid)
+        except:
+            pass
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
         plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=033).subscribe()
-
-    config_file = args.CONFIG
 
 # Load the configuration file
 if not os.path.isfile(config_file):
@@ -594,6 +629,14 @@ if __name__=="__main__":
         engine.signal_handler.subscribe()
     if hasattr(engine, "console_control_handler"):
         engine.console_control_handler.subscribe()
+    try:
+        cherrypy.config.update({'log.access_file':accesslog})
+    except:
+        pass
+    try:
+        cherrypy.config.update({'log.error_file':errorlog})
+    except:
+        pass
 
     # Always start the engine; this will start all other services
     try:

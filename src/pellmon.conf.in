@@ -148,7 +148,7 @@ database = @localstatedir@/lib/pellmon/rrd.db
 # persistent_db every db_store_interval seconds
 db_store_interval = 7200
 # Full path to the logfile
-logfile = @localstatedir@/log/pellmon/pellmon.log
+logfile = @localstatedir@/log/pellmonsrv/pellmon.log
 
 # logging level = info/debug
 loglevel = info
@@ -253,3 +253,9 @@ d08 = #2F2FFF
 # line in the order they appear here 
 # the offset is first subracted and the result is divided by the divisor
 # dxx = offset:divisor
+
+[weblog]
+# optional pellmonweb logging
+#accesslog = @localstatedir@/log/pellmonweb/access.log
+#errorlog = @localstatedir@/log/pellmonweb/error.log
+
