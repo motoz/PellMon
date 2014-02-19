@@ -35,12 +35,13 @@ Menutags = ['Calculate']
 gstore = {}
 
 class Calc():
-    def __init__(self, prog, glob, stack = []):
+    def __init__(self, prog, glob, stack=None):
         calc = prog.split(' ')
         self.calc = [value for value in calc if value != '']
         self.IP = 0
-        self.stack = []
-        if stack:
+        if stack == None:
+            self.stack = []
+        else:
             self.stack = stack
         self.glob = glob
         self.store = {}
@@ -102,7 +103,7 @@ class Calc():
         elif c=='exec':
             name = self.stack.pop()
             calc = self.glob['conf'].database.items[name].getItem()
-            prog = Calc(calc, self.glob)
+            prog = Calc(calc, self.glob, stack=self.stack)
             prog.run()
         elif c=='pop':
             self.stack.pop()
