@@ -21,6 +21,7 @@ import cherrypy
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from itertools import islice
+from cgi import escape
 
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
@@ -37,10 +38,9 @@ class LogViewer(object):
     @cherrypy.expose
     def getlines(self, linenum=100):    
         f = open(self.logfile, "r")
-        #lines = f.readlines()
         try:
             ln=int(linenum)
-            lines = islice(reversed_lines(f), ln)        
+            lines = islice(reversed_lines(f), ln)
             tmpl = lookup.get_template("loglines.html")
             return tmpl.render(lines=lines)
         except:
@@ -52,10 +52,10 @@ def reversed_lines(file):
     for block in reversed_blocks(file):
         for c in reversed(block):
             if c == '\n' and part:
-                yield part[::-1]
+                yield escape(part[::-1])
                 part = ''
             part += c
-    if part: yield part[::-1]
+    if part: yield escape(part[::-1])
 
 def reversed_blocks(file, blocksize=4096):
     "Generate blocks of file's contents in reverse order."

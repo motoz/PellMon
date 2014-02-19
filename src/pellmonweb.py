@@ -38,6 +38,7 @@ import pwd
 import grp
 import subprocess
 from datetime import datetime
+from cgi import escape
 
 class DbusNotConnected(Exception):
     pass
@@ -381,7 +382,7 @@ class PellMonWeb:
                     else:
                         # get parameter
                         try:
-                            values[parameterlist.index(item['name'])]=dbus.getItem(item['name'])
+                            values[parameterlist.index(item['name'])]=escape(dbus.getItem(item['name']))
                         except:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
@@ -447,7 +448,7 @@ def parameterReader(q):
     parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = dbus.getItem(item)
+            value = escape(dbus.getItem(item))
         except:
             value='error'
         q.put((item,value))
