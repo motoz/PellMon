@@ -9,14 +9,14 @@
     <div class="row">
         <div class="col-md-12">
         %if not empty:
-            <h4>Graph</h4>
+            <h4 class="graphtitle">Graph</h4>
                 <div>
                     <img class="graph image-responsive image-lazy" id="graph" data-time-choice="" data-direction="" data-src="image" src="media/img/spinner.gif" />
                 </div>
             <p>
                 Show:
                 %for index in range(len(timeChoices)):
-                    ${'<a href="#" data-time-choice="%s" class="timeChoice %s">%s</a> | ' % (timeChoices[index], 'selected' if timeChoice == timeChoices[index] else '', timeNames[index])}
+                    ${'<a href="#" data-time-choice="%s" data-title-text="%s" class="timeChoice %s">%s</a> | ' % (timeChoices[index], timeNames[index], 'selected' if timeChoice == timeChoices[index] else '', timeNames[index])}
                 %endfor
                 <a href="/graphconf">Add/remove lines</a>
             </p>

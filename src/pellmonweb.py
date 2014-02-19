@@ -155,6 +155,14 @@ class PellMonWeb:
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
 
     @cherrypy.expose
+    def graph_title(self):
+        try:
+            t = cherrypy.session['timeChoice']
+            return timeNames[t] 
+        except:
+            return "Graph"
+
+    @cherrypy.expose
     def image(self, **args):
         if not polling:
             return None
