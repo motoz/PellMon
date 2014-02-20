@@ -155,6 +155,14 @@ class PellMonWeb:
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
 
     @cherrypy.expose
+    def graph_title(self):
+        try:
+            t = cherrypy.session['timeChoice']
+            return timeNames[t] 
+        except:
+            return "Graph"
+
+    @cherrypy.expose
     def image(self, **args):
         if not polling:
             return None
@@ -201,6 +209,8 @@ class PellMonWeb:
         try:
             graphWidth = args.get('maxWidth')
             test = int(graphWidth) # should be int
+            if test > 5000:
+                graphWidth = '5000'
         except:
             graphWidth = '440' # Default bootstrap 3 grid size
 
@@ -247,9 +257,9 @@ class PellMonWeb:
                 else:
                     RrdGraphString1+="LINE1:%s%s:\"%s\" "% (value, colorsDict[key], value)
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
-        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(cmd.stdout)
+        cherrypy.response.headers['Content-Type'] = "image/png"
+        return cmd.communicate()[0]
 
     @cherrypy.expose
     def silolevel(self, **args):
@@ -280,9 +290,9 @@ class PellMonWeb:
         RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
         RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
-        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(cmd.stdout)
+        cherrypy.response.headers['Content-Type'] = "image/png"
+        return cmd.communicate()[0]
 
     @cherrypy.expose
     def consumption(self, **args):
@@ -297,9 +307,9 @@ class PellMonWeb:
             align = now/3600*3600
             RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h')
             cmd = subprocess.Popen(RrdGraphString, shell=True, stdout=subprocess.PIPE)
-            cmd.wait()
             cherrypy.response.headers['Pragma'] = 'no-cache'
-            return serve_fileobj(cmd.stdout)
+            cherrypy.response.headers['Content-Type'] = "image/png"
+            return cmd.communicate()[0]
 
     @cherrypy.expose
     @require() #requires valid login

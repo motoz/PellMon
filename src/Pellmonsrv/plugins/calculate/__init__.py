@@ -25,6 +25,7 @@ import os, grp, pwd
 from logging import getLogger
 import traceback
 from time import sleep
+from string import maketrans
 
 logger = getLogger('pellMon')
 
@@ -34,13 +35,19 @@ itemValues={}
 Menutags = ['Calculate']
 gstore = {}
 
+transstring = maketrans('\t', ' ')
+
 class Calc():
-    def __init__(self, prog, glob, stack = []):
-        calc = prog.split(' ')
-        self.calc = [value for value in calc if value != '']
+    def __init__(self, prog, glob, stack=None):
+        prog = prog.translate(transstring)
+        calc = []
+        for row in prog.splitlines():
+          calc += row.split(' ')
+        self.calc = [value for value in calc if value !='']
         self.IP = 0
-        self.stack = []
-        if stack:
+        if stack == None:
+            self.stack = []
+        else:
             self.stack = stack
         self.glob = glob
         self.store = {}
@@ -102,7 +109,7 @@ class Calc():
         elif c=='exec':
             name = self.stack.pop()
             calc = self.glob['conf'].database.items[name].getItem()
-            prog = Calc(calc, self.glob)
+            prog = Calc(calc, self.glob, stack=self.stack)
             prog.run()
         elif c=='pop':
             self.stack.pop()

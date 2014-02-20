@@ -70,7 +70,7 @@ var getGraph = function() {
 $('.timeChoice').click(function(e) {
 	e.preventDefault();
 	var me = $(this);
-
+        $('h4.graphtitle').text(me.data('title-text')+'...');
 	getGraph().data('time-choice', me.data('time-choice'));
 	refreshGraph();
 });
@@ -131,4 +131,13 @@ $('.btn.autorefresh').click(function(e) {
 if($('.btn.autorefresh').hasClass('active')) {
 	startImageRefresh();
 }
+
+$('#graph').load(function() {
+        $.get(
+                '/graph_title',
+                function(data) {
+            $('h4.graphtitle').text(data);
+                }
+        );
+});
 
