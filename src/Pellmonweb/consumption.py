@@ -115,9 +115,9 @@ class Consumption(object):
         align=now/3600*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 3600, 24, '-', 550, '24h consumption', 'kg/h')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
-        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(cmd.stdout)
+        cherrypy.response.headers['Content-Type'] = "image/png"
+        return cmd.communicate()[0]
 
     @cherrypy.expose
     def consumption7d(self):
@@ -127,9 +127,9 @@ class Consumption(object):
         align=int(now)/86400*86400-(localtime(now).tm_hour-int(now)%86400/3600)*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 86400, 7, '-', 550, 'last week', 'kg/day')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
-        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(cmd.stdout)
+        cherrypy.response.headers['Content-Type'] = "image/png"
+        return cmd.communicate()[0]
 
     @cherrypy.expose
     def consumption1m(self):    
@@ -139,9 +139,9 @@ class Consumption(object):
         align=int(now+4*86400)/(86400*7)*(86400*7)-(localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
         RrdGraphString = make_barchart_string(self.db, time(), align, 86400*7, 8, '-', 550, 'last two months', 'kg/week')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
-        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(cmd.stdout)
+        cherrypy.response.headers['Content-Type'] = "image/png"
+        return cmd.communicate()[0]
         
     @cherrypy.expose
     def consumption1y(self):    
@@ -151,7 +151,7 @@ class Consumption(object):
         align=now/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 2628000, 12, '-', 550, 'last year', 'kg/month')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
-        cmd.wait()
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return serve_fileobj(cmd.stdout)
+        cherrypy.response.headers['Content-Type'] = "image/png"
+        return cmd.communicate()[0]
 
