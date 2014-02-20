@@ -209,6 +209,8 @@ class PellMonWeb:
         try:
             graphWidth = args.get('maxWidth')
             test = int(graphWidth) # should be int
+            if test > 5000:
+                graphWidth = '5000'
         except:
             graphWidth = '440' # Default bootstrap 3 grid size
 
