@@ -163,58 +163,54 @@ class PellMonWeb:
             return "Graph"
 
     @cherrypy.expose
-    def image(self, **args):
+    def graph(self, **args):
         if not polling:
             return None
         if len(colorsDict) == 0:
             return None
             
-        try:
-            timeChoice = args['timeChoice']
-            timeChoice = timeChoices.index(timeChoice)
-            cherrypy.session['timeChoice'] = timeChoice
-        except:
-            pass
 
+        # Set x axis time span with ?timespan=xx 
         try:
-            timeChoice = cherrypy.session['timeChoice']
-            seconds=timeSeconds[timeChoice]
-        except:
-            seconds=timeSeconds[0]
-
-        # Set time offset with ?time=xx 
-        try:
-            time = int(args['time'])
-            # And save it in the session
-            cherrypy.session['time'] = str(time)
+            timespan = int(args['timespan'])
         except:
             try:
-                time = int(cherrypy.session['time'])
+                timespan = int(cherrypy.session['timespan'])
+            except:
+                timespan = 3600
+
+        # Offset x-axis with ?timeoffset=xx 
+        try:
+            time = int(args['timeoffset'])
+        except:
+            try:
+                time = int(cherrypy.session['timeoffset'])
             except:
                 time = 0
 
-
+        # Set graph width with ?width=xx 
         try:
-            direction = args['direction']
-            if direction == 'left':
-                time=time+seconds
-            elif direction == 'right':
-                time=time-seconds
-                if time<0:
-                    time=0
-            cherrypy.session['time']=str(time)
+            graphWidth = int(args['width'])
         except:
-            pass
+            try:
+                graphWidth = int(cherrypy.session['width'])
+            except:
+                graphWidth = 440 # Default bootstrap 3 grid size
+        if graphWidth > 5000:
+            graphWidth = 5000
 
+        # Set graph height with ?height=xx 
         try:
-            graphWidth = args.get('maxWidth')
-            test = int(graphWidth) # should be int
-            if test > 5000:
-                graphWidth = '5000'
+            graphHeight = int(args['height'])
         except:
-            graphWidth = '440' # Default bootstrap 3 grid size
+            try:
+                graphHeight = int(cherrypy.session['height'])
+            except:
+                graphHeight = 400
+        if graphHeight > 2000:
+            graphHeight = 2000
 
-        graphTimeStart=str(seconds + time)
+        graphTimeStart=str(timespan + time)
         graphTimeEnd=str(time)
 
         #Build the command string to make a graph from the database
@@ -238,8 +234,8 @@ class PellMonWeb:
         else:
             rightaxis = ''
         RrdGraphString1 = "rrdtool graph "+ graph_file + ' --disable-rrdtool-tag' +\
-            " --lower-limit 0 %s --full-size-mode --width "%rightaxis + graphWidth + " --right-axis-format %1.0lf "\
-            " --height 400 --end now-" + graphTimeEnd + "s --start now-" + graphTimeStart + "s " + \
+            " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "\
+            " --height %d --end now-"%graphHeight + graphTimeEnd + "s --start now-" + graphTimeStart + "s " + \
             "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for key,value in polldata:
             if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
