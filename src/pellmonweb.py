@@ -219,9 +219,6 @@ class PellMonWeb:
         graphTimeStart=str(timespan + time)
         graphTimeEnd=str(time)
 
-        #Build the command string to make a graph from the database
-        graph_file='-'
-        
         # Hide legends with ?legends=no
         legends = ''
         try:
@@ -235,7 +232,7 @@ class PellMonWeb:
             rightaxis = '--right-axis'
             scalestr = ' 1:0'
             for line in graph_lines:
-                if 'scale' in line:
+                if line['name'] in lines and 'scale' in line:
                     scale = line['scale'].split(':')
                     try:
                         gain = float(scale[1])
@@ -248,7 +245,9 @@ class PellMonWeb:
             rightaxis += scalestr
         else:
             rightaxis = ''
-        RrdGraphString1 =  "rrdtool graph "+ graph_file + ' --disable-rrdtool-tag --border 1 '+ legends
+
+        #Build the command string to make a graph from the database
+        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 1 '+ legends
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RrdGraphString1 += " --height %s --end now-"%graphHeight + graphTimeEnd + "s --start now-" + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
@@ -593,11 +592,6 @@ try:
 except ConfigParser.NoSectionError:
     ds_names = {}
 
-graph_lines=[]
-for key,value in polldata:
-    if key in colorsDict and key in ds_names:
-        graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key] })
-
 try:
     # Get the optional scales
     scales = parser.items("scaling")
@@ -606,6 +600,13 @@ try:
         scale_data[key] = value
 except ConfigParser.NoSectionError:
     scale_data = {}
+
+graph_lines=[]
+for key,value in polldata:
+    if key in colorsDict and key in ds_names:
+        graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key]})
+        if key in scale_data:
+            graph_lines[-1]['scale'] = scale_data[key]
 
 credentials = parser.items('authentication')
 logfile = parser.get('conf', 'logfile')
