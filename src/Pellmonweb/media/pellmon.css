@@ -7,3 +7,9 @@ html {
     overflow-y: scroll;
 }
 
+.selected {
+text-decoration: none;
+border-top: 3px solid; 
+}
+
+a:link {text-decoration:none; outline: none;}

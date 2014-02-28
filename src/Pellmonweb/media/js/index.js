@@ -35,14 +35,10 @@ var refreshAll = function() {
 
 var refreshGraph = function() {
 	var graph = getGraph(),
-		timeChoice = graph.data('time-choice'),
-		direction = graph.data('direction'),
-		maxWidth = getMaxWidth();
+	offset = graph.data('offset')
+	maxWidth = getMaxWidth();
 
-	graph.data('direction', '');
-	graph.data('timeChoice', '');
-
-	graph.attr('src', graph.data('src') + '?timeChoice=' + timeChoice + '&direction=' + direction + '&random=' + Math.random() + '&maxWidth=' + maxWidth);
+	graph.attr('src', graph.data('src') + '?width=' + maxWidth + '&timeoffset=' + offset + '&legends=no' + '&random=' + Math.random() );
 }
 
 var refreshConsumption = function() {
@@ -68,28 +64,89 @@ var getGraph = function() {
 }
 
 $('.timeChoice').click(function(e) {
+    e.preventDefault();
+    $('.timeChoice').each( function() {
+        $(this).removeClass('selected')
+    });
+    var me = $(this);
+    var graph=getGraph()
+    me.addClass('selected')
+    graph.data('title', me.data('title-text')+'...');
+    setGraphTitle()
+    graph.data('title', me.data('title-text'));
+
+    timespan =  me.data('time-choice');
+    graph.data('timespan', timespan);
+    $.post(
+            '/graphsession?timespan='+timespan,
+            function(data) {
+                refreshGraph();
+            }
+    )
+});
+
+$('.lineselection').click(function(e) {
 	e.preventDefault();
 	var me = $(this);
-        $('h4.graphtitle').text(me.data('title-text')+'...');
-	getGraph().data('time-choice', me.data('time-choice'));
-	refreshGraph();
+
+    a = me.data('selected')
+    if (a == 'yes')
+        { me.data('selected', 'no') 
+          me.removeClass('selected')
+        } 
+    else 
+        { me.data('selected', 'yes') 
+          me.addClass('selected')
+        } 
+	var s = ''
+    $('.lineselection').each(function() {
+        if ($(this).data('selected')=='yes')  {
+            s = s + $(this).data('linename')+',';
+        }
+    });
+
+    $.post(
+            '/graphsession?lines='+s,
+            function(data) {
+                getGraph().data('time-choice', me.data('time-choice'));
+                refreshGraph();
+            }
+    )
+
+
 });
 
-$('.btn.left').click(function(e) {
+
+$('.left').click(function(e) {
+    var graph = getGraph()
 	e.preventDefault();
-
-	getGraph().data('direction', 'left');
-	refreshGraph();
+	offset = graph.data('offset')
+    offset = parseInt(offset, 10)
+    timespan = graph.data('timespan')
+    offset = offset + timespan
+    ofs = offset.toString()
+    graph.data('offset', ofs+'...');
+    setGraphTitle();
+    graph.data('offset', ofs);
+    refreshGraph();
 });
 
-$('.btn.right').click(function(e) {
+$('.right').click(function(e) {
 	e.preventDefault();
-
-	getGraph().data('direction', 'right');
-	refreshGraph();
+	var graph=getGraph()
+	offset = graph.data('offset')
+    offset = parseInt(offset, 10)
+    timespan = graph.data('timespan')
+    offset = offset - timespan
+    if (offset < 0) {offset = 0}
+    ofs = offset.toString()
+    graph.data('offset', ofs+'...');
+    setGraphTitle();
+    graph.data('offset', ofs);
+    refreshGraph();
 });
 
-$('.btn.autorefresh').click(function(e) {
+$('.autorefresh').click(function(e) {
 	var me = $(this),
 		input = $('input.autorefresh');
 
@@ -114,13 +171,13 @@ $('.btn.autorefresh').click(function(e) {
 
 	me.data('processing', true);
 
-	if(me.hasClass('active')) {
-		me.removeClass('active');
+	if(me.hasClass('selected')) {
+		me.removeClass('selected');
 		setAutorefresh('no', function() {
 			clearInterval(refreshTimer);
 		});
 	} else {
-		me.addClass('active');
+		me.addClass('selected');
 		setAutorefresh('yes', function() {
 			startImageRefresh();
 		});
@@ -128,16 +185,25 @@ $('.btn.autorefresh').click(function(e) {
 	}
 });
 
-if($('.btn.autorefresh').hasClass('active')) {
+if($('.autorefresh').hasClass('selected')) {
 	startImageRefresh();
 }
 
+var setGraphTitle = function() {
+    var graph = getGraph()
+    offset = graph.data('offset')
+    if (offset == '0')
+    {
+        title = graph.data('title')
+    }
+    else
+    {
+        title = graph.data('title') + ' - ' + offset + 's'
+    }
+    $('h4.graphtitle').text(title);
+}
+
 $('#graph').load(function() {
-        $.get(
-                '/graph_title',
-                function(data) {
-            $('h4.graphtitle').text(data);
-                }
-        );
+    setGraphTitle();
 });
 
