@@ -130,21 +130,6 @@ class PellMonWeb:
         self.consumptionview = Consumption(polling, db)
 
     @cherrypy.expose
-    def form1(self, **args):
-        # The checkboxes are submitted with 'post'
-        if cherrypy.request.method == "POST":
-            # put the selection in session
-            for key,val in polldata:
-                # is this dataset checked?
-                if args.has_key(val):
-                    # if so, set it in the session
-                    cherrypy.session[val] = 'yes'
-                else:
-                    cherrypy.session[val] = 'no'
-        # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect('/')
-
-    @cherrypy.expose
     def autorefresh(self, **args):
         if cherrypy.request.method == "POST":
             if args.has_key('autorefresh') and args.get('autorefresh') == 'yes':
@@ -155,12 +140,23 @@ class PellMonWeb:
         return simplejson.dumps(dict(enabled=cherrypy.session['autorefresh']))
 
     @cherrypy.expose
-    def graph_title(self):
-        try:
-            t = cherrypy.session['timeChoice']
-            return timeNames[t] 
-        except:
-            return "Graph"
+    def graphsession(self, **args):
+        if cherrypy.request.method == "POST":
+            try:
+                if args.has_key('width'):
+                    cherrypy.session['width'] = int(args['width'])
+                if args.has_key('height'):
+                    cherrypy.session['height'] = int(args['height'])
+                if args.has_key('timespan'):
+                    cherrypy.session['timespan'] = int(args['timespan'])
+                if args.has_key('timeoffset'):
+                    cherrypy.session['timeoffset'] = int(args['timeoffset'])
+                if args.has_key('lines'):
+                    lines = args['lines'].split(',')
+                    cherrypy.session['lines'] = lines
+            except:
+                pass
+            return 'ok'
 
     @cherrypy.expose
     def graph(self, **args):
@@ -168,7 +164,6 @@ class PellMonWeb:
             return None
         if len(colorsDict) == 0:
             return None
-            
 
         # Set x axis time span with ?timespan=xx 
         try:
@@ -210,48 +205,69 @@ class PellMonWeb:
         if graphHeight > 2000:
             graphHeight = 2000
 
+        # Set plotlines with ?lines=line1,line2,line3
+        try:
+            lines = args['lines'].split(',')
+        except:
+            try:
+                lines = cherrypy.session['lines']
+            except:
+                lines = []
+        if graphHeight > 2000:
+            graphHeight = 2000
+
         graphTimeStart=str(timespan + time)
         graphTimeEnd=str(time)
 
         #Build the command string to make a graph from the database
         graph_file='-'
+        
+        # Hide legends with ?legends=no
+        legends = ''
+        try:
+            if args['legends'] == 'no':
+                legends = '--no-legend'
+        except:
+            pass
+
+        # scale the right y-axis according to the first scaled item if found, otherwise unscaled
         if int(graphWidth)>500:
             rightaxis = '--right-axis'
             scalestr = ' 1:0'
-            for key,value in polldata:
-                if scale_data.has_key(key) and cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
-                    scale = scale_data[key].split(':')
+            for line in graph_lines:
+                if 'scale' in line:
+                    scale = line['scale'].split(':')
                     try:
                         gain = float(scale[1])
                         offset = -float(scale[0])
                     except:
                         gain = 1
                         offset = 0
-                    print gain, offset
                     scalestr = " %s:%s"%(str(gain),str(offset))
                     break
             rightaxis += scalestr
         else:
             rightaxis = ''
-        RrdGraphString1 = "rrdtool graph "+ graph_file + ' --disable-rrdtool-tag' +\
-            " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "\
-            " --height %d --end now-"%graphHeight + graphTimeEnd + "s --start now-" + graphTimeStart + "s " + \
-            "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
-        for key,value in polldata:
-            if cherrypy.session.get(value)!='no' and colorsDict.has_key(key):
-                RrdGraphString1+="DEF:%s="%value+db+":%s:AVERAGE "%ds_names[key]
-                if scale_data.has_key(key):
-                    scale = scale_data[key].split(':')
+        RrdGraphString1 =  "rrdtool graph "+ graph_file + ' --disable-rrdtool-tag --border 1 '+ legends
+        RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
+        RrdGraphString1 += " --height %s --end now-"%graphHeight + graphTimeEnd + "s --start now-" + graphTimeStart + "s "
+        RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
+
+        for line in graph_lines:
+            if line['name'] in lines:
+                RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
+                if 'scale' in line:
+                    scale = line['scale'].split(':')
                     try:
                         gain = float(scale[1])
                         offset = float(scale[0])
                     except:
                         gain = 1
                         offset = 0
-                    RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(value, value, offset, gain)    
-                    RrdGraphString1+="LINE1:%s_s%s:\"%s\" "% (value, colorsDict[key], value)
+                    RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)    
+                    RrdGraphString1+="LINE1:%s_s%s:\"%s\" "% (line['name'], line['color'], line['name'])
                 else:
-                    RrdGraphString1+="LINE1:%s%s:\"%s\" "% (value, colorsDict[key], value)
+                    RrdGraphString1+="LINE1:%s%s:\"%s\" "% (line['name'], line['color'], line['name'])
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
@@ -275,7 +291,7 @@ class PellMonWeb:
             maxWidth = cherrypy.request.params.get('maxWidth')
         now=int(time())
         start=int(reset_time)
-        RrdGraphString1=  "rrdtool graph - --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, now,start)   
+        RrdGraphString1=  "rrdtool graph - --border 1 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, now,start)   
         RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
         RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
         #RrdGraphString1+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
@@ -427,19 +443,6 @@ class PellMonWeb:
         raise cherrypy.HTTPRedirect(cherrypy.request.headers['Referer'])
 
     @cherrypy.expose
-    def graphconf(self):
-        checkboxes=[]
-        empty=True
-        for key, val in polldata:
-            if colorsDict.has_key(key):
-                if cherrypy.session.get(val) in ['yes', None]:
-                    checkboxes.append((val,True))
-                else:
-                    checkboxes.append((val,''))
-        tmpl = lookup.get_template("graphconf.html")
-        return tmpl.render(checkboxes=checkboxes, empty=False)
-
-    @cherrypy.expose
     def index(self, **args):
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
         empty=True
@@ -448,7 +451,17 @@ class PellMonWeb:
                 if cherrypy.session.get(val)=='yes':
                     empty=False
         tmpl = lookup.get_template("index.html")
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeChoices=timeChoices, timeNames=timeNames, timeChoice=cherrypy.session.get('timeChoice'))
+        try:
+            lines = cherrypy.session['lines']
+        except:
+            lines = ','.join([line['name'] for line in graph_lines])
+            cherrypy.session['lines'] = lines
+        try:
+            timespan = cherrypy.session['timespan']
+        except:
+            timespan = 3600
+            cherrypy.session['timespan'] = timespan
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines)
 
 def parameterReader(q):
     parameterlist=dbus.getdb()
@@ -579,6 +592,11 @@ try:
         ds_names[key] = value
 except ConfigParser.NoSectionError:
     ds_names = {}
+
+graph_lines=[]
+for key,value in polldata:
+    if key in colorsDict and key in ds_names:
+        graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key] })
 
 try:
     # Get the optional scales
