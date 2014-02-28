@@ -69,11 +69,14 @@ $('.timeChoice').click(function(e) {
         $(this).removeClass('selected')
     });
     var me = $(this);
+    var graph=getGraph()
     me.addClass('selected')
-    $('h4.graphtitle').text(me.data('title-text')+'...');
-    getGraph().data('title', me.data('title-text'));
+    graph.data('title', me.data('title-text')+'...');
+    setGraphTitle()
+    graph.data('title', me.data('title-text'));
+
     timespan =  me.data('time-choice');
-    getGraph().data('timespan', timespan);
+    graph.data('timespan', timespan);
     $.post(
             '/graphsession?timespan='+timespan,
             function(data) {
@@ -114,28 +117,36 @@ $('.lineselection').click(function(e) {
 });
 
 
-$('.btn.left').click(function(e) {
+$('.left').click(function(e) {
+    var graph = getGraph()
 	e.preventDefault();
-	offset = getGraph().data('offset')
+	offset = graph.data('offset')
     offset = parseInt(offset, 10)
-    timespan = getGraph().data('timespan')
+    timespan = graph.data('timespan')
     offset = offset + timespan
-	getGraph().data('offset', offset.toString());
-	refreshGraph();
+    ofs = offset.toString()
+    graph.data('offset', ofs+'...');
+    setGraphTitle();
+    graph.data('offset', ofs);
+    refreshGraph();
 });
 
-$('.btn.right').click(function(e) {
+$('.right').click(function(e) {
 	e.preventDefault();
-	offset = getGraph().data('offset')
+	var graph=getGraph()
+	offset = graph.data('offset')
     offset = parseInt(offset, 10)
-    timespan = getGraph().data('timespan')
+    timespan = graph.data('timespan')
     offset = offset - timespan
     if (offset < 0) {offset = 0}
-	getGraph().data('offset', offset.toString());
-	refreshGraph();
+    ofs = offset.toString()
+    graph.data('offset', ofs+'...');
+    setGraphTitle();
+    graph.data('offset', ofs);
+    refreshGraph();
 });
 
-$('.btn.autorefresh').click(function(e) {
+$('.autorefresh').click(function(e) {
 	var me = $(this),
 		input = $('input.autorefresh');
 
@@ -160,13 +171,13 @@ $('.btn.autorefresh').click(function(e) {
 
 	me.data('processing', true);
 
-	if(me.hasClass('active')) {
-		me.removeClass('active');
+	if(me.hasClass('selected')) {
+		me.removeClass('selected');
 		setAutorefresh('no', function() {
 			clearInterval(refreshTimer);
 		});
 	} else {
-		me.addClass('active');
+		me.addClass('selected');
 		setAutorefresh('yes', function() {
 			startImageRefresh();
 		});
@@ -174,11 +185,25 @@ $('.btn.autorefresh').click(function(e) {
 	}
 });
 
-if($('.btn.autorefresh').hasClass('active')) {
+if($('.autorefresh').hasClass('selected')) {
 	startImageRefresh();
 }
 
+var setGraphTitle = function() {
+    var graph = getGraph()
+    offset = graph.data('offset')
+    if (offset == '0')
+    {
+        title = graph.data('title')
+    }
+    else
+    {
+        title = graph.data('title') + ' - ' + offset + 's'
+    }
+    $('h4.graphtitle').text(title);
+}
+
 $('#graph').load(function() {
-    $('h4.graphtitle').text(getGraph().data('title'));
+    setGraphTitle();
 });
 

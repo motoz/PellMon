@@ -247,7 +247,7 @@ class PellMonWeb:
             rightaxis = ''
 
         #Build the command string to make a graph from the database
-        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 1 '+ legends
+        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 1 "+ legends
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RrdGraphString1 += " --height %s --end now-"%graphHeight + graphTimeEnd + "s --start now-" + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
@@ -460,7 +460,13 @@ class PellMonWeb:
         except:
             timespan = 3600
             cherrypy.session['timespan'] = timespan
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines)
+        timeName = 'sdfas'
+        for i in range(len(timeNames)):
+            if timeSeconds[i] == timespan:
+                timeName = timeNames[i]
+                print timeName
+                break;
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName)
 
 def parameterReader(q):
     parameterlist=dbus.getdb()

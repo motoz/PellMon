@@ -10,7 +10,7 @@
         <div class="col-md-12">
             <h4 class="graphtitle">Graph</h4>
                 <div>
-                    ${'<img style="margin-bottom:8px" class="graph image-responsive image-lazy" id="graph" data-offset=0 data-timespan=%u data-time-choice="" data-direction="" data-src="graph" src="media/img/spinner.gif"'%timeChoice} />
+                    ${'<img style="margin-bottom:8px" class="graph image-responsive image-lazy" id="graph" data-title="%s" data-offset=0 data-timespan=%u data-src="graph" src="media/img/spinner.gif"'%(timeName, timeChoice)} />
                 </div>
             <p>
                 %for line in graphlines:
@@ -21,13 +21,10 @@
                 %for index in range(len(timeSeconds)):
                     ${'<a href="#" data-time-choice="%s" data-title-text="%s" class="timeChoice %s">%s</a> | ' % (timeSeconds[index], timeNames[index], 'selected' if timeChoice == timeSeconds[index] else '', timeNames[index])}
                 %endfor
+                <a href="#" class="left">go back |</a>
+                <a href="#" class="right">go forward |</a>
+                ${'<a href="#" class="autorefresh %s">Autorefresh graph</a>' % ('selected' if autorefresh else '')}
             </p>
-            <div class="text-center">
-                <button class="btn btn-default left"><<</button>
-                ${'<button class="btn btn-default autorefresh %s">Autorefresh graph</button>' % ('active' if autorefresh else '')}
-                <button class="btn btn-default right">>></button>
-            </div>
-
             <h4>Consumption</h4>
             <div>
                 <img class="graph image-responsive image-lazy" id="consumption" data-src="consumption" src="media/img/spinner.gif" />
