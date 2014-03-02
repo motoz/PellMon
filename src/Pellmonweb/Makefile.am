@@ -37,7 +37,6 @@ nobase_dist_foohtml_DATA = \
 	html/parameters.html \
 	html/consumption.html \
 	html/loglines.html \
-	html/graphconf.html \
 	html/index.html \
 	html/login.html \
 	html/logview.html

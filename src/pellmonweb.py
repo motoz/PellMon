@@ -284,13 +284,18 @@ class PellMonWeb:
         except:
             return None
             
-        if not cherrypy.request.params.get('maxWidth'):
+        try:
+            maxWidth = args['maxWidth']
+        except:
             maxWidth = '440'; # Default bootstrap 3 grid size
+        if int(maxWidth)>500:
+            rightaxis = '--right-axis 1:0'
         else:
-            maxWidth = cherrypy.request.params.get('maxWidth')
+            rightaxis = ''
+
         now=int(time())
         start=int(reset_time)
-        RrdGraphString1=  "rrdtool graph - --border 1 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s --right-axis 1:0 --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, now,start)   
+        RrdGraphString1=  "rrdtool graph - --border 1 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
         RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
         RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
         #RrdGraphString1+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
@@ -303,6 +308,7 @@ class PellMonWeb:
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
+        print RrdGraphString1
         return cmd.communicate()[0]
 
     @cherrypy.expose
@@ -310,13 +316,17 @@ class PellMonWeb:
         if not polling:
              return None
         if consumption_graph:
-            if not cherrypy.request.params.get('maxWidth'):
+            try:
+                maxWidth = args['maxWidth']
+            except:
                 maxWidth = '440'; # Default bootstrap 3 grid size
+            if int(maxWidth)>500:
+                rightaxis = '--right-axis 1:0'
             else:
-                maxWidth = cherrypy.request.params.get('maxWidth')
+                rightaxis = ''
             now = int(time())
             align = now/3600*3600
-            RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h')
+            RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h', param=rightaxis)
             cmd = subprocess.Popen(RrdGraphString, shell=True, stdout=subprocess.PIPE)
             cherrypy.response.headers['Pragma'] = 'no-cache'
             cherrypy.response.headers['Content-Type'] = "image/png"

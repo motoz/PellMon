@@ -147,6 +147,7 @@ $('.right').click(function(e) {
 });
 
 $('.autorefresh').click(function(e) {
+	e.preventDefault();
 	var me = $(this),
 		input = $('input.autorefresh');
 
