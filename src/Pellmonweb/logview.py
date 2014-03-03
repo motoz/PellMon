@@ -22,6 +22,7 @@ from mako.template import Template
 from mako.lookup import TemplateLookup
 from itertools import islice
 from cgi import escape
+from datetime import datetime
 
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
@@ -37,14 +38,23 @@ class LogViewer(object):
     
     @cherrypy.expose
     def getlines(self, linenum=100):    
+        fmt = '%Y-%m-%d %H:%M:%S'
         f = open(self.logfile, "r")
         try:
             ln=int(linenum)
             lines = islice(reversed_lines(f), ln)
+            timelines = []
+            for line in lines:
+                try:
+                    time = datetime.strptime(line[:19], fmt)
+                    seconds = str(int((time-datetime(1970,1,1)).total_seconds()))
+                except:
+                    seconds = None
+                timelines.append((seconds, line))
             tmpl = lookup.get_template("loglines.html")
-            return tmpl.render(lines=lines)
-        except:
-            pass
+            return tmpl.render(lines=timelines)
+        except Exception,e:
+            return str(e)
 
 def reversed_lines(file):
     "Generate the lines of file in reverse order."

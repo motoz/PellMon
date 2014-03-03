@@ -174,14 +174,20 @@ class PellMonWeb:
             except:
                 timespan = 3600
 
+        # Set x axis end time with ?time=xx 
+        try:
+            time = str(int(args['time']))
+        except:
+            time = 'Now'
+
         # Offset x-axis with ?timeoffset=xx 
         try:
-            time = int(args['timeoffset'])
+            timeoffset = int(args['timeoffset'])
         except:
             try:
-                time = int(cherrypy.session['timeoffset'])
+                timeoffset = int(cherrypy.session['timeoffset'])
             except:
-                time = 0
+                timeoffset = 0
 
         # Set graph width with ?width=xx 
         try:
@@ -216,8 +222,8 @@ class PellMonWeb:
         if graphHeight > 2000:
             graphHeight = 2000
 
-        graphTimeStart=str(timespan + time)
-        graphTimeEnd=str(time)
+        graphTimeStart=str(timespan + timeoffset)
+        graphTimeEnd=str(timeoffset)
 
         # Hide legends with ?legends=no
         legends = ''
@@ -249,9 +255,9 @@ class PellMonWeb:
         #Build the command string to make a graph from the database
         RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 1 "+ legends
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
-        RrdGraphString1 += " --height %s --end now-"%graphHeight + graphTimeEnd + "s --start now-" + graphTimeStart + "s "
+        RrdGraphString1 += " --height %s --end %s-"%(graphHeight,time) + graphTimeEnd + "s --start %s-"%time + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
-
+        print RrdGraphString1
         for line in graph_lines:
             if line['name'] in lines:
                 RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']

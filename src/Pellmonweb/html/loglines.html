@@ -1,5 +1,5 @@
 <table class="table table-striped table-bordered">
 %for line in lines:
-<tr><td>${line}</td></tr>
+<tr><td>${'<a href="#" class="loglinelink %s" data-src="/graph?time=%s">%s</a>'%(line[0],line[0],line[1]) if line[0] else line[1]}</td></tr>
 %endfor
 </table>
