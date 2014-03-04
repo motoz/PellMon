@@ -7,6 +7,10 @@ html {
     overflow-y: scroll;
 }
 
+body
+{
+background-color:#f3f3f3;
+}
 .selected {
 text-decoration: none;
 border-top: 3px solid; 

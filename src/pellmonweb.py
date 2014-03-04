@@ -253,7 +253,7 @@ class PellMonWeb:
             rightaxis = ''
 
         #Build the command string to make a graph from the database
-        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 1 "+ legends
+        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RrdGraphString1 += " --height %s --end %s-"%(graphHeight,time) + graphTimeEnd + "s --start %s-"%time + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
@@ -301,7 +301,7 @@ class PellMonWeb:
 
         now=int(time())
         start=int(reset_time)
-        RrdGraphString1=  "rrdtool graph - --border 1 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
+        RrdGraphString1=  "rrdtool graph - --border 0 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
         RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
         RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
         #RrdGraphString1+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
