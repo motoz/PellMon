@@ -23,8 +23,11 @@ from mako.lookup import TemplateLookup
 from itertools import islice
 from cgi import escape
 from datetime import datetime
+from dateutil import tz
 
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
+HERE = tz.tzlocal()
+UTC = tz.gettz('UTC')
 
 class LogViewer(object):    
     def __init__(self, logfile):
@@ -47,7 +50,9 @@ class LogViewer(object):
             for line in lines:
                 try:
                     time = datetime.strptime(line[:19], fmt)
-                    seconds = str(int((time-datetime(1970,1,1)).total_seconds()))
+                    time = time.replace(tzinfo=HERE)
+                    epoch = datetime(1970,1,1,tzinfo=UTC)
+                    seconds = str(int((time-epoch).total_seconds()))
                 except:
                     seconds = None
                 timelines.append((seconds, line))

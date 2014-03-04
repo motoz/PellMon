@@ -8,9 +8,9 @@ function getLog() {
             $('.loglinelink').click(function(e) {
                 e.preventDefault();
                 var me = $(this);
-                width = me.closest('div').innerWidth()
+                width = me.closest('div').innerWidth()-40
                 $.get(
-                    me.append('</br><img src='+me.data('src')+'&legends=no&width='+width+'>')
+                    me.append('</br><img src='+me.data('src')+'&height=250&legends=no&width='+width+'>')
                 );
             });
         }
