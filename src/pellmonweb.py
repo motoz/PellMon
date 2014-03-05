@@ -251,6 +251,8 @@ class PellMonWeb:
             graphtime += timespan
         elif align == 'center':
             graphtime += timespan/2
+        if graphtime > int(time.time()):
+            graphtime=int(time.time())
         graphtime =str(graphtime)
 
         graphTimeStart=str(timespan + timeoffset)
