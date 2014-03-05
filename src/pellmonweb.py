@@ -229,9 +229,18 @@ class PellMonWeb:
         legends = ''
         try:
             if args['legends'] == 'no':
-                legends = '--no-legend'
+                legends = ' --no-legend '
         except:
             pass
+
+        # Set background color with ?bgcolor=rrbbgg (hex color)
+        try:
+            bgcolor =  args['bgcolor']
+            if len(bgcolor) == 6:
+                test = int(bgcolor, 16)
+            bgcolor = ' --color BACK#'+bgcolor
+        except:
+            bgcolor = ' '
 
         # scale the right y-axis according to the first scaled item if found, otherwise unscaled
         if int(graphWidth)>500:
@@ -253,7 +262,7 @@ class PellMonWeb:
             rightaxis = ''
 
         #Build the command string to make a graph from the database
-        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends
+        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RrdGraphString1 += " --height %s --end %s-"%(graphHeight,time) + graphTimeEnd + "s --start %s-"%time + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
