@@ -11,9 +11,24 @@ body
 {
 background-color:#f3f3f3;
 }
+
 .selected {
 text-decoration: none;
 border-top: 3px solid; 
 }
 
 a:link {text-decoration:none; outline: none;}
+
+.col-centered{
+    display: inline-block;
+}
+
+#center
+{
+    text-align: center;
+}
+
+#left-align
+{
+    text-align: left"
+}
