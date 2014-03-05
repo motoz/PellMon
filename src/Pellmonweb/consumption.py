@@ -63,7 +63,7 @@ def make_barchart_string(db, end, align, div, bars, out='-', width=440, tot_txt=
     # AREA:barchart#ffffff" # draw an area below it      
     # Repeat for every bar            
 
-    RrdGraphString1="rrdtool graph "+consumption_file+" --border 1 --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" %s --right-axis-format %%1.1lf --height 400 --end %u --start %u-%us "%(param,now,now,div*bars)
+    RrdGraphString1="rrdtool graph "+consumption_file+" --border 0 --disable-rrdtool-tag --full-size-mode --width "+graphWidth+" %s --right-axis-format %%1.1lf --height 400 --end %u --start %u-%us "%(param,now,now,div*bars)
     RrdGraphString1=RrdGraphString1+"DEF:a=%s:feeder_time:AVERAGE:end=%u:start=%u DEF:b=%s:feeder_capacity:AVERAGE:end=%u:start=%u DEF:b1h=%s:feeder_capacity:AVERAGE"%(db,now,now1h-div*bars,db,now,now1h-div*bars,db)
 
     h=bars+3
