@@ -29,7 +29,8 @@ from gi.repository import Gio, GLib, GObject
 import simplejson
 import threading, Queue
 from Pellmonweb import *
-from time import time, mktime
+from time import mktime
+import time
 import threading
 import sys
 from Pellmonweb import __file__ as webpath
@@ -176,9 +177,9 @@ class PellMonWeb:
 
         # Set x axis end time with ?time=xx 
         try:
-            time = str(int(args['time']))
+            graphtime = int(args['time'])
         except:
-            time = 'Now'
+            graphtime = int(time.time())
 
         # Offset x-axis with ?timeoffset=xx 
         try:
@@ -222,9 +223,6 @@ class PellMonWeb:
         if graphHeight > 2000:
             graphHeight = 2000
 
-        graphTimeStart=str(timespan + timeoffset)
-        graphTimeEnd=str(timeoffset)
-
         # Hide legends with ?legends=no
         legends = ''
         try:
@@ -241,6 +239,22 @@ class PellMonWeb:
             bgcolor = ' --color BACK#'+bgcolor
         except:
             bgcolor = ' '
+
+        # Set background color with ?bgcolor=rrbbgg (hex color)
+        try:
+            if args['align'] in ['left','center','right']:
+                align = args['align']
+        except:
+            align = 'right'
+
+        if align == 'left':
+            graphtime += timespan
+        elif align == 'center':
+            graphtime += timespan/2
+        graphtime =str(graphtime)
+
+        graphTimeStart=str(timespan + timeoffset)
+        graphTimeEnd=str(timeoffset)
 
         # scale the right y-axis according to the first scaled item if found, otherwise unscaled
         if int(graphWidth)>500:
@@ -264,7 +278,7 @@ class PellMonWeb:
         #Build the command string to make a graph from the database
         RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
-        RrdGraphString1 += " --height %s --end %s-"%(graphHeight,time) + graphTimeEnd + "s --start %s-"%time + graphTimeStart + "s "
+        RrdGraphString1 += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         print RrdGraphString1
         for line in graph_lines:
@@ -308,7 +322,7 @@ class PellMonWeb:
         else:
             rightaxis = ''
 
-        now=int(time())
+        now=int(time.time())
         start=int(reset_time)
         RrdGraphString1=  "rrdtool graph - --border 0 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
         RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
@@ -339,7 +353,7 @@ class PellMonWeb:
                 rightaxis = '--right-axis 1:0'
             else:
                 rightaxis = ''
-            now = int(time())
+            now = int(time.time())
             align = now/3600*3600
             RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h', param=rightaxis)
             cmd = subprocess.Popen(RrdGraphString, shell=True, stdout=subprocess.PIPE)
