@@ -15,8 +15,8 @@ nobase_dist_foohtml_DATA = \
 	media/css/pellmon.css \
 	media/img/pellmon.svg \
 	media/img/spinner.gif \
-	jquery/jquery.js \
-	jquery/jquery.min.js \
+	media/jquery/jquery.js \
+	media/jquery/jquery.min.js \
 	media/bs3/fonts/glyphicons-halflings-regular.svg \
 	media/bs3/fonts/glyphicons-halflings-regular.woff \
 	media/bs3/fonts/glyphicons-halflings-regular.eot \
