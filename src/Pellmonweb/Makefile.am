@@ -7,22 +7,16 @@ web_PYTHON = \
 webdir = $(pythondir)/Pellmonweb
 
 nobase_dist_foohtml_DATA = \
+	media/favicon.ico \
 	media/js/spin.js \
 	media/js/logview.js \
 	media/js/index.js \
 	media/js/parameters.js \
-	media/bootstrap/js/bootstrap.js \
-	media/bootstrap/js/bootstrap.min.js \
-	media/bootstrap/img/glyphicons-halflings-white.png \
-	media/bootstrap/img/glyphicons-halflings.png \
-	media/bootstrap/css/bootstrap.css \
-	media/bootstrap/css/bootstrap-responsive.min.css \
-	media/bootstrap/css/bootstrap.min.css \
-	media/bootstrap/css/bootstrap-responsive.css \
-	media/favicon.ico \
-	media/pellmon.svg \
-	media/pellmon.css \
+	media/css/pellmon.css \
+	media/img/pellmon.svg \
 	media/img/spinner.gif \
+	jquery/jquery.js \
+	jquery/jquery.min.js \
 	media/bs3/fonts/glyphicons-halflings-regular.svg \
 	media/bs3/fonts/glyphicons-halflings-regular.woff \
 	media/bs3/fonts/glyphicons-halflings-regular.eot \
