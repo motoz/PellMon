@@ -130,7 +130,7 @@ Configuration values.
     
 ##Dependencies:
 <pre>
-rrdtool, python-serial, python-cherrypy3, python-dbus, python-mako, python-gobject, python-simplejson
+rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
 </pre>
 
 ##Build dependencies:
