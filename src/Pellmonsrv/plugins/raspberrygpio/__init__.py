@@ -28,6 +28,9 @@ import os, grp, pwd
 import mmap
 import signal
 import sys
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 itemList=[]
 itemTags = {}

@@ -25,6 +25,9 @@ from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 import sys
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': 5.56 },
           {'name':'feeder_rpm',           'longname':'feeder rpm',               'type':'R',   'unit':'/60s',   'value': 30   },

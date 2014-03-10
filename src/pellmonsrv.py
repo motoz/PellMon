@@ -34,6 +34,7 @@ from Pellmonsrv.yapsy.PluginManager import PluginManager
 from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
 import subprocess
+import sys, traceback
 
 class Database(object):
     def __init__(self):
@@ -65,6 +66,7 @@ class Database(object):
                 except Exception as e:
                     print str(e)
                     logger.info('Plugin %s init failed'%plugin.name)
+                    logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
     def terminate(self):
         for p in self.protocols:
             p.plugin_object.deactivate()

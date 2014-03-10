@@ -24,6 +24,9 @@ from os import path
 import os, grp, pwd
 from time import time
 from datetime import datetime
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 itemList=[{'name':'silo_reset_level',  'longname':'Silo fill up level',
            'type':'R/W',   'unit':'kg'   ,   'value':'0', 'min':'0', 'max':'50000'},

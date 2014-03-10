@@ -18,8 +18,12 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 itemList=[{'name':'testitem1', 'longname':'test item 1', 'type':'W'}, {'name':'testitem2', 'type':'R', 'unit':'m/s'}, {'name':'testitem3', 'type':'R/W',  'min':'0', 'max':'100', 'unit':'HP'}]
+
 
 class testplugin(protocols):
     def __init__(self):
@@ -34,16 +38,19 @@ class testplugin(protocols):
                 i['value'] = '1234'
         for key, value in self.conf.iteritems():
             itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'W', 'type':'R/W'})
+        logger.info('testplugin activated...')
 
     def getItem(self, item):
         for i in itemList:
             if i['name'] == item:
+                logger.info('testplugin: Get %s=%s'%(item,i['value']))
                 return i['value']
 
     def setItem(self, item, value):
         for i in itemList:
             if i['name'] == item:
                 i['value'] = value
+                logger.info('testplugin: Set %s=%s'%(item,str(value)))
                 return 'OK'
         return['error']
 
