@@ -26,8 +26,10 @@ import logging.handlers
 import sys
 import ConfigParser
 import time
-from smtplib import SMTP as smtp
-from email.mime.text import MIMEText as mimetext
+from smtplib import SMTP 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 import argparse
 import pwd, grp
 from Pellmonsrv.yapsy.PluginManager import PluginManager
@@ -35,6 +37,7 @@ from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
 import subprocess
 import sys, traceback
+import urllib2 as urllib
 
 class Database(object):
     def __init__(self):
@@ -246,19 +249,45 @@ def sendmail_thread(msg):
     try:
         username = conf.emailusername 
         password = conf.emailpassword
-        
-        mail = mimetext(msg)
-        mail['Subject'] = conf.emailsubject
-        mail['From'] = conf.emailfromaddress
-        mail['To'] = conf.emailtoaddress
 
-        mailserver = smtp(conf.emailserver)
+        # Create message container.
+        msgRoot = MIMEMultipart('related')
+        msgRoot['Subject'] = conf.emailsubject
+        msgRoot['From'] = conf.emailfromaddress
+        msgRoot['To'] = conf.emailtoaddress
+
+        if conf.port:
+            fd = urllib.urlopen("http://localhost:%s/graph?width=800&height=400&legends=yes&bgcolor=ffffff"%conf.port)
+            img = fd.read()
+
+            msgImg = MIMEImage(img, 'png')
+            msgImg.add_header('Content-ID', '<image1>')
+            msgImg.add_header('Content-Disposition', 'inline', filename='graph.png')
+            imagehtml = '<img src="cid:image1">'
+        else:
+            imagehtml = ''
+            msgImg = None
+
+        # Create the body of the message.
+        html = """\
+        <p>%s<br/>
+        %s
+        </p>
+        """%(msg,imagehtml)
+        msgHtml = MIMEText(html, 'html')
+        msgRoot.attach(msgHtml)
+        if msgImg:
+            msgRoot.attach(msgImg)
+
+        mailserver = SMTP(conf.emailserver)
         mailserver.starttls() 
-        mailserver.login(conf.emailusername, conf.emailpassword)  
-        mailserver.sendmail(mail['From'], mail['To'], mail.as_string())      
-        mailserver.quit()  
-    except:
+        mailserver.login(conf.emailusername, conf.emailpassword)
+        mailserver.sendmail(msgRoot['From'], msgRoot['To'], msgRoot.as_string())
+        mailserver.quit()
+        logger.info('email sent to'%msg)
+    except Exception, e:
         logger.info('error trying to send email')
+        logger.info(str(e))
     
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
@@ -434,6 +463,10 @@ class config:
             self.email=True
         except ConfigParser.NoOptionError:
             self.email=False
+        try:
+            self.port = parser.get('conf', 'port')
+        except:
+            self.port = None
 
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
