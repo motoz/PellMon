@@ -225,9 +225,24 @@ d11 = _logtick
 #from=user@mail.com
 #to=user@mail.com
 #subject=PellMon status
+
 # Send email when any of these change
 #conditions=alarm,mode,parameter
 
+# set email mode to html, default is text.
+#mode = html
+
+# set graphsize to attach a graph image to the email
+#graphsize = 600x300
+
+# set graphtime to the x axis time span in seconds 
+#graphtime = 3600
+
+# set graphlines to a comma separeted list of data to include in the graph, default is all data
+#graphlines = d01,d02,d04
+
+# set follow_up to send a new mail after the set number of seconds
+#followup = 3600
 
 ############################################################################################
 # Pellmonweb configuration

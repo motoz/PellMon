@@ -245,6 +245,13 @@ def sendmail(msg):
     ht = threading.Timer(2, sendmail_thread, args=(msg,))
     ht.start()
 
+#            self.email_mode = 'text'
+#            self.email_width = 600
+#            self.email_height = 300
+#            self.email_graphtime = 3600
+#            self.email_graphlines = None
+#            self.email_followup = 3600
+
 def sendmail_thread(msg):
     try:
         username = conf.emailusername 
@@ -257,7 +264,7 @@ def sendmail_thread(msg):
         msgRoot['To'] = conf.emailtoaddress
 
         if conf.port:
-            fd = urllib.urlopen("http://localhost:%s/graph?width=800&height=400&legends=yes&bgcolor=ffffff"%conf.port)
+            fd = urllib.urlopen("http://localhost:%s/graph?width=%u&height=%u&timespan=%u&legends=yes&bgcolor=ffffff"%conf.port, conf.email_width, conf.email_height, conf.graphtime)
             img = fd.read()
 
             msgImg = MIMEImage(img, 'png')
@@ -288,7 +295,7 @@ def sendmail_thread(msg):
     except Exception, e:
         logger.info('error trying to send email')
         logger.info(str(e))
-    
+
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
     def run(self):
@@ -393,7 +400,7 @@ class config:
         for key, value in rrd_ds_types:
             ds_types[key] = value
         for key, value in rrd_ds_names:
-            self.pollData.append({'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
+            self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
 
         # The RRD database
         try:
@@ -467,6 +474,31 @@ class config:
             self.port = parser.get('conf', 'port')
         except:
             self.port = None
+        try:
+            self.email_mode = parser.get('email', 'mode')
+        except:
+            self.email_mode = 'text'
+        try:
+            graphsize = parser.get('email', 'graphsize')
+            self.email_width = int(graphsize.split(',')[0])
+            self.email_height = int(graphsize.split(',')[1])
+        except:
+            self.email_width = 600
+            self.email_height = 300
+        try:
+            self.email_graphtime = int(parser.get('email', 'graphtime'))
+        except:
+            self.email_graphtime = 3600
+        try:
+            graphlines = parser.get('email', 'graphlines').split(',')
+            self.email_graphlines = ','.join([line['name'] for line in self.pollData if line['key'] in graphlines])
+        except:
+            self.email_graphlines = None
+        try:
+            self.email_followup = int(parser.get('email', 'followup'))
+        except:
+            self.email_followup = 3600
+
 
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
