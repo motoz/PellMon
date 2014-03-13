@@ -26,8 +26,10 @@ import logging.handlers
 import sys
 import ConfigParser
 import time
-from smtplib import SMTP as smtp
-from email.mime.text import MIMEText as mimetext
+from smtplib import SMTP 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 import argparse
 import pwd, grp
 from Pellmonsrv.yapsy.PluginManager import PluginManager
@@ -35,6 +37,7 @@ from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv import Daemon
 import subprocess
 import sys, traceback
+import urllib2 as urllib
 
 class Database(object):
     def __init__(self):
@@ -238,28 +241,73 @@ def sigterm_handler(signum, frame):
         sys.exit(0)
     
 
-def sendmail(msg):
-    ht = threading.Timer(2, sendmail_thread, args=(msg,))
+def sendmail(msg, wait=2, followup=True):
+    ht = threading.Timer(wait, sendmail_thread, args=(msg, followup))
     ht.start()
 
-def sendmail_thread(msg):
+#            self.email_mode = 'text'
+#            self.email_width = 600
+#            self.email_height = 300
+#            self.email_timespan = 3600
+#            self.email_graphlines = None
+#            self.email_followup = 3600
+
+def sendmail_thread(msg, followup):
     try:
         username = conf.emailusername 
         password = conf.emailpassword
-        
-        mail = mimetext(msg)
-        mail['Subject'] = conf.emailsubject
-        mail['From'] = conf.emailfromaddress
-        mail['To'] = conf.emailtoaddress
 
-        mailserver = smtp(conf.emailserver)
+        # Create message container.
+        msgRoot = MIMEMultipart('related')
+        msgRoot['Subject'] = conf.emailsubject
+        msgRoot['From'] = conf.emailfromaddress
+        msgRoot['To'] = conf.emailtoaddress
+
+        if conf.email_graph and conf.port:
+            graphlines = '&lines='+conf.email_graphlines if conf.email_graphlines else ''
+            if conf.email_followup and not followup:
+                align = 'center'
+                timespan = conf.email_followup*2
+            else:
+                align = 'right'
+                timespan = conf.email_timespan
+            fd = urllib.urlopen("http://localhost:%s/graph?width=%u&height=%u&timespan=%u&legends=yes&bgcolor=ffffff%s&align=%s"%(conf.port, conf.email_width, conf.email_height, timespan, graphlines, align))
+            img = fd.read()
+
+            msgImg = MIMEImage(img, 'png')
+            msgImg.add_header('Content-ID', '<image1>')
+            msgImg.add_header('Content-Disposition', 'inline', filename='graph.png')
+            imagehtml = '<img src="cid:image1">'
+        else:
+            imagehtml = ''
+            msgImg = None
+
+        if conf.email_mode == 'html':
+            # Create the body of the message.
+            html = """\
+            <p>%s<br/>
+            %s
+            </p>
+            """%(msg,imagehtml)
+            message = MIMEText(html, 'html')
+        else:
+            message = MIMEText(msg)
+        msgRoot.attach(message)
+        if msgImg:
+            msgRoot.attach(msgImg)
+
+        mailserver = SMTP(conf.emailserver)
         mailserver.starttls() 
-        mailserver.login(conf.emailusername, conf.emailpassword)  
-        mailserver.sendmail(mail['From'], mail['To'], mail.as_string())      
-        mailserver.quit()  
-    except:
+        mailserver.login(conf.emailusername, conf.emailpassword)
+        mailserver.sendmail(msgRoot['From'], msgRoot['To'], msgRoot.as_string())
+        mailserver.quit()
+        logger.info('email sent to'%msg)
+    except Exception, e:
         logger.info('error trying to send email')
-    
+        logger.info(str(e))
+    if followup and conf.email_followup:
+        sendmail('Pellmon status followup', conf.email_followup, False)
+
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
     def run(self):
@@ -276,7 +324,7 @@ class MyDaemon(Daemon):
                 drop_privileges(conf.USER, conf.GROUP)
         except:
             pass
-            
+
         # DBUS needs the gobject main loop, this way it seems to work...
         gobject.threads_init()
         dbus.mainloop.glib.threads_init()    
@@ -314,7 +362,6 @@ class MyDaemon(Daemon):
         logger.debug('created signalhandler')
         signal.setitimer(signal.ITIMER_REAL, 2, conf.poll_interval)
         logger.debug('started timer')
-
         # Execute glib main loop to serve DBUS connections
         DBUSMAINLOOP.run()
 
@@ -364,7 +411,7 @@ class config:
         for key, value in rrd_ds_types:
             ds_types[key] = value
         for key, value in rrd_ds_names:
-            self.pollData.append({'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
+            self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
 
         # The RRD database
         try:
@@ -434,6 +481,35 @@ class config:
             self.email=True
         except ConfigParser.NoOptionError:
             self.email=False
+        try:
+            self.port = parser.get('conf', 'port')
+        except:
+            self.port = None
+        try:
+            self.email_mode = parser.get('email', 'mode')
+        except:
+            self.email_mode = 'text'
+        try:
+            graphsize = parser.get('email', 'graphsize')
+            self.email_width = int(graphsize.split('x')[0])
+            self.email_height = int(graphsize.split('x')[1])
+            self.email_graph = True
+        except:
+            self.email_graph = False
+        try:
+            self.email_timespan = int(parser.get('email', 'graphtimespan'))
+        except:
+            self.email_timespan = 3600
+        try:
+            graphlines = parser.get('email', 'graphlines').split(',')
+            self.email_graphlines = ','.join([line['name'] for line in self.pollData if line['key'] in graphlines])
+        except:
+            self.email_graphlines = None
+        try:
+            self.email_followup = int(parser.get('email', 'followup'))
+        except:
+            self.email_followup = None
+
 
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]

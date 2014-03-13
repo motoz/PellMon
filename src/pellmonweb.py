@@ -219,7 +219,7 @@ class PellMonWeb:
             try:
                 lines = cherrypy.session['lines']
             except:
-                lines = []
+                lines = '__all__'
         if graphHeight > 2000:
             graphHeight = 2000
 
@@ -284,7 +284,7 @@ class PellMonWeb:
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         print RrdGraphString1
         for line in graph_lines:
-            if line['name'] in lines:
+            if lines == '__all__' or line['name'] in lines:
                 RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
                 if 'scale' in line:
                     scale = line['scale'].split(':')
