@@ -145,12 +145,15 @@ class scottecom(protocols):
 
     def alarm_pollthread(self, alarms):
         # Log changes to 'mode' and 'alarm'
-        for param in alarms:
-            value = self.protocol.getItem(param)
-            if param in self.dbvalues:
-                if not value==self.dbvalues[param]:
-                    self.settings_changed(param, self.dbvalues[param], value, param)
-            self.dbvalues[param] = value
+        try:
+            for param in alarms:
+                value = self.protocol.getItem(param)
+                if param in self.dbvalues:
+                    if not value==self.dbvalues[param]:
+                        self.settings_changed(param, self.dbvalues[param], value, param)
+                self.dbvalues[param] = value
+        except:
+            pass
         # run this thread again after 30 seconds
         ht = threading.Timer(30, self.alarm_pollthread, args=(alarms,))
         ht.setDaemon(True)

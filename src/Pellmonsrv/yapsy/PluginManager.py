@@ -22,12 +22,12 @@ needs.
 """
 
 import sys, os
-import logging
+from logging import getLogger
 import ConfigParser
 import types
 
 from IPlugin import IPlugin
-
+logging = getLogger('pellMon')
 
 # A forbiden string that can later be used to describe lists of
 # plugins for instance (see ``ConfigurablePluginManager``)

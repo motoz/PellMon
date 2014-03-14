@@ -24,6 +24,9 @@ import traceback
 import sys
 from threading import Thread, Timer
 from time import time, sleep
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 # This is needed to find the local module ownet_fix
 sys.path.append(path.dirname(path.abspath(__file__)))

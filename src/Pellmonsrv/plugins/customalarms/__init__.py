@@ -22,6 +22,9 @@ from threading import Thread, Timer
 from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 itemList=[]
 itemTags={}
