@@ -245,13 +245,6 @@ def sendmail(msg, wait=2, followup=True):
     ht = threading.Timer(wait, sendmail_thread, args=(msg, followup))
     ht.start()
 
-#            self.email_mode = 'text'
-#            self.email_width = 600
-#            self.email_height = 300
-#            self.email_timespan = 3600
-#            self.email_graphlines = None
-#            self.email_followup = 3600
-
 def sendmail_thread(msg, followup):
     try:
         username = conf.emailusername 
@@ -301,7 +294,7 @@ def sendmail_thread(msg, followup):
         mailserver.login(conf.emailusername, conf.emailpassword)
         mailserver.sendmail(msgRoot['From'], msgRoot['To'], msgRoot.as_string())
         mailserver.quit()
-        logger.info('email sent to'%msg)
+        logger.info('status email sent')
     except Exception, e:
         logger.info('error trying to send email')
         logger.info(str(e))
