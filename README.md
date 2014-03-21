@@ -85,24 +85,6 @@ usage: pellmoncli.py [-h] {get,set,list,i}
 ###pellmon.conf
 Configuration values. 
 
-
-##User installation:
-    # Generate configure script
-    ./autogen.sh
-    # Configure for installation in home directory
-    ./configure --prefix=/home/<user>/.local
-    make
-    make install
-    # Start the daemons manually
-    /home/<user>/.local/bin/pellmonsrv.py -C /home/<user>/.local/etc/pellmon/pellmon.conf start
-    /home/<user>/.local/bin/pellmonweb.py -C /home/<user>/.local/etc/pellmon/pellmon.conf -D
-    # Stop the daemons manually
-    kill $(cat /tmp/pellmonsrv.pid)
-    kill $(cat /tmp/pellmonweb.pid)
-###Uninstall
-    make uninstall
-
-
 ##System installation:
     # Add system users
     sudo adduser --system --group --no-create-home pellmonsrv
@@ -127,7 +109,23 @@ Configuration values.
     # Remove from init if you added them
     sudo update-rc.d pellmonsrv remove
     sudo update-rc.d pellmonweb remove
-    
+
+##User installation:
+    # Generate configure script
+    ./autogen.sh
+    # Configure for installation in home directory
+    ./configure --prefix=/home/<user>/.local
+    make
+    make install
+    # Start the daemons manually
+    /home/<user>/.local/bin/pellmonsrv.py -C /home/<user>/.local/etc/pellmon/pellmon.conf --PLUGINDIR /home/<user>/.local/lib/Pellmonsrv/plugins/ start
+    /home/<user>/.local/bin/pellmonweb.py -C /home/<user>/.local/etc/pellmon/pellmon.conf -D
+    # Stop the daemons manually
+    kill $(cat /tmp/pellmonsrv.pid)
+    kill $(cat /tmp/pellmonweb.pid)
+###Uninstall
+    make uninstall
+
 ##Dependencies:
 <pre>
 rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
