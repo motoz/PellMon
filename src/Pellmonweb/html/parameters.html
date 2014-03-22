@@ -1,5 +1,5 @@
 <%inherit file="layout.html"/>
-<%! scripts = ['parameters.js'] %>
+<%! scripts = ['parameters.js', 'websocket.js'] %>
 <%def name="title()">
        	${heading}
 </%def>
@@ -74,7 +74,7 @@
                 %for key in data:
                         <dt class="editable">${key['longname'].title()}</dt>
 			<dd class="editable">
-				<span id="${key['name']}-value" class="param value"></span> ${key['unit'].decode('utf-8')}
+				<span id="${key['name']}-value" data-name="${key['name']}" class="param value"></span> ${key['unit'].decode('utf-8')}
 				<div class="details hidden">
 				   ${key['longname'].title()}
 				   <br>id: ${key['name']}
@@ -94,7 +94,7 @@
                 %for key in params:
                         <dt class="editable">${key['longname'].title()}</dt>
 			<dd> 
-				<span id="${key['name']}-value" class="editable param value" ></span> ${key['unit'].decode('utf-8')}
+				<span id="${key['name']}-value" data-name="${key['name']}" class="editable param value" ></span> ${key['unit'].decode('utf-8')}
 				<div style="z-index: 10000" class="details hidden">
     				%if key['longname']:
     				   ${key['longname'].title()}

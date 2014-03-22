@@ -12,6 +12,7 @@ nobase_dist_foohtml_DATA = \
 	media/js/logview.js \
 	media/js/index.js \
 	media/js/parameters.js \
+	media/js/websocket.js \
 	media/css/pellmon.css \
 	media/img/pellmon.svg \
 	media/img/spinner.gif \

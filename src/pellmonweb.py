@@ -41,6 +41,54 @@ import subprocess
 from datetime import datetime
 from cgi import escape
 
+try:
+    from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+    from ws4py.websocket import WebSocket
+    websockets = True
+except:
+    websockets = False
+    print 'ws4py module is missing, install with "pip install ws4py" for websocket support'
+
+class Sensor(threading.Thread):
+    def __init__(self, param):
+        threading.Thread.__init__(self)
+        self.websocket = None
+        params = param.split(',')
+        db=dbus.getdb()
+        self.params = [param for param in params if param in(db)]
+        print self.params
+        self.setDaemon(True)
+        self.start()
+
+    def stop(self):
+        self.running = False
+        print 'stopping thread'
+
+    def run(self):
+        self.running = True
+        db = {k:'-' for k in self.params}
+        while self.running:
+            if self.websocket:
+                paramlist = []
+                for param in self.params:
+                    try:
+                        value=dbus.getItem(param)
+                        if value != db[param]:
+                            paramlist.append(dict(name=param, value=value))
+                    except:
+                        pass
+                try:
+                    if paramlist:
+                        message = simplejson.dumps(paramlist)
+                        self.websocket.send(message)
+                    for p in paramlist:
+                        db[p['name']] = p['value']
+                except Exception, e:
+                    self.running = False
+            time.sleep(2)
+        self.websocket = None
+        print "Sensor stopped"
+
 class DbusNotConnected(Exception):
     pass
 
@@ -365,7 +413,7 @@ class PellMonWeb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def getparam(self, param):
+    def getparam(self, param='-'):
         parameterlist=dbus.getdb()
         if cherrypy.request.method == "GET":
             if param in(parameterlist):
@@ -379,7 +427,7 @@ class PellMonWeb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def setparam(self, param, data=None):
+    def setparam(self, param='-', data=None):
         parameterlist=dbus.getdb()
         if cherrypy.request.method == "POST":
             if param in(parameterlist):
@@ -406,7 +454,7 @@ class PellMonWeb:
             paramQueue = Queue.Queue(300)
             # Store the queue in the session
             cherrypy.session['paramReaderQueue'] = paramQueue
-            ht = threading.Thread(target=parameterReader, args=(paramQueue,))
+            ht = threading.Thread(target=parameterReader, args=(paramQueue,parameterlist))
             ht.start()
             values=['']*len(parameterlist)
             params={}
@@ -509,14 +557,21 @@ class PellMonWeb:
                 break;
         return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName)
 
-def parameterReader(q):
-    parameterlist=dbus.getdb()
+class WsHandler:
+    @cherrypy.expose
+    def ws(self, param='test'):
+        sensor = Sensor(param)
+        sensor.websocket = cherrypy.request.ws_handler
+        print ("Handler created: %s" % repr(sensor.websocket))
+
+def parameterReader(q, parameterlist):
+    #parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = escape(dbus.getItem(item))
+            value = escape(dbus.getItem(item['name']))
         except:
             value='error'
-        q.put((item,value))
+        q.put((item['name'],value))
     q.put(('**end**','**end**'))
 
 
@@ -673,7 +728,8 @@ if fc and ft:
     consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
 else:
     consumption_graph=False
-
+WebSocketPlugin(cherrypy.engine).subscribe()
+cherrypy.tools.websocket = WebSocketTool()
 global_conf = {
         'global':   { 'server.environment': 'debug',
                       'tools.sessions.on' : True,
@@ -688,8 +744,14 @@ app_conf =  {'/media':
                  'tools.staticdir.dir': MEDIA_DIR},
              '/favicon.ico':
                 {'tools.staticfile.on':True,
-                 'tools.staticfile.filename': FAVICON}
+                 'tools.staticfile.filename': FAVICON},
             }
+
+if websockets:
+    ws_conf = {'/ws':
+                 {'tools.websocket.on': True,
+                  'tools.websocket.handler_cls': WebSocket}
+              }
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cherrypy.config.update(global_conf)
@@ -697,6 +759,8 @@ cherrypy.config.update(global_conf)
 if __name__=="__main__":
 
     cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
+    if websockets:
+        cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
     if hasattr(engine, "signal_handler"):
         engine.signal_handler.subscribe()
     if hasattr(engine, "console_control_handler"):
