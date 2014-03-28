@@ -128,12 +128,21 @@ class Dbus_handler:
             'org.pellmon.int',
             '/org/pellmon/int',
             'org.pellmon.int',
-            None,
-        )
+            None)
+        def on_signal(proxy, sender_name, signal_name, parameters):
+            print signal_name
+            p = parameters[0]
+            for param in p:
+                print param['name'], param['value']
+            #if signal_name == "MediaPlayerKeyPressed":
+            #    self._key_pressed(*parameters)
+        self.notify.connect("g-signal", on_signal)
+
 
     def dbus_disconnect(self, connection, name):
         if self.notify:
             self.notify = None
+
 
     def getItem(self, itm):
         if self.notify:

@@ -123,6 +123,10 @@ class MyDBUSService(dbus.service.Object):
             menutags = menutags + plugin.plugin_object.getMenutags()
         return menutags
 
+    @dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
+    def changed_parameters(self, message):
+        pass
+
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
     logger.debug('handlerTread started by signal handler')
@@ -130,6 +134,8 @@ def pollThread():
     global conf
     if not conf.polling:
         return
+    conf.myservice.changed_parameters([{'name':'version','value':'0.01'},{'name':'t1','value':'2.01'}])
+    print 'poll'
     try:
         for data in conf.pollData:
             # 'special cases' handled here, name starting with underscore are not polled from the protocol 
@@ -323,7 +329,7 @@ class MyDaemon(Daemon):
         dbus.mainloop.glib.threads_init()    
         DBUSMAINLOOP = gobject.MainLoop()
         DBusGMainLoop(set_as_default=True)
-        myservice = MyDBUSService(conf.dbus)
+        conf.myservice = MyDBUSService(conf.dbus)
 
         # Create RRD database if does not exist
         if conf.polling:
