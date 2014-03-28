@@ -16,6 +16,7 @@ nobase_dist_foohtml_DATA = \
 	media/css/pellmon.css \
 	media/img/pellmon.svg \
 	media/img/spinner.gif \
+	media/img/system.svg \
 	media/jquery/jquery.js \
 	media/jquery/jquery.min.js \
 	media/bs3/fonts/glyphicons-halflings-regular.svg \
