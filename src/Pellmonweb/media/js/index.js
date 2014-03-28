@@ -247,7 +247,7 @@ function url(s) {
 
 $(document).ready(function() {
 
-    websocket = url('/ws/'+ 'boiler_temp,smoke_temp,chute_temp,magazine_contents');
+    websocket = url('/ws/'+ 'boiler_temp,smoke_temp,chute_temp,magazine_content');
     if (window.WebSocket) {
         ws = new WebSocket(websocket);
     }
