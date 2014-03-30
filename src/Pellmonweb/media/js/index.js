@@ -23,8 +23,8 @@ $(window).on('resize', function(e) {
 	}, 300);
 });
 
-var getMaxWidth = function() {
-	return 	getGraph().closest('div').innerWidth();
+var getMaxWidth = function(name) {
+	return 	$(name).closest('div').innerWidth();
 }
 
 var refreshAll = function() {
@@ -36,21 +36,21 @@ var refreshAll = function() {
 var refreshGraph = function() {
 	var graph = getGraph(),
 	offset = graph.data('offset')
-	maxWidth = getMaxWidth();
+	maxWidth = getMaxWidth('#graph');
 
 	graph.attr('src', graph.data('src') + '?width=' + maxWidth + '&timeoffset=' + offset + '&legends=no' + '&random=' + Math.random() );
 }
 
 var refreshConsumption = function() {
 	var consumption = $('#consumption'),
-		maxWidth = getMaxWidth();
+		maxWidth = getMaxWidth('#consumption');
 
 	consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var refreshSilolevel = function() {
 	var silolevel = $('#silolevel'),
-		maxWidth = getMaxWidth();
+		maxWidth = getMaxWidth('#silolevel');
 
 	silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
