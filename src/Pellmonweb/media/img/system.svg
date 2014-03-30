@@ -77,7 +77,7 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="2.1791745"
-     inkscape:cx="173.89188"
+     inkscape:cx="178.25199"
      inkscape:cy="131.28529"
      inkscape:window-width="1280"
      inkscape:window-height="1000"
@@ -140,12 +140,12 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccccc" />
     <path
-       transform="translate(14.71875,107.34375)"
        style="fill:#ff0000;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
        d="m 134.3503,190.98236 32.57741,0 15.90991,15.9099 c 0,17.93021 0,27.52666 0,27.52666 l -48.48732,0 z"
        id="rect3065"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccccc" />
+       sodipodi:nodetypes="cccccc"
+       transform="translate(14.71875,107.34375)" />
     <rect
        style="fill:#ff0000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.88421512px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        id="rect3070"
@@ -166,7 +166,8 @@
        style="font-size:16.80952454000000174px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        x="70.95536"
        y="255.44742"
-       id="paramname_boiler_temp"
+       id="paramname:boiler_temp"
+       class="pellmon-param"
        sodipodi:linespacing="125%"
        transform="scale(0.96970452,1.031242)"
        inkscape:label="#text3084"><tspan
@@ -175,16 +176,16 @@
          x="70.95536"
          y="255.44742">70.0</tspan></text>
     <text
-       transform="scale(0.9697045,1.031242)"
+       transform="scale(0.91030311,1.0985352)"
        sodipodi:linespacing="125%"
-       id="paramname_chute_temp"
-       y="290.77643"
-       x="199.93666"
-       style="font-size:16.80952454px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       id="paramname:chute_temp"
+       y="284.03748"
+       x="168.98749"
+       style="font-size:11.36144543px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"
        inkscape:label="#text3088"><tspan
-         y="290.77643"
-         x="199.93666"
+         y="284.03748"
+         x="168.98749"
          id="tspan3090"
          sodipodi:role="line">70.0</tspan></text>
     <text
@@ -192,7 +193,7 @@
        style="font-size:16.80952454000000174px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        x="351.60049"
        y="218.73717"
-       id="paramname_magazine_content"
+       id="paramname:magazine_content"
        sodipodi:linespacing="125%"
        transform="scale(0.9697045,1.031242)"
        inkscape:label="#text3092"><tspan
@@ -205,7 +206,7 @@
        style="font-size:16.80952454px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
        x="92.826607"
        y="135.90915"
-       id="paramname_smoke_temp"
+       id="paramname:smoke_temp"
        sodipodi:linespacing="125%"
        transform="scale(0.9697045,1.031242)"
        inkscape:label="#text3836"><tspan
@@ -213,5 +214,74 @@
          id="tspan3838"
          x="92.826607"
          y="135.90915">70.0</tspan></text>
+    <text
+       inkscape:label="#text3836"
+       transform="scale(0.9697045,1.031242)"
+       sodipodi:linespacing="125%"
+       id="paramname:power_kW"
+       y="319.68881"
+       x="99.451775"
+       style="font-size:16.80952454px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="319.68881"
+         x="99.451775"
+         id="tspan3010"
+         sodipodi:role="line">70.0</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:11.63431644px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="173.04613"
+       y="287.96884"
+       id="paramname:light"
+       sodipodi:linespacing="125%"
+       transform="scale(0.88895282,1.1249191)"
+       inkscape:label="#text3836"
+       inkscape:transform-center-x="37.559738"
+       inkscape:transform-center-y="2.7342505e-05"><tspan
+         sodipodi:role="line"
+         id="tspan3014"
+         x="173.04613"
+         y="287.96884">70.0</tspan></text>
+    <text
+       inkscape:label="#text3836"
+       transform="scale(0.9697045,1.031242)"
+       sodipodi:linespacing="125%"
+       id="paramname:feeder_capacity"
+       y="196.4274"
+       x="218.23149"
+       style="font-size:16.80952454px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="196.4274"
+         x="218.23149"
+         id="tspan3015"
+         sodipodi:role="line">70.0</tspan></text>
+    <text
+       inkscape:transform-center-y="2.7342505e-05"
+       inkscape:transform-center-x="37.559738"
+       inkscape:label="#text3836"
+       transform="scale(0.88895282,1.1249191)"
+       sodipodi:linespacing="125%"
+       id="paramname:mode"
+       y="298.56964"
+       x="173.04613"
+       style="font-size:11.63431644px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="298.56964"
+         x="173.04613"
+         id="tspan3019"
+         sodipodi:role="line">70.0</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16.80952454px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="60.647266"
+       y="363.93332"
+       id="paramname:alarm"
+       sodipodi:linespacing="125%"
+       transform="scale(0.9697045,1.031242)"
+       inkscape:label="#text3836"><tspan
+         sodipodi:role="line"
+         id="tspan3023"
+         x="60.647266"
+         y="363.93332">70.0</tspan></text>
   </g>
 </svg>

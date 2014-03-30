@@ -228,13 +228,14 @@ function getSubDocument(embedding_element)
 function findSVGElements(name, value)
 {
 	var elms = document.querySelectorAll(".emb");
-	for (var i = 0; i < elms.length; i++)
-	{
+	for (var i = 0; i < elms.length; i++) {
 		var subdoc = getSubDocument(elms[i])
-		if (subdoc)
+		if (subdoc) {
 //			subdoc.getElementById("svgbar").setAttribute("fill", "lime");
-			var sub2 = subdoc.getElementById("paramname_" + name)
-			sub2.textContent = value;
+			var sub2 = subdoc.getElementById("paramname:" + name)
+			if (sub2)
+    			sub2.textContent = value;
+        }
 	}
 }
 
@@ -246,8 +247,22 @@ function url(s) {
 }
 
 $(document).ready(function() {
+    var params="";
+	var elms = document.querySelectorAll(".emb");
+	for (var i = 0; i < elms.length; i++) {
+		var subdoc = getSubDocument(elms[i])
+		if (subdoc) 
+            var allElements = subdoc.getElementsByTagName("*");
+            for(var i = 0; i < allElements.length; i++) {
+                var element = allElements[i];
+                if((element.id).indexOf("paramname:") != -1) {
+                    if (params != "") params = params + ','
+                    params = params + (element.id).split(':')[1];
+                }    
+            }
+    }
 
-    websocket = url('/ws/'+ 'boiler_temp,smoke_temp,chute_temp,magazine_content');
+    websocket = url('/ws/'+ params);
     if (window.WebSocket) {
         ws = new WebSocket(websocket);
     }
