@@ -7,12 +7,20 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-md-12">
-            <h4 class="graphtitle">Graph</h4>
+        <div class="col-md-6">
+            <h4>System</h4>
                 <div>
                     <embed id="systembild" class="emb image-responsive" src="media/img/system.svg" type="image/svg+xml" />
                 </div>
+        </div>
 
+        <div id="lines" data-lines="7" class="col-md-6">
+            <h4>Events</h4>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h4 class="graphtitle">Graph</h4>
                 <div>
                     ${'<img style="margin-bottom:8px" class="graph image-responsive image-lazy" id="graph" data-title="%s" data-offset=0 data-timespan=%u data-src="graph" src="media/img/spinner.gif"'%(timeName, timeChoice)} />
                 </div>
@@ -36,6 +44,8 @@
                                 </p>
                     </div>
                 </div>
+        </div>
+        <div class="col-md-6">
             <h4>Consumption</h4>
             <div>
                 <img class="graph image-responsive image-lazy" id="consumption" data-src="consumption" src="media/img/spinner.gif" />
@@ -46,8 +56,5 @@
             </div>
         </div>
 
-        <div id="lines" data-lines="5" class="col-md-12">
-            <h4>Events</h5>
-        </div>
     </div>
 </div>
