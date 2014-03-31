@@ -78,7 +78,7 @@
      fit-margin-bottom="0"
      inkscape:zoom="1.5409091"
      inkscape:cx="243.45386"
-     inkscape:cy="69.080826"
+     inkscape:cy="43.122124"
      inkscape:window-width="1280"
      inkscape:window-height="1000"
      inkscape:window-x="0"
@@ -221,11 +221,11 @@
        transform="scale(0.9697045,1.031242)"
        sodipodi:linespacing="125%"
        id="paramname:power_kW"
-       y="309.54672"
+       y="307.6073"
        x="111.52744"
-       style="font-size:16.80952454000000174px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
+       style="font-size:16.80952454px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
-         y="309.54672"
+         y="307.6073"
          x="111.52744"
          id="tspan3010"
          sodipodi:role="line">--</tspan></text>
@@ -286,7 +286,7 @@
          id="tspan3023"
          x="269.29535"
          y="333.63281"
-         style="font-size:13.55698109px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">ok</tspan></text>
+         style="font-size:13.55698109px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">--</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:12.90731049000000041px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.59649122;stroke:none;font-family:Sans"
@@ -323,11 +323,11 @@
     <text
        sodipodi:linespacing="125%"
        id="text3046"
-       y="319.4631"
+       y="317.4631"
        x="111.25163"
-       style="font-size:12.90731049000000041px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.59649122;stroke:none;font-family:Sans"
+       style="font-size:12.90731049px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.5964912;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
-         y="319.4631"
+         y="317.4631"
          x="111.25163"
          id="tspan3048"
          sodipodi:role="line">kW</tspan></text>
