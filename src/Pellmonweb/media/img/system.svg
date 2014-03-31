@@ -77,7 +77,7 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="1.5409091"
-     inkscape:cx="244.10283"
+     inkscape:cx="243.45386"
      inkscape:cy="69.080826"
      inkscape:window-width="1280"
      inkscape:window-height="1000"
@@ -272,20 +272,21 @@
          x="175.80736"
          id="tspan3019"
          sodipodi:role="line"
-         style="font-size:9.83825397px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">Running</tspan></text>
+         style="font-size:9.83825397px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">----</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:16.80952454px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-       x="269.03625"
-       y="338.77573"
+       style="font-size:13.55698109px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="269.29535"
+       y="333.63281"
        id="paramname:alarm"
        sodipodi:linespacing="125%"
        transform="scale(0.9697045,1.031242)"
        inkscape:label="#text3836"><tspan
          sodipodi:role="line"
          id="tspan3023"
-         x="269.03625"
-         y="338.77573">--</tspan></text>
+         x="269.29535"
+         y="333.63281"
+         style="font-size:13.55698109px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold">ok</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:12.90731049000000041px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.59649122;stroke:none;font-family:Sans"
@@ -408,5 +409,26 @@
            height="46.725666"
            x="73.9823"
            y="-1.6519219" /></flowRegion><flowPara
-         id="flowPara3850" /></flowRoot>  </g>
+         id="flowPara3850" /></flowRoot>    <text
+       xml:space="preserve"
+       style="font-size:11.50009441px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.66228069;stroke:none;font-family:Sans"
+       x="223.77734"
+       y="344.09128"
+       id="text3834"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3836"
+         x="223.77734"
+         y="344.09128">State:</tspan></text>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3838"
+       style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Sans;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion3840"><rect
+           id="rect3842"
+           width="90.855453"
+           height="68.141594"
+           x="199.882"
+           y="197.58112" /></flowRegion><flowPara
+         id="flowPara3844"></flowPara></flowRoot>  </g>
 </svg>
