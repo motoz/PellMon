@@ -247,33 +247,38 @@ function setupWebSocket() {
                 params = params + (element.id).split(':')[1];
             }    
         }
-    }
-    
-    websocket = url('/ws/'+ params);
-    if (window.WebSocket) {
-        ws = new WebSocket(websocket);
-    }
-    else if (window.MozWebSocket) {
-        ws = MozWebSocket(websocket);
-    }
-    else {
-        console.log('WebSocket Not Supported');
-        return;
-    }
-
-    window.onbeforeunload = function(e) {
-        ws.close();
-    };
-
-    ws.onmessage = function (evt) {
-        jsonObject = $.parseJSON(evt.data);
-        for (i in jsonObject) {
-            obj = jsonObject[i];
-            changeSystemImageText(obj.name, obj.value);
+        if (params == "") setTimeout(1000, setupWebSocket)
+        websocket = url('/ws/'+ params);
+        if (window.WebSocket) {
+            ws = new WebSocket(websocket);
         }
-    };
+        else if (window.MozWebSocket) {
+            ws = MozWebSocket(websocket);
+        }
+        else {
+            console.log('WebSocket Not Supported');
+            return;
+        }
+
+        window.onbeforeunload = function(e) {
+            ws.close();
+        };
+
+        ws.onmessage = function (evt) {
+            jsonObject = $.parseJSON(evt.data);
+            for (i in jsonObject) {
+                obj = jsonObject[i];
+                changeSystemImageText(obj.name, obj.value);
+            }
+        };
+    }
+    else
+    {
+        setTimeout(1000, setupWebSocket);
+    }
 }
 
 var params="";
 var svgElement = document.getElementById("systemimage");
-svgElement.addEventListener("load", setupWebSocket);
+//svgElement.addEventListener("load", setupWebSocket);
+setupWebSocket();
