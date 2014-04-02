@@ -13,7 +13,7 @@
    id="svg2"
    version="1.1"
    viewBox="0 0 440 280"
-   inkscape:version="0.48.3.1 r9886"
+   inkscape:version="0.48.4 r9939"
    sodipodi:docname="system.svg"
    width="100%"
    height="100%">
@@ -76,12 +76,12 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="1.5409091"
-     inkscape:cx="243.45386"
-     inkscape:cy="43.122124"
-     inkscape:window-width="1280"
-     inkscape:window-height="1000"
-     inkscape:window-x="0"
+     inkscape:zoom="2.1791745"
+     inkscape:cx="214.47157"
+     inkscape:cy="146.41513"
+     inkscape:window-width="1388"
+     inkscape:window-height="876"
+     inkscape:window-x="52"
      inkscape:window-y="24" />
   <metadata
      id="metadata7">
@@ -246,17 +246,17 @@
          y="302.55646">----</tspan></text>
     <text
        inkscape:label="#text3836"
-       transform="scale(0.9697045,1.031242)"
+       transform="matrix(0.72733632,0.64133352,-0.68203258,0.77349312,0,0)"
        sodipodi:linespacing="125%"
        id="paramname:feeder_capacity"
-       y="186.91901"
-       x="250.84763"
-       style="font-size:12.64935589px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       y="21.970259"
+       x="394.57547"
+       style="font-size:8.32258606px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        xml:space="preserve"><tspan
-         y="186.91901"
-         x="250.84763"
+         y="21.970259"
+         x="394.57547"
          id="tspan3015"
-         sodipodi:role="line">----</tspan></text>
+         sodipodi:role="line">---</tspan></text>
     <text
        inkscape:transform-center-x="31.761393"
        inkscape:label="#text3836"
@@ -333,15 +333,16 @@
          sodipodi:role="line">kW</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:8.19797993000000069px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:0.85964912;stroke:none;font-family:Sans"
-       x="246.2074"
-       y="192.69838"
+       style="font-size:5.39382315px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:0.59360729;stroke:none;font-family:Sans"
+       x="383.86942"
+       y="15.723793"
        id="text3050"
-       sodipodi:linespacing="125%"><tspan
+       sodipodi:linespacing="125%"
+       transform="matrix(0.73966497,0.67297528,-0.67297528,0.73966497,0,0)"><tspan
          sodipodi:role="line"
          id="tspan3052"
-         x="246.2074"
-         y="192.69838">g/360s</tspan></text>
+         x="383.86942"
+         y="15.723793">g/360s</tspan></text>
     <text
        sodipodi:linespacing="125%"
        id="text3054"
@@ -430,5 +431,15 @@
            height="68.141594"
            x="199.882"
            y="197.58112" /></flowRegion><flowPara
-         id="flowPara3844"></flowPara></flowRoot>  </g>
+         id="flowPara3844" /></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3816"
+       style="fill:black;stroke:none;stroke-opacity:1;stroke-width:1px;stroke-linejoin:miter;stroke-linecap:butt;fill-opacity:1;font-family:Sans;font-style:normal;font-weight:normal;font-size:40px;line-height:125%;letter-spacing:0px;word-spacing:0px"><flowRegion
+         id="flowRegion3818"><rect
+           id="rect3820"
+           width="62.62537"
+           height="98.643066"
+           x="198.58408"
+           y="84.011803" /></flowRegion><flowPara
+         id="flowPara3822"></flowPara></flowRoot>  </g>
 </svg>
