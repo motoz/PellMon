@@ -112,8 +112,6 @@ $('.lineselection').click(function(e) {
                 refreshGraph();
             }
     )
-
-
 });
 
 
@@ -208,7 +206,6 @@ $('#graph').load(function() {
     setGraphTitle();
 });
 
-// fetches the document for the given embedding_element
 function getSubDocument(embedding_element)
 {
 	if (embedding_element.contentDocument) 
@@ -225,43 +222,33 @@ function getSubDocument(embedding_element)
 	}
 }
 
-function findSVGElements(name, value)
+function changeSystemImageText(name, value)
 {
-	var elms = document.querySelectorAll(".emb");
-	for (var i = 0; i < elms.length; i++) {
-		var subdoc = getSubDocument(elms[i])
-		if (subdoc) {
-//			subdoc.getElementById("svgbar").setAttribute("fill", "lime");
-			var sub2 = subdoc.getElementById("paramname:" + name)
-			if (sub2)
-    			sub2.textContent = value;
-        }
-	}
+    var subdoc = getSubDocument(svgElement)
+    if (subdoc) {
+        var sub2 = subdoc.getElementById("paramname:" + name)
+        if (sub2) sub2.textContent = value;
+    }
 }
-
-window.addEventListener("load", findSVGElements, false);
 
 function url(s) {
     var l = window.location;
     return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port != 80) && (l.port != 443)) ? ":" + l.port : "") + '/websocket' +s;
 }
 
-$(document).ready(function() {
-    var params="";
-	var elms = document.querySelectorAll(".emb");
-	for (var i = 0; i < elms.length; i++) {
-		var subdoc = getSubDocument(elms[i])
-		if (subdoc) 
-            var allElements = subdoc.getElementsByTagName("*");
-            for(var i = 0; i < allElements.length; i++) {
-                var element = allElements[i];
-                if((element.id).indexOf("paramname:") != -1) {
-                    if (params != "") params = params + ','
-                    params = params + (element.id).split(':')[1];
-                }    
-            }
+function setupWebSocket() {
+    var subdoc = getSubDocument(svgElement)
+    if (subdoc) {
+        var allElements = subdoc.getElementsByTagName("*");
+        for(var i = 0; i < allElements.length; i++) {
+            var element = allElements[i];
+            if((element.id).indexOf("paramname:") != -1) {
+                if (params != "") params = params + ','
+                params = params + (element.id).split(':')[1];
+            }    
+        }
     }
-
+    
     websocket = url('/ws/'+ params);
     if (window.WebSocket) {
         ws = new WebSocket(websocket);
@@ -282,11 +269,11 @@ $(document).ready(function() {
         jsonObject = $.parseJSON(evt.data);
         for (i in jsonObject) {
             obj = jsonObject[i];
-            //container = $('#' + obj.name + '-value');
-            //container.html(obj.value);
-            findSVGElements(obj.name, obj.value);
-     }
-  };
+            changeSystemImageText(obj.name, obj.value);
+        }
+    };
+}
 
-});
-
+var params="";
+var svgElement = document.getElementById("systemimage");
+svgElement.addEventListener("load", setupWebSocket);
