@@ -239,7 +239,7 @@ function url(s) {
 function setupWebSocket() {
     var subdoc = getSubDocument(svgElement)
     if (subdoc) {
-        var allElements = subdoc.getElementsByTagName("*");
+        var allElements = subdoc.getElementsByTagName("text");
         for(var i = 0; i < allElements.length; i++) {
             var element = allElements[i];
             if((element.id).indexOf("paramname:") != -1) {
@@ -247,35 +247,42 @@ function setupWebSocket() {
                 params = params + (element.id).split(':')[1];
             }    
         }
-        if (params == "") setTimeout(1000, setupWebSocket)
-        websocket = url('/ws/'+ params);
-        if (window.WebSocket) {
-            ws = new WebSocket(websocket);
+        if (params == "") 
+        {
+            setTimeout(setupWebSocket, 1000)
         }
-        else if (window.MozWebSocket) {
-            ws = MozWebSocket(websocket);
-        }
-        else {
-            console.log('WebSocket Not Supported');
-            return;
-        }
-
-        window.onbeforeunload = function(e) {
-            ws.close();
-        };
-
-        ws.onmessage = function (evt) {
-            jsonObject = $.parseJSON(evt.data);
-            for (i in jsonObject) {
-                obj = jsonObject[i];
-                changeSystemImageText(obj.name, obj.value);
+        else
+        {
+            websocket = url('/ws/'+ params);
+            if (window.WebSocket) {
+                ws = new WebSocket(websocket);
             }
-        };
+            else if (window.MozWebSocket) {
+                ws = MozWebSocket(websocket);
+            }
+            else {
+                console.log('WebSocket Not Supported');
+                return;
+            }
+
+            window.onbeforeunload = function(e) {
+                ws.close();
+            };
+
+            ws.onmessage = function (evt) {
+                jsonObject = $.parseJSON(evt.data);
+                for (i in jsonObject) {
+                    obj = jsonObject[i];
+                    changeSystemImageText(obj.name, obj.value);
+                }
+            };
+        }
     }
     else
     {
-        setTimeout(1000, setupWebSocket);
+        setTimeout(setupWebSocket, 1000);
     }
+
 }
 
 var params="";

@@ -2,7 +2,7 @@
 <%! scripts = ['spin.js','index.js','logview.js'] %>
 
 <%def name="title()">
-    Graph
+    PellMon
 </%def>
 
 <div class="container">
@@ -10,7 +10,7 @@
     <div class="row">
         <div class="col-md-6">
         <h4>System</h4>
-            <embed id="systemimage" class="image-responsive" src="media/img/system.svg" type="image/svg+xml" />
+            <object id="systemimage" class="image-responsive" data="media/img/system.svg" type="image/svg+xml"> </object>
         </div>
 
         <div id="lines" data-lines="7" class="col-md-6">
