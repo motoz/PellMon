@@ -39,9 +39,17 @@ import subprocess
 import sys, traceback
 import urllib2 as urllib
 
-class Database(object):
-    def __init__(self):
-    
+class dbus_signal_handler(logging.Handler):
+    """Emit log messages as a dbus signal"""
+    def __init__(self, dbus_service):
+        logging.Handler.__init__(self)
+        self.dbus_service = dbus_service
+    def emit(self, record):
+        msg = self.format(record)
+        self.dbus_service.changed_parameters([{'name':'__event__', 'value':msg}])
+
+class Database(threading.Thread):
+    def __init__(self, dbus_service):
         class getset:
             def __init__(self, item, obj):
                 self.item = item
@@ -50,9 +58,13 @@ class Database(object):
                 return self.obj.getItem(self.item)
             def setItem(self, value):
                 return self.obj.setItem(self.item, value)
-
+        threading.Thread.__init__(self)
+        self.dbus_service = dbus_service
         self.items={}
+        self.values={}
         self.protocols=[]
+        self.setDaemon(True)
+        self.start()
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
@@ -67,9 +79,25 @@ class Database(object):
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
-                    print str(e)
                     logger.info('Plugin %s init failed'%plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
+
+    def run(self):
+        while True:
+            time.sleep(2)
+            changed_params = []
+            for item_name in self.items:
+                value = self.items[item_name].getItem()
+                if item_name in self.values:
+                    if value != self.values[item_name]:
+                        changed_params.append({'name':item_name, 'value':value})
+                        self.values[item_name] = value
+                else:
+                    changed_params.append({'name':item_name, 'value':value})
+                    self.values[item_name] = value
+            if changed_params:
+                self.dbus_service.changed_parameters(changed_params)
+
     def terminate(self):
         for p in self.protocols:
             p.plugin_object.deactivate()
@@ -134,8 +162,6 @@ def pollThread():
     global conf
     if not conf.polling:
         return
-    conf.myservice.changed_parameters([{'name':'version','value':'0.01'},{'name':'t1','value':'2.01'}])
-    print 'poll'
     try:
         for data in conf.pollData:
             # 'special cases' handled here, name starting with underscore are not polled from the protocol 
@@ -313,11 +339,6 @@ class MyDaemon(Daemon):
         global logger
         logger = logging.getLogger('pellMon')
 
-        logger.info('starting pelletMonitor')
-
-        # Load all plugins of 'protocol' category.
-        conf.database = Database()
-
         try:
             if conf.USER:
                 drop_privileges(conf.USER, conf.GROUP)
@@ -330,6 +351,17 @@ class MyDaemon(Daemon):
         DBUSMAINLOOP = gobject.MainLoop()
         DBusGMainLoop(set_as_default=True)
         conf.myservice = MyDBUSService(conf.dbus)
+
+        # Add a handler that signals log messages over dbus
+        dh = dbus_signal_handler(conf.myservice)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        dh.setFormatter(formatter)
+        logger.addHandler(dh)
+
+        logger.info('starting pelletMonitor')
+
+        # Load all plugins of 'protocol' category.
+        conf.database = Database(conf.myservice)
 
         # Create RRD database if does not exist
         if conf.polling:

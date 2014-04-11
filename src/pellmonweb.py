@@ -49,45 +49,55 @@ except:
     websockets = False
     print 'ws4py module is missing, install with "pip install ws4py" for websocket support'
 
-class Sensor(threading.Thread):
-    def __init__(self, param):
-        threading.Thread.__init__(self)
-        self.websocket = None
-        params = param.split(',')
-        db=dbus.getdb()
-        self.params = [param for param in params if param in(db)]
-        print self.params
-        self.setDaemon(True)
-        self.start()
+class Sensor(object):
+    sensorlist = []
+    def __init__(self, parameters, websocket, events):
+        self.websocket = websocket
+        self.params = parameters
+        self.db = {k:'-' for k in self.params}
+        self.events = events
+        Sensor.sensorlist.append(self)
 
-    def stop(self):
-        self.running = False
-        print 'stopping thread'
+        paramlist = []
+        for param in self.params:
+            try:
+                value = dbus.getItem(param)
+                if value != db[param]:
+                    paramlist.append(dict(name=param, value=value))
+            except:
+                pass
+        try:
+            if paramlist:
+                message = simplejson.dumps(paramlist)
+                self.websocket.send(message)
+            for p in paramlist:
+                db[p['name']] = p['value']
+        except Exception, e:
+            self.websocket = None
 
-    def run(self):
-        self.running = True
-        db = {k:'-' for k in self.params}
-        while self.running:
-            if self.websocket:
-                paramlist = []
-                for param in self.params:
-                    try:
-                        value=dbus.getItem(param)
-                        if value != db[param]:
-                            paramlist.append(dict(name=param, value=value))
-                    except:
-                        pass
-                try:
-                    if paramlist:
-                        message = simplejson.dumps(paramlist)
-                        self.websocket.send(message)
-                    for p in paramlist:
-                        db[p['name']] = p['value']
-                except Exception, e:
-                    self.running = False
-            time.sleep(2)
-        self.websocket = None
-        print "Sensor stopped"
+    def send(self, message):
+        try:
+            paramlist = []
+            for param in message:
+                if param['name'] in self.params:
+                    paramlist.append(param)
+            try:
+                if paramlist:
+                    message = simplejson.dumps(paramlist)
+                    self.websocket.send(message)
+                return True
+            except Exception, e:
+                self.websocket = None
+                return False
+
+            ml = []
+            ml.append(message)
+            message = simplejson.dumps(ml)
+            self.websocket.send(message)
+            return True
+        except Exception, e:
+            self.websocket = None
+            return False
 
 class DbusNotConnected(Exception):
     pass
@@ -130,10 +140,11 @@ class Dbus_handler:
             'org.pellmon.int',
             None)
         def on_signal(proxy, sender_name, signal_name, parameters):
-            print signal_name
             p = parameters[0]
-            for param in p:
-                print param['name'], param['value']
+            for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
+                sensor = Sensor.sensorlist[i]
+                if not sensor.send(p):
+                    del Sensor.sensorlist[i]
             #if signal_name == "MediaPlayerKeyPressed":
             #    self._key_pressed(*parameters)
         self.notify.connect("g-signal", on_signal)
@@ -339,7 +350,6 @@ class PellMonWeb:
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RrdGraphString1 += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
-        print RrdGraphString1
         for line in graph_lines:
             if lines == '__all__' or line['name'] in lines:
                 RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
@@ -396,7 +406,6 @@ class PellMonWeb:
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
-        print RrdGraphString1
         return cmd.communicate()[0]
 
     @cherrypy.expose
@@ -562,16 +571,16 @@ class PellMonWeb:
         for i in range(len(timeNames)):
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
-                print timeName
                 break;
         return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName)
 
 class WsHandler:
     @cherrypy.expose
-    def ws(self, param='test'):
-        sensor = Sensor(param)
-        sensor.websocket = cherrypy.request.ws_handler
-        print ("Handler created: %s" % repr(sensor.websocket))
+    def ws(self, parameters='', events='no'):
+        db=dbus.getdb()
+        parameters = parameters.split(',')
+        params = [param for param in parameters if param in(db)]
+        sensor = Sensor(params, cherrypy.request.ws_handler, events == 'yes')
 
 def parameterReader(q, parameterlist):
     #parameterlist=dbus.getdb()

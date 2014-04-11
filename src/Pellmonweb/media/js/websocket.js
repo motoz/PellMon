@@ -5,7 +5,7 @@ function url(s) {
 
 $(document).ready(function() {
 
-    websocket = url('/ws/'+paramlist);
+    websocket = url('/ws?parameters='+paramlist);
     if (window.WebSocket) {
         ws = new WebSocket(websocket);
     }
