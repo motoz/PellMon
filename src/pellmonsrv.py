@@ -50,7 +50,7 @@ class dbus_signal_handler(logging.Handler):
         self.dbus_service.changed_parameters([{'name':'__event__', 'value':msg}])
 
 class Database(threading.Thread):
-    def __init__(self, dbus_service):
+    def __init__(self):
         class getset:
             def __init__(self, item, obj):
                 self.item = item
@@ -60,7 +60,7 @@ class Database(threading.Thread):
             def setItem(self, value):
                 return self.obj.setItem(self.item, value)
         threading.Thread.__init__(self)
-        self.dbus_service = dbus_service
+        self.dbus_service = None
         self.items={}
         self.values={}
         self.protocols=[]
@@ -97,7 +97,8 @@ class Database(threading.Thread):
                     changed_params.append({'name':item_name, 'value':value})
                     self.values[item_name] = value
             if changed_params:
-                self.dbus_service.changed_parameters(changed_params)
+                if self.dbus_service:
+                    self.dbus_service.changed_parameters(changed_params)
 
     def terminate(self):
         for p in self.protocols:
@@ -339,6 +340,10 @@ class MyDaemon(Daemon):
     def run(self):
         global logger
         logger = logging.getLogger('pellMon')
+        logger.info('starting pelletMonitor')
+
+        # Load all plugins of 'protocol' category.
+        conf.database = Database()
 
         try:
             if conf.USER:
@@ -352,17 +357,13 @@ class MyDaemon(Daemon):
         DBUSMAINLOOP = gobject.MainLoop()
         DBusGMainLoop(set_as_default=True)
         conf.myservice = MyDBUSService(conf.dbus)
-
+        conf.database.dbus_service = conf.myservice
+        
         # Add a handler that signals log messages over dbus
         dh = dbus_signal_handler(conf.myservice)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         dh.setFormatter(formatter)
         logger.addHandler(dh)
-
-        logger.info('starting pelletMonitor')
-
-        # Load all plugins of 'protocol' category.
-        conf.database = Database(conf.myservice)
 
         # Create RRD database if does not exist
         if conf.polling:
