@@ -40,6 +40,7 @@ import grp
 import subprocess
 from datetime import datetime
 from cgi import escape
+from threading import Timer
 
 try:
     from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
@@ -57,21 +58,22 @@ class Sensor(object):
         self.db = {k:'-' for k in self.params}
         self.events = events
         Sensor.sensorlist.append(self)
-
         paramlist = []
         for param in self.params:
             try:
                 value = dbus.getItem(param)
-                if value != db[param]:
+                if value != self.db[param]:
                     paramlist.append(dict(name=param, value=value))
-            except:
+            except Exception, e:
+                print str(e)
                 pass
         try:
             if paramlist:
                 message = simplejson.dumps(paramlist)
-                self.websocket.send(message)
+                t = Timer(1, self.websocket.send, args= [message])
+                t.start()
             for p in paramlist:
-                db[p['name']] = p['value']
+                self.db[p['name']] = p['value']
         except Exception, e:
             self.websocket = None
 
@@ -79,7 +81,7 @@ class Sensor(object):
         try:
             paramlist = []
             for param in message:
-                if param['name'] in self.params:
+                if param['name'] in self.params or (param['name'] == '__event__' and self.events):
                     paramlist.append(param)
             try:
                 if paramlist:

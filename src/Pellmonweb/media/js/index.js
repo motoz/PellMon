@@ -23,8 +23,8 @@ $(window).on('resize', function(e) {
 	}, 300);
 });
 
-var getMaxWidth = function() {
-	return 	getGraph().closest('div').innerWidth();
+var getMaxWidth = function(name) {
+	return 	$(name).closest('div').innerWidth();
 }
 
 var refreshAll = function() {
@@ -36,21 +36,21 @@ var refreshAll = function() {
 var refreshGraph = function() {
 	var graph = getGraph(),
 	offset = graph.data('offset')
-	maxWidth = getMaxWidth();
+	maxWidth = getMaxWidth('#graph');
 
 	graph.attr('src', graph.data('src') + '?width=' + maxWidth + '&timeoffset=' + offset + '&legends=no' + '&random=' + Math.random() );
 }
 
 var refreshConsumption = function() {
 	var consumption = $('#consumption'),
-		maxWidth = getMaxWidth();
+		maxWidth = getMaxWidth('#consumption');
 
 	consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var refreshSilolevel = function() {
 	var silolevel = $('#silolevel'),
-		maxWidth = getMaxWidth();
+		maxWidth = getMaxWidth('#silolevel');
 
 	silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
@@ -112,8 +112,6 @@ $('.lineselection').click(function(e) {
                 refreshGraph();
             }
     )
-
-
 });
 
 
@@ -208,44 +206,90 @@ $('#graph').load(function() {
     setGraphTitle();
 });
 
+function getSubDocument(embedding_element)
+{
+	if (embedding_element.contentDocument) 
+	{
+		return embedding_element.contentDocument;
+	} 
+	else 
+	{
+		var subdoc = null;
+		try {
+			subdoc = embedding_element.getSVGDocument();
+		} catch(e) {}
+		return subdoc;
+	}
+}
+
+function changeSystemImageText(name, value)
+{
+    var subdoc = getSubDocument(svgElement)
+    if (subdoc) {
+        var sub2 = subdoc.getElementById("paramname:" + name)
+        if (sub2) sub2.textContent = value;
+    }
+}
 
 function url(s) {
     var l = window.location;
     return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port != 80) && (l.port != 443)) ? ":" + l.port : "") + '/websocket' +s;
 }
 
-$(document).ready(function() {
+function setupWebSocket() {
+    var subdoc = getSubDocument(svgElement)
+    if (subdoc) {
+        var allElements = subdoc.getElementsByTagName("text");
+        for(var i = 0; i < allElements.length; i++) {
+            var element = allElements[i];
+            if((element.id).indexOf("paramname:") != -1) {
+                if (params != "") params = params + ','
+                params = params + (element.id).split(':')[1];
+            }    
+        }
+        if (params == "") 
+        {
+            setTimeout(setupWebSocket, 1000)
+        }
+        else
+        {
+            websocket = url('/ws/?parameters='+ params + '&events=yes');
+            if (window.WebSocket) {
+                ws = new WebSocket(websocket);
+            }
+            else if (window.MozWebSocket) {
+                ws = MozWebSocket(websocket);
+            }
+            else {
+                console.log('WebSocket Not Supported');
+                return;
+            }
 
-    websocket = url('/ws?parameters=__event__');
-    if (window.WebSocket) {
-        ws = new WebSocket(websocket);
+            window.onbeforeunload = function(e) {
+                ws.close();
+            };
+
+            ws.onmessage = function (evt) {
+                jsonObject = $.parseJSON(evt.data);
+                for (i in jsonObject) {
+                    obj = jsonObject[i];
+                    if (obj.name == '__event__') 
+                        getLog();
+                    else
+                        changeSystemImageText(obj.name, obj.value);
+                }
+            };
+        }
     }
-    else if (window.MozWebSocket) {
-        ws = MozWebSocket(websocket);
-    }
-    else {
-        console.log('WebSocket Not Supported');
-        return;
+    else
+    {
+        setTimeout(setupWebSocket, 1000);
     }
 
-    window.onbeforeunload = function(e) {
-        ws.close();
-    };
+}
 
-    ws.onmessage = function (evt) {
-        jsonObject = $.parseJSON(evt.data);
-        getLog()
-//        for (i in jsonObject) {
-//            obj = jsonObject[i];
-//            var table = document.getElementById("eventlog");
-//            if (table) {
-//                table.deleteRow(4);
-//                var row = table.insertRow(0);
-//                var cell1 = row.insertCell(0);
-//                cell1.innerHTML = obj;
-//            }
-//     }
-  };
-
-});
+var params="";
+var svgElement = document.getElementById("systemimage");
+//svgElement.addEventListener("load", setupWebSocket);
+setupWebSocket();
 

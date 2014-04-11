@@ -597,7 +597,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.PLUGINDIR == '-':
         args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')
-        print args.PLUGINDIR
 
     config_file = args.CONFIG
     if not os.path.isfile(config_file):
