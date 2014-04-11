@@ -38,6 +38,7 @@ from Pellmonsrv import Daemon
 import subprocess
 import sys, traceback
 import urllib2 as urllib
+from Pellmonsrv import __file__ as pluginpath
 
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
@@ -592,8 +593,11 @@ if __name__ == "__main__":
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
-    parser.add_argument('-p', '--PLUGINDIR', default='Pellmonsrv/plugins', help='Full path to plugin directory')
+    parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
     args = parser.parse_args()
+    if args.PLUGINDIR == '-':
+        args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')
+        print args.PLUGINDIR
 
     config_file = args.CONFIG
     if not os.path.isfile(config_file):
