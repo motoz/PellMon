@@ -65,7 +65,6 @@ class Database(threading.Thread):
         self.values={}
         self.protocols=[]
         self.setDaemon(True)
-        self.start()
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
@@ -82,20 +81,24 @@ class Database(threading.Thread):
                 except Exception as e:
                     logger.info('Plugin %s init failed'%plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
+        self.start()
 
     def run(self):
         while True:
             time.sleep(2)
             changed_params = []
             for item_name in self.items:
-                value = self.items[item_name].getItem()
-                if item_name in self.values:
-                    if value != self.values[item_name]:
+                try:
+                    value = self.items[item_name].getItem()
+                    if item_name in self.values:
+                        if value != self.values[item_name]:
+                            changed_params.append({'name':item_name, 'value':value})
+                            self.values[item_name] = value
+                    else:
                         changed_params.append({'name':item_name, 'value':value})
                         self.values[item_name] = value
-                else:
-                    changed_params.append({'name':item_name, 'value':value})
-                    self.values[item_name] = value
+                except:
+                    pass
             if changed_params:
                 if self.dbus_service:
                     self.dbus_service.changed_parameters(changed_params)
