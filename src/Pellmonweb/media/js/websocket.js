@@ -7,7 +7,7 @@ $(document).ready(function() {
 
     websocket = url('/ws?parameters='+paramlist);
     if (window.WebSocket) {
-        ws = new WebSocket(websocket);
+        ws = new ReconnectingWebSocket(websocket);
     }
     else if (window.MozWebSocket) {
         ws = MozWebSocket(websocket);
