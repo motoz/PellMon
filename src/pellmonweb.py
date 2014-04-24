@@ -41,6 +41,7 @@ import subprocess
 from datetime import datetime
 from cgi import escape
 from threading import Timer
+import signal
 
 try:
     from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
@@ -115,13 +116,13 @@ class Dbus_handler:
         # Needed to be able to use threads with a glib main loop running
         GObject.threads_init()
         # A main loop is needed for dbus "name watching" to work
-        main_loop = GObject.MainLoop()
+        main_loop = GLib.MainLoop()
         # The glib main loop gets along with the cherrypy main loop if run in it's own thread
-        DBUSLOOPTHREAD = threading.Thread(name='glib_mainloop', target=main_loop.run)
+        #DBUSLOOPTHREAD = threading.Thread(name='glib_mainloop', target=main_loop.run)
         # This causes the dbus main loop thread to just die when the main thread exits
-        DBUSLOOPTHREAD.setDaemon(True)
+        #DBUSLOOPTHREAD.setDaemon(True)
         # Start it here, thes must happen after the daemonizer double fork
-        DBUSLOOPTHREAD.start()
+        #DBUSLOOPTHREAD.start()
         self.notify = None
         self.bus = Gio.bus_get_sync(self.bustype, None)
         Gio.bus_watch_name(
@@ -130,6 +131,7 @@ class Dbus_handler:
             Gio.DBusProxyFlags.NONE,
             self.dbus_connect,
             self.dbus_disconnect,
+        #main_loop.run()
         )
 
     def dbus_connect(self, connection, name, owner):
@@ -619,7 +621,7 @@ if __name__ == '__main__':
 
     # The dbus main_loop thread can't be started before double fork to daemon, the
     # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-    cherrypy.engine.subscribe('start', dbus.setup, 90)
+    # cherrypy.engine.subscribe('start', dbus.setup, 90)
 
     engine = cherrypy.engine
 
@@ -674,109 +676,107 @@ if __name__ == '__main__':
         gid = grp.getgrnam(args.GROUP).gr_gid
         plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=033).subscribe()
 
-# Load the configuration file
-if not os.path.isfile(config_file):
-    config_file = '/etc/pellmon.conf'
-if not os.path.isfile(config_file):
-    config_file = '/usr/local/etc/pellmon.conf'
-if not os.path.isfile(config_file):
-    print "config file not found"
-    sys.exit(1)
-parser.read(config_file)
+    # Load the configuration file
+    if not os.path.isfile(config_file):
+        config_file = '/etc/pellmon.conf'
+    if not os.path.isfile(config_file):
+        config_file = '/usr/local/etc/pellmon.conf'
+    if not os.path.isfile(config_file):
+        print "config file not found"
+        sys.exit(1)
+    parser.read(config_file)
 
-# The RRD database, updated by pellMon
-try:
-    polling = True
-    db = parser.get('conf', 'database')
-    graph_file = os.path.join(os.path.dirname(db), 'graph.png')
-except ConfigParser.NoOptionError:
-    polling = False
-    db = ''
+    # The RRD database, updated by pellMon
+    try:
+        polling = True
+        db = parser.get('conf', 'database')
+        graph_file = os.path.join(os.path.dirname(db), 'graph.png')
+    except ConfigParser.NoOptionError:
+        polling = False
+        db = ''
 
-# the colors to use when drawing the graph
-try:
-    colors = parser.items('graphcolors')
-    colorsDict = {}
-    for key, value in colors:
-        colorsDict[key] = value
-except ConfigParser.NoSectionError:
-    colorsDict = {}
+    # the colors to use when drawing the graph
+    try:
+        colors = parser.items('graphcolors')
+        colorsDict = {}
+        for key, value in colors:
+            colorsDict[key] = value
+    except ConfigParser.NoSectionError:
+        colorsDict = {}
 
-# Get the names of the polled data
-polldata = parser.items("pollvalues")
-
-try:
     # Get the names of the polled data
-    rrd_ds_names = parser.items("rrd_ds_names")
-    ds_names = {}
-    for key, value in rrd_ds_names:
-        ds_names[key] = value
-except ConfigParser.NoSectionError:
-    ds_names = {}
+    polldata = parser.items("pollvalues")
 
-try:
-    # Get the optional scales
-    scales = parser.items("scaling")
-    scale_data = {}
-    for key, value in scales:
-        scale_data[key] = value
-except ConfigParser.NoSectionError:
-    scale_data = {}
+    try:
+        # Get the names of the polled data
+        rrd_ds_names = parser.items("rrd_ds_names")
+        ds_names = {}
+        for key, value in rrd_ds_names:
+            ds_names[key] = value
+    except ConfigParser.NoSectionError:
+        ds_names = {}
 
-graph_lines=[]
-for key,value in polldata:
-    if key in colorsDict and key in ds_names:
-        graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key]})
-        if key in scale_data:
-            graph_lines[-1]['scale'] = scale_data[key]
+    try:
+        # Get the optional scales
+        scales = parser.items("scaling")
+        scale_data = {}
+        for key, value in scales:
+            scale_data[key] = value
+    except ConfigParser.NoSectionError:
+        scale_data = {}
 
-credentials = parser.items('authentication')
-logfile = parser.get('conf', 'logfile')
+    graph_lines=[]
+    for key,value in polldata:
+        if key in colorsDict and key in ds_names:
+            graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key]})
+            if key in scale_data:
+                graph_lines[-1]['scale'] = scale_data[key]
 
-timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
-timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
-timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
-ft=False
-fc=False
-for a,b in polldata:
-    if b=='feeder_capacity':
-        fc=True
-    if b=='feeder_time':
-        ft=True
-if fc and ft:
-    consumption_graph=True
-    consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
-else:
-    consumption_graph=False
-WebSocketPlugin(cherrypy.engine).subscribe()
-cherrypy.tools.websocket = WebSocketTool()
-global_conf = {
-        'global':   { 'server.environment': 'debug',
-                      'tools.sessions.on' : True,
-                      'tools.sessions.timeout': 7200,
-                      'tools.auth.on': True,
-                      'server.socket_host': '0.0.0.0',
-                      'server.socket_port': int(parser.get('conf', 'port')),
-                    }
-              }
-app_conf =  {'/media':
-                {'tools.staticdir.on': True,
-                 'tools.staticdir.dir': MEDIA_DIR},
-             '/favicon.ico':
-                {'tools.staticfile.on':True,
-                 'tools.staticfile.filename': FAVICON},
-            }
+    credentials = parser.items('authentication')
+    logfile = parser.get('conf', 'logfile')
 
-if websockets:
-    ws_conf = {'/ws':
-                 {'tools.websocket.on': True,
-                  'tools.websocket.handler_cls': WebSocket}
-              }
+    timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
+    timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+    timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
+    ft=False
+    fc=False
+    for a,b in polldata:
+        if b=='feeder_capacity':
+            fc=True
+        if b=='feeder_time':
+            ft=True
+    if fc and ft:
+        consumption_graph=True
+        consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
+    else:
+        consumption_graph=False
+    WebSocketPlugin(cherrypy.engine).subscribe()
+    cherrypy.tools.websocket = WebSocketTool()
+    global_conf = {
+            'global':   { 'server.environment': 'debug',
+                          'tools.sessions.on' : True,
+                          'tools.sessions.timeout': 7200,
+                          'tools.auth.on': True,
+                          'server.socket_host': '0.0.0.0',
+                          'server.socket_port': int(parser.get('conf', 'port')),
+                        }
+                  }
+    app_conf =  {'/media':
+                    {'tools.staticdir.on': True,
+                     'tools.staticdir.dir': MEDIA_DIR},
+                 '/favicon.ico':
+                    {'tools.staticfile.on':True,
+                     'tools.staticfile.filename': FAVICON},
+                }
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-cherrypy.config.update(global_conf)
+    if websockets:
+        ws_conf = {'/ws':
+                     {'tools.websocket.on': True,
+                      'tools.websocket.handler_cls': WebSocket}
+                  }
 
-if __name__=="__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    cherrypy.config.update(global_conf)
 
     cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
     if websockets:
@@ -801,14 +801,33 @@ if __name__=="__main__":
         # Assume the error has been logged already via bus.log.
         sys.exit(1)
     else:
-        engine.block()
 
-#    cherrypy.quickstart(PellMonWeb(), config=app_conf)
 
-else:
-    # The dbus main_loop thread can't be started before double fork to daemon, the
-    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-    cherrypy.engine.subscribe('start', dbus.setup, 90)
-    dbus = Dbus_handler('SYSTEM')
-    cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
+
+        # Needed to be able to use threads with a glib main loop running
+        GObject.threads_init()
+        # A main loop is needed for dbus "name watching" to work
+        main_loop = GLib.MainLoop()
+
+        dbus.setup()
+        def publish():
+            cherrypy.engine.publish('main')
+            return True
+        
+        def signal_handler(signal, frame):
+            print 'sigint!!'
+            engine.stop()
+            engine.exit()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+
+        GLib.timeout_add(100, publish)
+        
+        main_loop.run()
+        print 'stopped'
+        engine.stop()
+        engine.exit()
+        #engine.block()
+
 
