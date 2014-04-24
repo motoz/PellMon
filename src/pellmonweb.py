@@ -112,17 +112,7 @@ class Dbus_handler:
         else:
             self.bustype=Gio.BusType.SESSION
 
-    def setup(self):
-        # Needed to be able to use threads with a glib main loop running
-        GObject.threads_init()
-        # A main loop is needed for dbus "name watching" to work
-        main_loop = GLib.MainLoop()
-        # The glib main loop gets along with the cherrypy main loop if run in it's own thread
-        #DBUSLOOPTHREAD = threading.Thread(name='glib_mainloop', target=main_loop.run)
-        # This causes the dbus main loop thread to just die when the main thread exits
-        #DBUSLOOPTHREAD.setDaemon(True)
-        # Start it here, thes must happen after the daemonizer double fork
-        #DBUSLOOPTHREAD.start()
+    def start(self):
         self.notify = None
         self.bus = Gio.bus_get_sync(self.bustype, None)
         Gio.bus_watch_name(
@@ -131,7 +121,6 @@ class Dbus_handler:
             Gio.DBusProxyFlags.NONE,
             self.dbus_connect,
             self.dbus_disconnect,
-        #main_loop.run()
         )
 
     def dbus_connect(self, connection, name, owner):
@@ -619,23 +608,11 @@ if __name__ == '__main__':
 
     dbus = Dbus_handler(args.DBUS)
 
-    # The dbus main_loop thread can't be started before double fork to daemon, the
-    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-    # cherrypy.engine.subscribe('start', dbus.setup, 90)
-
-    engine = cherrypy.engine
-
     config_file = args.CONFIG
 
-    # Only daemonize if asked to.
-#    if daemonize:
-    if args.DAEMONIZE:
-        # Don't print anything to stdout/sterr.
-        cherrypy.config.update({'log.screen': False})
-        plugins.Daemonizer(engine).subscribe()
     pidfile = args.PIDFILE
     if pidfile:
-        plugins.PIDFile(engine, pidfile).subscribe()
+        plugins.PIDFile(cherrypy.engine, pidfile).subscribe()
 
     if args.USER:
         # Load the configuration file
@@ -674,7 +651,7 @@ if __name__ == '__main__':
             pass
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
-        plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=033).subscribe()
+        plugins.DropPrivileges(cherrypy.engine, uid=uid, gid=gid, umask=033).subscribe()
 
     # Load the configuration file
     if not os.path.isfile(config_file):
@@ -753,12 +730,22 @@ if __name__ == '__main__':
     WebSocketPlugin(cherrypy.engine).subscribe()
     cherrypy.tools.websocket = WebSocketTool()
     global_conf = {
-            'global':   { 'server.environment': 'debug',
+            'global':   { #w'server.environment': 'debug',
                           'tools.sessions.on' : True,
                           'tools.sessions.timeout': 7200,
                           'tools.auth.on': True,
                           'server.socket_host': '0.0.0.0',
                           'server.socket_port': int(parser.get('conf', 'port')),
+
+                          #'engine.autoreload.on': False,
+                          #'checker.on': False,
+                          #'tools.log_headers.on': False,
+                          #'request.show_tracebacks': False,
+                          'request.show_mismatched_params': False,
+                          #'log.screen': False,
+                          'engine.SIGHUP': None,
+                          'engine.SIGTERM': None,
+
                         }
                   }
     app_conf =  {'/media':
@@ -778,13 +765,16 @@ if __name__ == '__main__':
     current_dir = os.path.dirname(os.path.abspath(__file__))
     cherrypy.config.update(global_conf)
 
+    # Only daemonize if asked to.
+    if args.DAEMONIZE:
+        # Don't print anything to stdout/sterr.
+        cherrypy.config.update({'log.screen': False, 'engine.autoreload.on': False})
+        plugins.Daemonizer(cherrypy.engine).subscribe()
+
     cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
     if websockets:
         cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
-    if hasattr(engine, "signal_handler"):
-        engine.signal_handler.subscribe()
-    if hasattr(engine, "console_control_handler"):
-        engine.console_control_handler.subscribe()
+
     try:
         cherrypy.config.update({'log.access_file':accesslog})
     except:
@@ -794,40 +784,49 @@ if __name__ == '__main__':
     except:
         pass
 
+    GObject.threads_init()
+
     # Always start the engine; this will start all other services
     try:
-        engine.start()
+        cherrypy.engine.start()
     except:
         # Assume the error has been logged already via bus.log.
         sys.exit(1)
     else:
-
-
-
         # Needed to be able to use threads with a glib main loop running
-        GObject.threads_init()
+
         # A main loop is needed for dbus "name watching" to work
         main_loop = GLib.MainLoop()
 
-        dbus.setup()
+        # cherrypy has it's own mainloop, cherrypy.engine.block, that
+        # regularly calls engine.publish every 100ms. The most reliable
+        # way to run dbus and cherrypy together seems to be to use the
+        # glib mainloop for both, ie call engine.publish from the glib 
+        # mainloop instead of calling engine.block.
         def publish():
-            cherrypy.engine.publish('main')
+            try:
+                cherrypy.engine.publish('main')
+                if cherrypy.engine.execv:
+                    main_loop.quit()
+                    cherrypy.engine._do_execv()
+            except KeyboardInterrupt:
+                pass
             return True
-        
-        def signal_handler(signal, frame):
-            print 'sigint!!'
-            engine.stop()
-            engine.exit()
-            sys.exit(0)
 
+        # Use our own signal handler to stop on ctrl-c, seems to be simpler
+        # than subscribing to cherrypy's signal handler
+        def signal_handler(signal, frame):
+            cherrypy.engine.exit()
+            main_loop.quit()
         signal.signal(signal.SIGINT, signal_handler)
 
+        # Handle cherrypy's main loop needs from here
         GLib.timeout_add(100, publish)
-        
-        main_loop.run()
-        print 'stopped'
-        engine.stop()
-        engine.exit()
-        #engine.block()
+
+        dbus.start()
+        try:
+            main_loop.run()
+        except KeyboardInterrupt:
+            pass
 
 
