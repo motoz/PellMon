@@ -40,6 +40,12 @@ import sys, traceback
 import urllib2 as urllib
 from Pellmonsrv import __file__ as pluginpath
 
+def dbus_msg_to_string(msg):
+    ls = []
+    for d in msg:
+        ls.append(d['name'] + ':' + d['value'])
+    return ';'.join(ls)
+
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
     def __init__(self, dbus_service):
@@ -47,7 +53,9 @@ class dbus_signal_handler(logging.Handler):
         self.dbus_service = dbus_service
     def emit(self, record):
         msg = self.format(record)
-        self.dbus_service.changed_parameters([{'name':'__event__', 'value':msg}])
+        #self.dbus_service.changed_parameters([{'name':'__event__', 'value':msg}])
+        s = dbus_msg_to_string([{'name':'__event__', 'value':msg}])
+        self.dbus_service.changed_parameters(s)
 
 class Database(threading.Thread):
     def __init__(self):
@@ -101,7 +109,9 @@ class Database(threading.Thread):
                     pass
             if changed_params:
                 if self.dbus_service:
-                    self.dbus_service.changed_parameters(changed_params)
+                    s = dbus_msg_to_string(changed_params)
+                    #self.dbus_service.changed_parameters(changed_params)
+                    self.dbus_service.changed_parameters(s)
 
     def terminate(self):
         for p in self.protocols:
@@ -156,7 +166,8 @@ class MyDBUSService(dbus.service.Object):
             menutags = menutags + plugin.plugin_object.getMenutags()
         return menutags
 
-    @dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
+    #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
+    @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
     def changed_parameters(self, message):
         pass
 

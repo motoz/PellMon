@@ -134,9 +134,15 @@ class Dbus_handler:
             None)
         def on_signal(proxy, sender_name, signal_name, parameters):
             p = parameters[0]
+            msg = []
+            l = p.split(';')
+            for ds in l:
+                d= ds.split(':')
+                msg.append({'name':ds[0],'value':ds[1]})
             for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
                 sensor = Sensor.sensorlist[i]
-                if not sensor.send(p):
+                #if not sensor.send(p):
+                if not sensor.send(msg):
                     del Sensor.sensorlist[i]
             #if signal_name == "MediaPlayerKeyPressed":
             #    self._key_pressed(*parameters)
