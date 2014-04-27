@@ -285,11 +285,56 @@ function setupWebSocket() {
     {
         setTimeout(setupWebSocket, 1000);
     }
+}
 
+
+function setupPolling() {
+    var subdoc = getSubDocument(svgElement)
+    if (subdoc) {
+        var allElements = subdoc.getElementsByTagName("text");
+        for(var i = 0; i < allElements.length; i++) {
+            var element = allElements[i];
+            if((element.id).indexOf("paramname:") != -1) {
+                if (params != "") params = params + ','
+                params = params + (element.id).split(':')[1];
+            }    
+        }
+        if (params == "") 
+        {
+            setTimeout(setupPolling, 1000)
+        }
+        else
+        {
+            var pollParams = function(params) {
+                $.get('/getparamlist?parameters='+ params,
+                    function(data) {
+                        jsonObject = $.parseJSON(data);
+                        for (i in jsonObject) {
+                            obj = jsonObject[i];
+                            changeSystemImageText(obj.name, obj.value);
+                        }
+                    }
+                )
+                setTimeout(pollParams, 15000);
+            };
+            pollParams(params);
+        }
+    }
+    else
+    {
+        setTimeout(setupWebSocket, 1000);
+    }
 }
 
 var params="";
 var svgElement = document.getElementById("systemimage");
 //svgElement.addEventListener("load", setupWebSocket);
-setupWebSocket();
+if ($("#systemimage").data('websocket')) 
+{
+    setupWebSocket();
+}
+else 
+{
+    setupPolling();
+}
 

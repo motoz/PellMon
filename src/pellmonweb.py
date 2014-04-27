@@ -49,7 +49,7 @@ try:
     websockets = True
 except:
     websockets = False
-    print 'ws4py module is missing, install with "pip install ws4py" for websocket support'
+    cherrypy.log('python-ws4py module missing, no websocket support')
 
 class Sensor(object):
     sensorlist = []
@@ -66,7 +66,7 @@ class Sensor(object):
                 if value != self.db[param]:
                     paramlist.append(dict(name=param, value=value))
             except Exception, e:
-                print str(e)
+                cherrypy.log(str(e))
                 pass
         try:
             if paramlist:
@@ -443,6 +443,24 @@ class PellMonWeb:
             return simplejson.dumps(dict(param=param, value=result))
 
     @cherrypy.expose
+    def getparamlist(self, parameters=None):
+        db=dbus.getdb()
+        paramlist = [param for param in parameters.split(',') if param in db]
+        responselist = [ {'name':param, 'value':dbus.getItem(param)} for param in paramlist]
+        message = simplejson.dumps(responselist)
+        return message
+
+        if cherrypy.request.method == "GET":
+            if param in(parameterlist):
+                try:
+                    result = dbus.getItem(param)
+                except:
+                    result = 'error'
+            else: result = 'not found'
+            cherrypy.response.headers['Content-Type'] = 'application/json'
+            return simplejson.dumps(dict(param=param, value=result))
+
+    @cherrypy.expose
     @require() #requires valid login
     def setparam(self, param='-', data=None):
         parameterlist=dbus.getdb()
@@ -514,7 +532,7 @@ class PellMonWeb:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags)
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets)
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -571,15 +589,16 @@ class PellMonWeb:
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
                 break;
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets)
 
 class WsHandler:
     @cherrypy.expose
     def ws(self, parameters='', events='no'):
-        db=dbus.getdb()
-        parameters = parameters.split(',')
-        params = [param for param in parameters if param in(db)]
-        sensor = Sensor(params, cherrypy.request.ws_handler, events == 'yes')
+        if websockets:
+            db=dbus.getdb()
+            parameters = parameters.split(',')
+            params = [param for param in parameters if param in(db)]
+            sensor = Sensor(params, cherrypy.request.ws_handler, events == 'yes')
 
 def parameterReader(q, parameterlist):
     #parameterlist=dbus.getdb()
@@ -627,7 +646,7 @@ if __name__ == '__main__':
         if not os.path.isfile(config_file):
             config_file = '/usr/local/etc/pellmon.conf'
         if not os.path.isfile(config_file):
-            print "config file not found"
+            cherrypy.log("config file not found")
             sys.exit(1)
         parser.read(config_file)
 
@@ -665,7 +684,7 @@ if __name__ == '__main__':
     if not os.path.isfile(config_file):
         config_file = '/usr/local/etc/pellmon.conf'
     if not os.path.isfile(config_file):
-        print "config file not found"
+        cherrypy.log("config file not found")
         sys.exit(1)
     parser.read(config_file)
 
@@ -733,8 +752,9 @@ if __name__ == '__main__':
         consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
     else:
         consumption_graph=False
-    WebSocketPlugin(cherrypy.engine).subscribe()
-    cherrypy.tools.websocket = WebSocketTool()
+    if websockets:
+        WebSocketPlugin(cherrypy.engine).subscribe()
+        cherrypy.tools.websocket = WebSocketTool()
     global_conf = {
             'global':   { #w'server.environment': 'debug',
                           'tools.sessions.on' : True,
