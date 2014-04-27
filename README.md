@@ -131,6 +131,11 @@ Configuration values.
 rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
 </pre>
 
+##Optional dependencies:
+<pre>
+python-ws4py
+</pre>
+
 ##Build dependencies:
 <pre>
 autoconf

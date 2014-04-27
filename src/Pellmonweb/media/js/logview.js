@@ -21,7 +21,7 @@ function getLog() {
     $.get(
         '/logview/getlines?linenum='+container.data('lines'),
         function(data) {
-            container.append(data)
+            container.html(data)
             $('.loglinelink').click(function(e) {
                 e.preventDefault();
                 var me = $(this);

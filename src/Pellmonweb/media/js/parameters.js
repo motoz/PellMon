@@ -77,19 +77,22 @@ $(".command").on('click', function(e) {
 	);
 });
 
-var params = $('.param'),
-	count = params.length;
+var params = $('.param')
+count = params.length;
+var paramlist = []
+$.each(params, function() {paramlist.push($(this).data('name'))});
+paramlist = paramlist.join(',')
 
 function getParams() {
-	$.get(
-		'/getparams/',
-		function(data) {
-            	for (var param in data) {
-			var container = $('#' + param + '-value');
-			if(container.length > 0) {
-				container.html(data[param]);
-				count = count-1;
-			}
+    $.get(
+        '/getparams/',
+        function(data) {
+            for (var param in data) {
+                var container = $('#' + param + '-value');
+                if(container.length > 0) {
+                    container.html(data[param]);
+                    count = count-1;
+                }
             }
 
 		if (count > 0) {
@@ -101,4 +104,3 @@ function getParams() {
 
 getParams();
 
-$('.set').button();
