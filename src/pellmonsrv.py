@@ -38,10 +38,27 @@ from Pellmonsrv import Daemon
 import subprocess
 import sys, traceback
 import urllib2 as urllib
+from Pellmonsrv import __file__ as pluginpath
 
-class Database(object):
+def dbus_msg_to_string(msg):
+    ls = []
+    for d in msg:
+        ls.append(d['name'] + ':' + d['value'])
+    return ';'.join(ls)
+
+class dbus_signal_handler(logging.Handler):
+    """Emit log messages as a dbus signal"""
+    def __init__(self, dbus_service):
+        logging.Handler.__init__(self)
+        self.dbus_service = dbus_service
+    def emit(self, record):
+        msg = self.format(record)
+        #self.dbus_service.changed_parameters([{'name':'__event__', 'value':msg}])
+        s = dbus_msg_to_string([{'name':'__event__', 'value':msg}])
+        self.dbus_service.changed_parameters(s)
+
+class Database(threading.Thread):
     def __init__(self):
-    
         class getset:
             def __init__(self, item, obj):
                 self.item = item
@@ -50,9 +67,12 @@ class Database(object):
                 return self.obj.getItem(self.item)
             def setItem(self, value):
                 return self.obj.setItem(self.item, value)
-
+        threading.Thread.__init__(self)
+        self.dbus_service = None
         self.items={}
+        self.values={}
         self.protocols=[]
+        self.setDaemon(True)
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
@@ -67,9 +87,32 @@ class Database(object):
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
-                    print str(e)
                     logger.info('Plugin %s init failed'%plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
+        self.start()
+
+    def run(self):
+        while True:
+            time.sleep(2)
+            changed_params = []
+            for item_name in self.items:
+                try:
+                    value = self.items[item_name].getItem()
+                    if item_name in self.values:
+                        if value != self.values[item_name]:
+                            changed_params.append({'name':item_name, 'value':value})
+                            self.values[item_name] = value
+                    else:
+                        changed_params.append({'name':item_name, 'value':value})
+                        self.values[item_name] = value
+                except:
+                    pass
+            if changed_params:
+                if self.dbus_service:
+                    s = dbus_msg_to_string(changed_params)
+                    #self.dbus_service.changed_parameters(changed_params)
+                    self.dbus_service.changed_parameters(s)
+
     def terminate(self):
         for p in self.protocols:
             p.plugin_object.deactivate()
@@ -122,6 +165,11 @@ class MyDBUSService(dbus.service.Object):
         for plugin in conf.database.protocols:
             menutags = menutags + plugin.plugin_object.getMenutags()
         return menutags
+
+    #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
+    @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
+    def changed_parameters(self, message):
+        pass
 
 def pollThread():
     """Poll data defined in conf.pollData and update the RRD database with the responses"""
@@ -306,7 +354,6 @@ class MyDaemon(Daemon):
     def run(self):
         global logger
         logger = logging.getLogger('pellMon')
-
         logger.info('starting pelletMonitor')
 
         # Load all plugins of 'protocol' category.
@@ -323,7 +370,14 @@ class MyDaemon(Daemon):
         dbus.mainloop.glib.threads_init()    
         DBUSMAINLOOP = gobject.MainLoop()
         DBusGMainLoop(set_as_default=True)
-        myservice = MyDBUSService(conf.dbus)
+        conf.myservice = MyDBUSService(conf.dbus)
+        conf.database.dbus_service = conf.myservice
+        
+        # Add a handler that signals log messages over dbus
+        dh = dbus_signal_handler(conf.myservice)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        dh.setFormatter(formatter)
+        logger.addHandler(dh)
 
         # Create RRD database if does not exist
         if conf.polling:
@@ -554,8 +608,10 @@ if __name__ == "__main__":
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
-    parser.add_argument('-p', '--PLUGINDIR', default='Pellmonsrv/plugins', help='Full path to plugin directory')
+    parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
     args = parser.parse_args()
+    if args.PLUGINDIR == '-':
+        args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')
 
     config_file = args.CONFIG
     if not os.path.isfile(config_file):

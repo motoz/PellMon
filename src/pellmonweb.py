@@ -40,6 +40,67 @@ import grp
 import subprocess
 from datetime import datetime
 from cgi import escape
+from threading import Timer
+import signal
+
+try:
+    from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+    from ws4py.websocket import WebSocket
+    websockets = True
+except:
+    websockets = False
+    cherrypy.log('python-ws4py module missing, no websocket support')
+
+class Sensor(object):
+    sensorlist = []
+    def __init__(self, parameters, websocket, events):
+        self.websocket = websocket
+        self.params = parameters
+        self.db = {k:'-' for k in self.params}
+        self.events = events
+        Sensor.sensorlist.append(self)
+        paramlist = []
+        for param in self.params:
+            try:
+                value = dbus.getItem(param)
+                if value != self.db[param]:
+                    paramlist.append(dict(name=param, value=value))
+            except Exception, e:
+                cherrypy.log(str(e))
+                pass
+        try:
+            if paramlist:
+                message = simplejson.dumps(paramlist)
+                t = Timer(1, self.websocket.send, args= [message])
+                t.start()
+            for p in paramlist:
+                self.db[p['name']] = p['value']
+        except Exception, e:
+            self.websocket = None
+
+    def send(self, message):
+        try:
+            paramlist = []
+            for param in message:
+                if param['name'] in self.params or (param['name'] == '__event__' and self.events):
+                    paramlist.append(param)
+            try:
+                if paramlist:
+                    message = simplejson.dumps(paramlist)
+                    self.websocket.send(message)
+                return True
+            except Exception, e:
+                self.websocket = None
+                return False
+
+            ml = []
+            ml.append(message)
+            message = simplejson.dumps(ml)
+            self.websocket.send(message)
+            return True
+        except Exception, e:
+            self.websocket = None
+            return False
 
 class DbusNotConnected(Exception):
     pass
@@ -51,17 +112,7 @@ class Dbus_handler:
         else:
             self.bustype=Gio.BusType.SESSION
 
-    def setup(self):
-        # Needed to be able to use threads with a glib main loop running
-        GObject.threads_init()
-        # A main loop is needed for dbus "name watching" to work
-        main_loop = GObject.MainLoop()
-        # The glib main loop gets along with the cherrypy main loop if run in it's own thread
-        DBUSLOOPTHREAD = threading.Thread(name='glib_mainloop', target=main_loop.run)
-        # This causes the dbus main loop thread to just die when the main thread exits
-        DBUSLOOPTHREAD.setDaemon(True)
-        # Start it here, thes must happen after the daemonizer double fork
-        DBUSLOOPTHREAD.start()
+    def start(self):
         self.notify = None
         self.bus = Gio.bus_get_sync(self.bustype, None)
         Gio.bus_watch_name(
@@ -80,12 +131,28 @@ class Dbus_handler:
             'org.pellmon.int',
             '/org/pellmon/int',
             'org.pellmon.int',
-            None,
-        )
+            None)
+        def on_signal(proxy, sender_name, signal_name, parameters):
+            p = parameters[0]
+            msg = []
+            l = p.split(';')
+            for ds in l:
+                d= ds.split(':')
+                msg.append({'name':d[0],'value':d[1]})
+            for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
+                sensor = Sensor.sensorlist[i]
+                #if not sensor.send(p):
+                if not sensor.send(msg):
+                    del Sensor.sensorlist[i]
+            #if signal_name == "MediaPlayerKeyPressed":
+            #    self._key_pressed(*parameters)
+        self.notify.connect("g-signal", on_signal)
+
 
     def dbus_disconnect(self, connection, name):
         if self.notify:
             self.notify = None
+
 
     def getItem(self, itm):
         if self.notify:
@@ -282,7 +349,6 @@ class PellMonWeb:
         RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RrdGraphString1 += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
         RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
-        print RrdGraphString1
         for line in graph_lines:
             if lines == '__all__' or line['name'] in lines:
                 RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
@@ -339,7 +405,6 @@ class PellMonWeb:
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
-        print RrdGraphString1
         return cmd.communicate()[0]
 
     @cherrypy.expose
@@ -365,7 +430,7 @@ class PellMonWeb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def getparam(self, param):
+    def getparam(self, param='-'):
         parameterlist=dbus.getdb()
         if cherrypy.request.method == "GET":
             if param in(parameterlist):
@@ -378,8 +443,26 @@ class PellMonWeb:
             return simplejson.dumps(dict(param=param, value=result))
 
     @cherrypy.expose
+    def getparamlist(self, parameters=None):
+        db=dbus.getdb()
+        paramlist = [param for param in parameters.split(',') if param in db]
+        responselist = [ {'name':param, 'value':dbus.getItem(param)} for param in paramlist]
+        message = simplejson.dumps(responselist)
+        return message
+
+        if cherrypy.request.method == "GET":
+            if param in(parameterlist):
+                try:
+                    result = dbus.getItem(param)
+                except:
+                    result = 'error'
+            else: result = 'not found'
+            cherrypy.response.headers['Content-Type'] = 'application/json'
+            return simplejson.dumps(dict(param=param, value=result))
+
+    @cherrypy.expose
     @require() #requires valid login
-    def setparam(self, param, data=None):
+    def setparam(self, param='-', data=None):
         parameterlist=dbus.getdb()
         if cherrypy.request.method == "POST":
             if param in(parameterlist):
@@ -406,7 +489,7 @@ class PellMonWeb:
             paramQueue = Queue.Queue(300)
             # Store the queue in the session
             cherrypy.session['paramReaderQueue'] = paramQueue
-            ht = threading.Thread(target=parameterReader, args=(paramQueue,))
+            ht = threading.Thread(target=parameterReader, args=(paramQueue,parameterlist))
             ht.start()
             values=['']*len(parameterlist)
             params={}
@@ -449,7 +532,7 @@ class PellMonWeb:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags)
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets)
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -505,18 +588,26 @@ class PellMonWeb:
         for i in range(len(timeNames)):
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
-                print timeName
                 break;
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets)
 
-def parameterReader(q):
-    parameterlist=dbus.getdb()
+class WsHandler:
+    @cherrypy.expose
+    def ws(self, parameters='', events='no'):
+        if websockets:
+            db=dbus.getdb()
+            parameters = parameters.split(',')
+            params = [param for param in parameters if param in(db)]
+            sensor = Sensor(params, cherrypy.request.ws_handler, events == 'yes')
+
+def parameterReader(q, parameterlist):
+    #parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = escape(dbus.getItem(item))
+            value = escape(dbus.getItem(item['name']))
         except:
             value='error'
-        q.put((item,value))
+        q.put((item['name'],value))
     q.put(('**end**','**end**'))
 
 
@@ -542,23 +633,11 @@ if __name__ == '__main__':
 
     dbus = Dbus_handler(args.DBUS)
 
-    # The dbus main_loop thread can't be started before double fork to daemon, the
-    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-    cherrypy.engine.subscribe('start', dbus.setup, 90)
-
-    engine = cherrypy.engine
-
     config_file = args.CONFIG
 
-    # Only daemonize if asked to.
-#    if daemonize:
-    if args.DAEMONIZE:
-        # Don't print anything to stdout/sterr.
-        cherrypy.config.update({'log.screen': False})
-        plugins.Daemonizer(engine).subscribe()
     pidfile = args.PIDFILE
     if pidfile:
-        plugins.PIDFile(engine, pidfile).subscribe()
+        plugins.PIDFile(cherrypy.engine, pidfile).subscribe()
 
     if args.USER:
         # Load the configuration file
@@ -567,7 +646,7 @@ if __name__ == '__main__':
         if not os.path.isfile(config_file):
             config_file = '/usr/local/etc/pellmon.conf'
         if not os.path.isfile(config_file):
-            print "config file not found"
+            cherrypy.log("config file not found")
             sys.exit(1)
         parser.read(config_file)
 
@@ -597,110 +676,131 @@ if __name__ == '__main__':
             pass
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
-        plugins.DropPrivileges(engine, uid=uid, gid=gid, umask=033).subscribe()
+        plugins.DropPrivileges(cherrypy.engine, uid=uid, gid=gid, umask=033).subscribe()
 
-# Load the configuration file
-if not os.path.isfile(config_file):
-    config_file = '/etc/pellmon.conf'
-if not os.path.isfile(config_file):
-    config_file = '/usr/local/etc/pellmon.conf'
-if not os.path.isfile(config_file):
-    print "config file not found"
-    sys.exit(1)
-parser.read(config_file)
+    # Load the configuration file
+    if not os.path.isfile(config_file):
+        config_file = '/etc/pellmon.conf'
+    if not os.path.isfile(config_file):
+        config_file = '/usr/local/etc/pellmon.conf'
+    if not os.path.isfile(config_file):
+        cherrypy.log("config file not found")
+        sys.exit(1)
+    parser.read(config_file)
 
-# The RRD database, updated by pellMon
-try:
-    polling = True
-    db = parser.get('conf', 'database')
-    graph_file = os.path.join(os.path.dirname(db), 'graph.png')
-except ConfigParser.NoOptionError:
-    polling = False
-    db = ''
+    # The RRD database, updated by pellMon
+    try:
+        polling = True
+        db = parser.get('conf', 'database')
+        graph_file = os.path.join(os.path.dirname(db), 'graph.png')
+    except ConfigParser.NoOptionError:
+        polling = False
+        db = ''
 
-# the colors to use when drawing the graph
-try:
-    colors = parser.items('graphcolors')
-    colorsDict = {}
-    for key, value in colors:
-        colorsDict[key] = value
-except ConfigParser.NoSectionError:
-    colorsDict = {}
+    # the colors to use when drawing the graph
+    try:
+        colors = parser.items('graphcolors')
+        colorsDict = {}
+        for key, value in colors:
+            colorsDict[key] = value
+    except ConfigParser.NoSectionError:
+        colorsDict = {}
 
-# Get the names of the polled data
-polldata = parser.items("pollvalues")
-
-try:
     # Get the names of the polled data
-    rrd_ds_names = parser.items("rrd_ds_names")
-    ds_names = {}
-    for key, value in rrd_ds_names:
-        ds_names[key] = value
-except ConfigParser.NoSectionError:
-    ds_names = {}
+    polldata = parser.items("pollvalues")
 
-try:
-    # Get the optional scales
-    scales = parser.items("scaling")
-    scale_data = {}
-    for key, value in scales:
-        scale_data[key] = value
-except ConfigParser.NoSectionError:
-    scale_data = {}
+    try:
+        # Get the names of the polled data
+        rrd_ds_names = parser.items("rrd_ds_names")
+        ds_names = {}
+        for key, value in rrd_ds_names:
+            ds_names[key] = value
+    except ConfigParser.NoSectionError:
+        ds_names = {}
 
-graph_lines=[]
-for key,value in polldata:
-    if key in colorsDict and key in ds_names:
-        graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key]})
-        if key in scale_data:
-            graph_lines[-1]['scale'] = scale_data[key]
+    try:
+        # Get the optional scales
+        scales = parser.items("scaling")
+        scale_data = {}
+        for key, value in scales:
+            scale_data[key] = value
+    except ConfigParser.NoSectionError:
+        scale_data = {}
 
-credentials = parser.items('authentication')
-logfile = parser.get('conf', 'logfile')
+    graph_lines=[]
+    for key,value in polldata:
+        if key in colorsDict and key in ds_names:
+            graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key]})
+            if key in scale_data:
+                graph_lines[-1]['scale'] = scale_data[key]
 
-timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
-timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
-timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
-ft=False
-fc=False
-for a,b in polldata:
-    if b=='feeder_capacity':
-        fc=True
-    if b=='feeder_time':
-        ft=True
-if fc and ft:
-    consumption_graph=True
-    consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
-else:
-    consumption_graph=False
+    credentials = parser.items('authentication')
+    logfile = parser.get('conf', 'logfile')
 
-global_conf = {
-        'global':   { 'server.environment': 'debug',
-                      'tools.sessions.on' : True,
-                      'tools.sessions.timeout': 7200,
-                      'tools.auth.on': True,
-                      'server.socket_host': '0.0.0.0',
-                      'server.socket_port': int(parser.get('conf', 'port')),
-                    }
-              }
-app_conf =  {'/media':
-                {'tools.staticdir.on': True,
-                 'tools.staticdir.dir': MEDIA_DIR},
-             '/favicon.ico':
-                {'tools.staticfile.on':True,
-                 'tools.staticfile.filename': FAVICON}
-            }
+    timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
+    timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+    timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
+    ft=False
+    fc=False
+    for a,b in polldata:
+        if b=='feeder_capacity':
+            fc=True
+        if b=='feeder_time':
+            ft=True
+    if fc and ft:
+        consumption_graph=True
+        consumption_file = os.path.join(os.path.dirname(db), 'consumption.png')
+    else:
+        consumption_graph=False
+    if websockets:
+        WebSocketPlugin(cherrypy.engine).subscribe()
+        cherrypy.tools.websocket = WebSocketTool()
+    global_conf = {
+            'global':   { #w'server.environment': 'debug',
+                          'tools.sessions.on' : True,
+                          'tools.sessions.timeout': 7200,
+                          'tools.auth.on': True,
+                          'server.socket_host': '0.0.0.0',
+                          'server.socket_port': int(parser.get('conf', 'port')),
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-cherrypy.config.update(global_conf)
+                          #'engine.autoreload.on': False,
+                          #'checker.on': False,
+                          #'tools.log_headers.on': False,
+                          #'request.show_tracebacks': False,
+                          'request.show_mismatched_params': False,
+                          #'log.screen': False,
+                          'engine.SIGHUP': None,
+                          'engine.SIGTERM': None,
 
-if __name__=="__main__":
+                        }
+                  }
+    app_conf =  {'/media':
+                    {'tools.staticdir.on': True,
+                     'tools.staticdir.dir': MEDIA_DIR},
+                 '/favicon.ico':
+                    {'tools.staticfile.on':True,
+                     'tools.staticfile.filename': FAVICON},
+                }
+
+    if websockets:
+        ws_conf = {'/ws':
+                     {'tools.websocket.on': True,
+                      'tools.websocket.handler_cls': WebSocket}
+                  }
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    cherrypy.config.update(global_conf)
+
+    # Only daemonize if asked to.
+    if args.DAEMONIZE:
+        # Don't print anything to stdout/sterr.
+        cherrypy.config.update({'log.screen': False, 'engine.autoreload.on': False})
+        plugins.Daemonizer(cherrypy.engine).subscribe()
 
     cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
-    if hasattr(engine, "signal_handler"):
-        engine.signal_handler.subscribe()
-    if hasattr(engine, "console_control_handler"):
-        engine.console_control_handler.subscribe()
+    if websockets:
+        cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
+
     try:
         cherrypy.config.update({'log.access_file':accesslog})
     except:
@@ -710,21 +810,49 @@ if __name__=="__main__":
     except:
         pass
 
+    GObject.threads_init()
+
     # Always start the engine; this will start all other services
     try:
-        engine.start()
+        cherrypy.engine.start()
     except:
         # Assume the error has been logged already via bus.log.
         sys.exit(1)
     else:
-        engine.block()
+        # Needed to be able to use threads with a glib main loop running
 
-#    cherrypy.quickstart(PellMonWeb(), config=app_conf)
+        # A main loop is needed for dbus "name watching" to work
+        main_loop = GLib.MainLoop()
 
-else:
-    # The dbus main_loop thread can't be started before double fork to daemon, the
-    # daemonizer plugin has priority 65 so it's executed before dbus_handler.setup
-    cherrypy.engine.subscribe('start', dbus.setup, 90)
-    dbus = Dbus_handler('SYSTEM')
-    cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
+        # cherrypy has it's own mainloop, cherrypy.engine.block, that
+        # regularly calls engine.publish every 100ms. The most reliable
+        # way to run dbus and cherrypy together seems to be to use the
+        # glib mainloop for both, ie call engine.publish from the glib 
+        # mainloop instead of calling engine.block.
+        def publish():
+            try:
+                cherrypy.engine.publish('main')
+                if cherrypy.engine.execv:
+                    main_loop.quit()
+                    cherrypy.engine._do_execv()
+            except KeyboardInterrupt:
+                pass
+            return True
+
+        # Use our own signal handler to stop on ctrl-c, seems to be simpler
+        # than subscribing to cherrypy's signal handler
+        def signal_handler(signal, frame):
+            cherrypy.engine.exit()
+            main_loop.quit()
+        signal.signal(signal.SIGINT, signal_handler)
+
+        # Handle cherrypy's main loop needs from here
+        GLib.timeout_add(100, publish)
+
+        dbus.start()
+        try:
+            main_loop.run()
+        except KeyboardInterrupt:
+            pass
+
 
