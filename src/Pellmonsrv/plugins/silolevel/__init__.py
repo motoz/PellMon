@@ -31,7 +31,7 @@ logger = getLogger('pellMon')
 itemList=[{'name':'silo_reset_level',  'longname':'Silo fill up level',
            'type':'R/W',   'unit':'kg'   ,   'value':'0', 'min':'0', 'max':'50000'},
           {'name':'silo_reset_time',   'longname':'Silo fill up time', 
-           'type':'R/W',   'unit':''    ,   'value':'-', 'min':'0', 'max':'-'},
+           'type':'R/W',   'unit':''    ,   'value':'01/01/14 12:00', 'min':'0', 'max':'-'},
          ]
 
 itemTags = {'silo_reset_level' :    ['All', 'Basic', 'SiloLevel'],
