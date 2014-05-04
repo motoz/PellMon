@@ -38,6 +38,7 @@ itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',         
           {'name':'feeder_rev',           'longname':'feeder rev count',         'type':'R',   'unit':' ',      'value': '',    'min':'0', 'max':'-'    },
           {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': 0    },
           {'name':'power_kW',             'longname':'power',                    'type':'R',   'unit':'kW',     'value': 0    }, 
+          {'name':'mode',                 'longname':'mode',                     'type':'R',   'unit':'',       'value': '-'  }, 
          ]
 
 itemTags = {'feeder_rev_capacity' : ['All', 'pelletCalc'],
@@ -47,6 +48,7 @@ itemTags = {'feeder_rev_capacity' : ['All', 'pelletCalc'],
             'feeder_rev' :          ['All', 'pelletCalc', 'Basic'],
             'feeder_time' :         ['All', 'pelletCalc'],
             'power_kW' :            ['All', 'pelletCalc'],
+            'mode' :                ['All', 'pelletCalc', 'Basic'],
            }
 
 itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution',
@@ -55,7 +57,8 @@ itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution
                     'feeder_rp6m' :         'Feeder screw revolutions in 360 seconds',
                     'feeder_rev' :          'Feeder screw revolutions count',
                     'feeder_time' :         'Feeder screw run time',
-                    'power_kW' :            'Power calculated from fed pellet mass/time'}
+                    'power_kW' :            'Power calculated from fed pellet mass/time',
+                    'mode' :                'Current burner state'}
 
 Menutags = ['pelletCalc']
 
@@ -65,6 +68,11 @@ class pelletcalc(protocols):
         protocols.__init__(self)
         self.timelist=[]
         self.power = 0
+        self.state = 'Off'
+        self.oldstate = self.state
+        self.time_count = time()
+        self.time_state = self.time_count
+        self.feeder_time = None
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
@@ -108,6 +116,8 @@ class pelletcalc(protocols):
             return str(rp6m / 6.0)
         elif item == 'power_kW':
             return str(self.power)
+        elif item == 'mode':
+            return self.state
         else:
             for i in itemList:
                 if i['name'] == item:
@@ -146,26 +156,107 @@ class pelletcalc(protocols):
     def getMenutags(self):
         return Menutags
 
+
+    def calculate_state(self):
+        try:
+            feeder_time = float(self.getItem('feeder_time'))
+            if self.feeder_time == None:
+                 self.feeder_time = feeder_time
+            power = float(self.getItem('power_kW'))
+        except Exception,e:
+            return
+        if self.state in ('Off', 'Ignition failed'):
+            if feeder_time > self.feeder_time:
+                # switch to 'Starting' as soon as some feeder activity is detected
+                self.feeder_time = feeder_time
+                self.time_feeder_time = time()
+                self.time_state = self.time_feeder_time
+                self.state = 'Starting'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+
+        elif self.state == 'Starting':
+            if feeder_time > self.feeder_time:
+                self.feeder_time = feeder_time
+                self.time_feeder_time = time()
+            if time() - self.time_state > 60:
+                # switch to 'Igniting' after 60s
+                self.time_state = time()
+                self.state = 'Igniting'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+
+        elif self.state == 'Igniting':
+            if feeder_time > self.feeder_time:
+                self.feeder_time = feeder_time
+                self.time_feeder_time = time()
+            if time() - self.time_feeder_time > 600:
+                # if we are still in 'Igniting' after 10 min then go to 'Ignition failed'
+                self.time_state = time()
+                self.state = 'Ignition failed'
+            if power > 5:
+                # switch to 'Running' when the 5 min average power is above 5kW
+                self.time_state = time()
+                self.state = 'Running'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+
+        elif self.state == 'Ignition failed':
+            # Getting out of here is handled by the 'Off' case
+            pass
+
+        elif self.state == 'Running':
+            if feeder_time > self.feeder_time:
+                self.feeder_time = feeder_time
+                self.time_feeder_time = time()
+            if time() - self.time_feeder_time > 60:
+                # No activity for 60s, got to 'Cooling'
+                self.time_state = time()
+                self.state = 'Cooling'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+
+        elif self.state == 'Cooling':
+            if feeder_time > self.feeder_time:
+                # apparently it didn't shut down, go back to 'Running'
+                self.feeder_time = feeder_time
+                self.time_feeder_time = time()
+                self.time_state = time()
+                self.state = 'Running'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+            elif power < 0.1:
+                # stay here until 5min average power is below 0.1kW
+                self.time_state = time()
+                self.state = 'Off'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+
+
     def calc_thread(self):
         """ Calculate last 5 minutes mean power """
-        p1 = int(self.getItem('feeder_time'))
-        t1 = time()
-        self.timelist.append((p1,t1))
-        if self.timelist[-1][1] - self.timelist[0][1] > 300:
-            self.timelist = self.timelist[1:]
-        last = self.timelist[0][0]
-        sum = 0
-        for t in self.timelist:
-             try:
-                 v = int(t[0])
-             except:
-                 v = 0
-             if v > last:
-                 sum += (v - last)
-             last = v
-        capacity = float(self.getItem('feeder_capacity')) / 360
-        self.power = sum * capacity * 12 * 4.8 * 0.9 / 1000
+        while True:
+            try:
+                p1 = int(self.getItem('feeder_time'))
+                t1 = time()
+                self.timelist.append((p1,t1,self.state))
+                if self.timelist[-1][1] - self.timelist[0][1] > 300:
+                    self.timelist = self.timelist[1:]
+                last = self.timelist[0][0]
+                sum = 0
+                for t in self.timelist:
+                    try:
+                        v = int(t[0])
+                    except:
+                        v = 0
+                    if v > last:
+                        if t[2] in ('Igniting','Running','Cooling'):
+                            sum += (v - last)
+                    last = v
+                capacity = float(self.getItem('feeder_capacity')) / 360
+                self.power = sum * capacity * 12 * 4.8 * 0.9 / 1000
+                self.calculate_state()
+            except Exception, e:
+                pass
+            sleep(5)
 
-        t = Timer(5, self.calc_thread)
-        t.setDaemon(True)
-        t.start()
