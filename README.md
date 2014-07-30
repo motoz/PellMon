@@ -28,7 +28,7 @@ Calculate. Provides editable expressions that calcualates new values based on th
 
 SiloLevel. Uses rrdtool to calculate and graph the pellet silo level from the fill-up time to current time. 
 
-Plugin decumentation is int the configuration file.
+Plugin documentation is found in the configuration file pellmon.conf.
 
 ####Contains:
 
@@ -91,17 +91,20 @@ Configuration values.
     sudo adduser --system --group --no-create-home pellmonweb
     # Give the server access to the serial port
     sudo adduser pellmonsrv dialout
+    # Create build system
     ./autogen.sh
     # Configure for running as system users
     ./configure --with-user_srv=pellmonsrv --with-user_web=pellmonweb --sysconfdir=/etc
+    # Build PellMon
     make
+    # Install PellMon
     sudo make install
     # Activate pellmon dbus system bus permissions
     sudo service dbus reload
     # Start the daemons manually
     sudo service pellmonsrv start
     sudo service pellmonweb start
-    # Or add them to init so they are started at boot
+    # Add them to init so they are started at boot
     sudo update-rc.d pellmonsrv defaults
     sudo update-rc.d pellmonweb defaults
 ###Uninstall
