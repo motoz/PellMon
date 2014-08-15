@@ -40,6 +40,8 @@ dataDescriptions = {          #name, unit, description
     'ignition_count':        ('number of ignitions', 'times',  'Total number of burner cold-startups'),
     'boiler_return_temp':    ('boiler return temp', '°',  'Temperature of return flow to boiler'),
     'hotwater_temp':         ('hotwater temp', '°',  'Temperature in hotwater boiler'),
+    'hotwater_temp_set':     ('hotwater desired temp', '°',  'The desired temperature in hotwater boiler'),
+    'hotwater_temp_diff':    ('hotwater temp diff', '°',  'Shift to hotwater production when this much below the set point'),
     'outside_temp':          ('outside temp', '°',  'Outside temperature'),
     'indoor_temp':           ('indoor temp', '°',  'Indoor temperature'),
     'flow':                  ('flow', 'l/s',  'Water flow'),

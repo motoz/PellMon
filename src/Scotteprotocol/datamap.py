@@ -112,6 +112,8 @@ dataBaseMap =  {
     'oxygen_regulation_P':  { ('4.99','zzzz') : param (FrameZ03, 5,     2,    'I04',   0,     5) },
     'oxygen_regulation_D':  { ('4.99','zzzz') : param (FrameZ03, 6,     0,    'I05',   0,   100) },
     'blower_off_time':      { ('4.99','zzzz') : param (FrameZ03, 9,     0,    'I07',   0,    30) },
+    'hotwater_temp_set':    { ('6.03','zzzz') : param (FrameZ03, 15,    0,    'B08',   0,    80) },
+    'hotwater_temp_diff':   { ('6.03','zzzz') : param (FrameZ03, 16,    0,    'B09',   0,    20) },
 
     'timer_heating_period': { ('6.03','zzzz') : param (FrameZ05, 9, 	0,    'K00',   0,  1440) },
     'timer_hotwater_period':{ ('6.03','zzzz') : param (FrameZ05, 10, 	0,    'K01',   0,  1440) },
