@@ -567,6 +567,7 @@ class PellMonWeb:
 
     @cherrypy.expose
     def index(self, **args):
+        print cherrypy.request.base, cherrypy.request.script_name
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
         empty=True
         for key, val in polldata:
@@ -589,7 +590,7 @@ class PellMonWeb:
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
                 break;
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot='/pellmon')
 
 class WsHandler:
     @cherrypy.expose
@@ -797,7 +798,7 @@ if __name__ == '__main__':
         cherrypy.config.update({'log.screen': False, 'engine.autoreload.on': False})
         plugins.Daemonizer(cherrypy.engine).subscribe()
 
-    cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
+    cherrypy.tree.mount(PellMonWeb(), '/pellmon', config=app_conf)
     if websockets:
         cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
 

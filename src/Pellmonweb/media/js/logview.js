@@ -19,7 +19,7 @@ function rgb2hex(rgb) {
 function getLog() {
     var container = $('#lines');
     $.get(
-        '/logview/getlines?linenum='+container.data('lines'),
+        'logview/getlines?linenum='+container.data('lines'),
         function(data) {
             container.html(data)
             $('.loglinelink').click(function(e) {

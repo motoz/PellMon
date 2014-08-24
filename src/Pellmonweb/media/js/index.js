@@ -78,7 +78,7 @@ $('.timeChoice').click(function(e) {
     timespan =  me.data('time-choice');
     graph.data('timespan', timespan);
     $.post(
-            '/graphsession?timespan='+timespan,
+            'graphsession?timespan='+timespan,
             function(data) {
                 refreshGraph();
             }
@@ -106,7 +106,7 @@ $('.lineselection').click(function(e) {
     });
 
     $.post(
-            '/graphsession?lines='+s,
+            'graphsession?lines='+s,
             function(data) {
                 getGraph().data('time-choice', me.data('time-choice'));
                 refreshGraph();
@@ -306,7 +306,7 @@ function setupPolling() {
         else
         {
             var pollParams = function(params) {
-                $.get('/getparamlist?parameters='+ params,
+                $.get('getparamlist?parameters='+ params,
                     function(data) {
                         jsonObject = $.parseJSON(data);
                         for (i in jsonObject) {
