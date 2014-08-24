@@ -19,7 +19,7 @@
 					<span class="icon-bar"></span>
 				</button>
 				
-				<a href="/" class="navbar-brand"><img src="media/img/pellmon.svg" width="18" style="margin:0px 10px 0px 0px;">PellMon</a>
+				<a href="${webroot}" class="navbar-brand"><img src="${webroot}/media/img/pellmon.svg" width="18" style="margin:0px 10px 0px 0px;">PellMon</a>
     		</div>
     		<div class="navbar-collapse collapse">
 				<ul class="nav navbar-nav">
@@ -34,9 +34,9 @@
 					</li>
 					<li>
 						% if username == None:
-						<a href=auth/login>Login</a>
+						<a href=${webroot}/auth/login>Login</a>
 						% else:
-						<a href=auth/logout>Logout</a>
+						<a href=${webroot}/auth/logout>Logout</a>
 						% endif
 					</li>
 				</ul>

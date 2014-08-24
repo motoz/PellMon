@@ -532,7 +532,7 @@ class PellMonWeb:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets)
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets, webroot=cherrypy.request.script_name)
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -567,7 +567,6 @@ class PellMonWeb:
 
     @cherrypy.expose
     def index(self, **args):
-        print cherrypy.request.base, cherrypy.request.script_name
         autorefresh = cherrypy.session.get('autorefresh')=='yes'
         empty=True
         for key, val in polldata:
@@ -590,7 +589,7 @@ class PellMonWeb:
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
                 break;
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot='/pellmon')
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name)
 
 class WsHandler:
     @cherrypy.expose
