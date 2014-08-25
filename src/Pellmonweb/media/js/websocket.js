@@ -1,6 +1,6 @@
 function url(s) {
     var l = window.location;
-    return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port != 80) && (l.port != 443)) ? ":" + l.port : "") + '/websocket' +s;
+    return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port != 80) && (l.port != 443)) ? ":" + l.port : "") + webroot+'/websocket' +s;
 }
 
 $(document).ready(function() {

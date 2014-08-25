@@ -803,7 +803,7 @@ if __name__ == '__main__':
 
     cherrypy.tree.mount(PellMonWeb(), webroot, config=app_conf)
     if websockets:
-        cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
+        cherrypy.tree.mount(WsHandler(), webroot+'/websocket', config=ws_conf)
 
     try:
         cherrypy.config.update({'log.access_file':accesslog})
