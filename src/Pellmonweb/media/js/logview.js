@@ -38,7 +38,6 @@ function getLog() {
                             }
                         });
                     }
-                    webroot = container.data('webroot')
                     graphid = (me.data('time')+Math.random()).toString().replace(/\./g, '0')
                     me.append('<div class='+loglink+'><img id='+graphid+' src="'+webroot+'/media/img/spinner.gif"/></ div>')
                     $('#'+graphid).attr('src', me.data('src')+'&width='+width+'&bgcolor='+rgb2hex(bgcolor)+'&random='+Math.random())

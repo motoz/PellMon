@@ -1,5 +1,5 @@
 var getParam = function(param) {
-	$.get('/getparam/' + param,
+	$.get(webroot + '/getparam/' + param,
 		function(data) {
 			setParam(param, data.value);
 		}
@@ -48,7 +48,7 @@ $(".save").on('submit', function(e) {
 	btn.button('loading');
 
 	$.post(
-		'/setparam/' + name,
+		webroot + '/setparam/' + name,
 		{
 			data: value
 		},
@@ -70,7 +70,7 @@ $(".command").on('click', function(e) {
 	name = me.data('name');
 
 	$.post(
-		'/setparam/' + name,
+		webroot + '/setparam/' + name,
 		{
 			data: '0'
 		}
@@ -85,7 +85,7 @@ paramlist = paramlist.join(',')
 
 function getParams() {
     $.get(
-        '/getparams/',
+        webroot + '/getparams/',
         function(data) {
             for (var param in data) {
                 var container = $('#' + param + '-value');
