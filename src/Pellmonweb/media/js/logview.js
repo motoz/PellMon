@@ -19,7 +19,7 @@ function rgb2hex(rgb) {
 function getLog() {
     var container = $('#lines');
     $.get(
-        'logview/getlines?linenum='+container.data('lines'),
+        container.data('url'),
         function(data) {
             container.html(data)
             $('.loglinelink').click(function(e) {
@@ -38,8 +38,9 @@ function getLog() {
                             }
                         });
                     }
+                    webroot = container.data('webroot')
                     graphid = (me.data('time')+Math.random()).toString().replace(/\./g, '0')
-                    me.append('<div class='+loglink+'><img id='+graphid+' src="/media/img/spinner.gif"/></ div>')
+                    me.append('<div class='+loglink+'><img id='+graphid+' src="'+webroot+'/media/img/spinner.gif"/></ div>')
                     $('#'+graphid).attr('src', me.data('src')+'&width='+width+'&bgcolor='+rgb2hex(bgcolor)+'&random='+Math.random())
                 }
                 else

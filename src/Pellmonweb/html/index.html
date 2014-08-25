@@ -15,7 +15,7 @@
             ${'<object id="systemimage" class="image-responsive" data="media/img/system.svg" data-websocket=%s type="image/svg+xml"> </object>' % ('1' if websockets else '0')}
         </div>
 
-        <div id="lines" data-lines="7" class="col-md-6">
+        <div id="lines" data-webroot="${webroot}" data-url="${webroot}/logview/getlines?linenum=7" class="col-md-6">
             <h4>Events</h4>
         </div>
     </div>
