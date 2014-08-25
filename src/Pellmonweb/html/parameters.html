@@ -31,7 +31,7 @@
                 <ul class="nav nav-pills nav-stacked">
                 %for tag in tags:
                     <li class="">
-                        <a href="/parameters/${tag}">${tag}</a>
+                        <a href="${webroot}/parameters/${tag}">${tag}</a>
                     </li>
                 %endfor
                 </ul>
@@ -48,7 +48,7 @@
                             link='All'
                        %>
 
-                    <li><a href="/setlevel/${link}">${switch}</a></li>
+                    <li><a href="${webroot}/setlevel/${link}?from_page=${from_page}">${switch}</a></li>
                 </ul>
             </div>
         </div>

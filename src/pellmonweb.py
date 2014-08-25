@@ -532,7 +532,7 @@ class PellMonWeb:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets, webroot=cherrypy.request.script_name)
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets, webroot=cherrypy.request.script_name, from_page=cherrypy.url())
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -560,10 +560,10 @@ class PellMonWeb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def setlevel(self, level='Basic'):
+    def setlevel(self, level='Basic', from_page=cherrypy.request.script_name):
         cherrypy.session['level']=level
         # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect(cherrypy.request.headers['Referer'])
+        raise cherrypy.HTTPRedirect(from_page)
 
     @cherrypy.expose
     def index(self, **args):
