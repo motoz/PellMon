@@ -15,7 +15,7 @@
             ${'<object id="systemimage" class="image-responsive" data="media/img/system.svg" data-websocket=%s type="image/svg+xml"> </object>' % ('1' if websockets else '0')}
         </div>
 
-        <div id="lines" data-lines="7" class="col-md-6">
+        <div id="lines" data-url="${webroot}/logview/getlines?linenum=7" class="col-md-6">
             <h4>Events</h4>
         </div>
     </div>
@@ -24,7 +24,7 @@
         <div class="col-md-12">
             <h4 class="graphtitle">Graph</h4>
             <div>
-                ${'<img style="margin-bottom:8px" class="graph image-responsive image-lazy" id="graph" data-title="%s" data-offset=0 data-timespan=%u data-src="graph" src="media/img/spinner.gif"'%(timeName, timeChoice)} />
+                ${'<img style="margin-bottom:8px" class="graph image-responsive image-lazy" id="graph" data-title="%s" data-offset=0 data-timespan=%u data-src="%s/graph" src="%s/media/img/spinner.gif"'%(timeName, timeChoice, webroot, webroot)} />
             </div>
             <div id="center">
                 <div class="col-centered">
@@ -53,13 +53,13 @@
         <div class="col-md-6">
             <h4>Consumption</h4>
             <div>
-                <img class="graph image-responsive image-lazy" id="consumption" data-src="consumption" src="media/img/spinner.gif" />
+                <img class="graph image-responsive image-lazy" id="consumption" data-src="${webroot}/consumption" src="${webroot}/media/img/spinner.gif" />
             </div>
         </div>
         <div class="col-md-6">
             <h4>Silo level</h4>
             <div>
-                <img class="graph image-responsive image-lazy" id="silolevel" data-src="silolevel" src="media/img/spinner.gif" />
+                <img class="graph image-responsive image-lazy" id="silolevel" data-src="${webroot}/silolevel" src="${webroot}/media/img/spinner.gif" />
             </div>
         </div>
     </div>

@@ -532,7 +532,7 @@ class PellMonWeb:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets)
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets, webroot=cherrypy.request.script_name, from_page=cherrypy.url())
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -560,10 +560,10 @@ class PellMonWeb:
 
     @cherrypy.expose
     @require() #requires valid login
-    def setlevel(self, level='Basic'):
+    def setlevel(self, level='Basic', from_page=cherrypy.request.script_name):
         cherrypy.session['level']=level
         # redirect back after setting selection in session
-        raise cherrypy.HTTPRedirect(cherrypy.request.headers['Referer'])
+        raise cherrypy.HTTPRedirect(from_page)
 
     @cherrypy.expose
     def index(self, **args):
@@ -589,7 +589,7 @@ class PellMonWeb:
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
                 break;
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name)
 
 class WsHandler:
     @cherrypy.expose
@@ -736,6 +736,10 @@ if __name__ == '__main__':
 
     credentials = parser.items('authentication')
     logfile = parser.get('conf', 'logfile')
+    try:
+        webroot = parser.get ('conf', 'webroot') 
+    except:
+        webroot = '/'
 
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
     timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
@@ -797,9 +801,9 @@ if __name__ == '__main__':
         cherrypy.config.update({'log.screen': False, 'engine.autoreload.on': False})
         plugins.Daemonizer(cherrypy.engine).subscribe()
 
-    cherrypy.tree.mount(PellMonWeb(), '/', config=app_conf)
+    cherrypy.tree.mount(PellMonWeb(), webroot, config=app_conf)
     if websockets:
-        cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
+        cherrypy.tree.mount(WsHandler(), os.path.join(webroot, 'websocket'), config=ws_conf)
 
     try:
         cherrypy.config.update({'log.access_file':accesslog})

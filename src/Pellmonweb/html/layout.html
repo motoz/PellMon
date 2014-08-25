@@ -2,11 +2,12 @@
 <%! stylesheets = [] %>
 <!DOCTYPE html>
 <html>
+<script type="text/javascript"> var webroot = "${webroot}";</script> 
 <head>
 	<title>${next.title()}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link href="/media/bs3/css/bootstrap.min.css" rel="stylesheet" media="screen">
-	<link href="/media/css/pellmon.css" rel="stylesheet" media="screen">
+	<link href="${webroot}/media/bs3/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	<link href="${webroot}/media/css/pellmon.css" rel="stylesheet" media="screen">
 	${self.stylesheetIncludes()}
 </head>
 <body>
@@ -19,24 +20,24 @@
 					<span class="icon-bar"></span>
 				</button>
 				
-				<a href="/" class="navbar-brand"><img src="/media/img/pellmon.svg" width="18" style="margin:0px 10px 0px 0px;">PellMon</a>
+				<a href="${webroot if webroot else '/'}" class="navbar-brand"><img src="${webroot}/media/img/pellmon.svg" width="18" style="margin:0px 10px 0px 0px;">PellMon</a>
     		</div>
     		<div class="navbar-collapse collapse">
 				<ul class="nav navbar-nav">
 					<li class="">
-						<a href="/consumptionview/consumption">Consumption</a>
+						<a href="${webroot}/consumptionview/consumption">Consumption</a>
 					</li>
 					<li class="">
-						<a href="/parameters/All">Parameters</a>
+						<a href="${webroot}/parameters/All">Parameters</a>
 					</li>
 					<li class="">
-						<a href="/logview/logView">View log</a>
+						<a href="${webroot}/logview/logView">View log</a>
 					</li>
 					<li>
 						% if username == None:
-						<a href=/auth/login>Login</a>
+						<a href=${webroot}/auth/login>Login</a>
 						% else:
-						<a href=/auth/logout>Logout</a>
+						<a href=${webroot}/auth/logout>Logout</a>
 						% endif
 					</li>
 				</ul>
@@ -47,8 +48,8 @@
 		${self.body()}
 	<!-- </div> -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="/media/jquery/jquery.min.js"><\/script>')</script>
-	<script src="/media/bs3/js/bootstrap.min.js"></script>
+    <script>window.jQuery || document.write('<script src="media/jquery/jquery.min.js"><\/script>')</script>
+	<script src="${webroot}/media/bs3/js/bootstrap.min.js"></script>
 	${self.scriptIncludes()}
 </body>
 </html>
@@ -62,7 +63,7 @@
       t = t.inherits
 %>
 % for script in all_scripts:
-    <script src="/media/js/${script}" type="text/javascript"></script>
+    <script src="${webroot}/media/js/${script}" type="text/javascript"></script>
 % endfor
 </%def>
 
