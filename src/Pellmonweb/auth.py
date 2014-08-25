@@ -154,7 +154,7 @@ class AuthController(object):
             return "Incorrect username or password."
 
     @cherrypy.expose
-    def login(self, username=None, password=None, from_page=cherrypy.request.script_name):
+    def login(self, username=None, password=None, from_page=cherrypy.request.script_name if cherrypy.request.script_name else '/'):
         if username is None or password is None:
             return self.get_loginform("", from_page=from_page)
         
@@ -164,7 +164,7 @@ class AuthController(object):
         else:
             cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
             self.on_login(username)
-            raise cherrypy.HTTPRedirect(from_page or cherrypy.request.script_name)
+            raise cherrypy.HTTPRedirect(from_page)
     
     @cherrypy.expose
     def logout(self, from_page=cherrypy.request.script_name):
@@ -174,4 +174,4 @@ class AuthController(object):
         if username:
             cherrypy.request.login = None
             self.on_logout(username)
-        raise cherrypy.HTTPRedirect(from_page or cherrypy.request.script_name)
+        raise cherrypy.HTTPRedirect(cherrypy.request.script_name if cherrypy.request.script_name else '/' )
