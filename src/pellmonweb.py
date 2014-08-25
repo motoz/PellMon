@@ -736,6 +736,10 @@ if __name__ == '__main__':
 
     credentials = parser.items('authentication')
     logfile = parser.get('conf', 'logfile')
+    try:
+        webroot = parser.get ('conf', 'webroot') 
+    except:
+        webroot = '/'
 
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
     timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
@@ -797,7 +801,7 @@ if __name__ == '__main__':
         cherrypy.config.update({'log.screen': False, 'engine.autoreload.on': False})
         plugins.Daemonizer(cherrypy.engine).subscribe()
 
-    cherrypy.tree.mount(PellMonWeb(), '/pellmon', config=app_conf)
+    cherrypy.tree.mount(PellMonWeb(), webroot, config=app_conf)
     if websockets:
         cherrypy.tree.mount(WsHandler(), '/websocket', config=ws_conf)
 
