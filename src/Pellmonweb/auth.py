@@ -59,10 +59,10 @@ def check_auth(*args, **kwargs):
                 # A condition is just a callable that returns true or false
                 if not condition():
                     # Send old page as from_page parameter
-                    raise cherrypy.HTTPRedirect("/auth/login?from_page=%s" % get_parmas)
+                    raise cherrypy.HTTPRedirect(cherrypy.request.script_name+"/auth/login?from_page=%s" % get_parmas)
         else:
             # Send old page as from_page parameter
-            raise cherrypy.HTTPRedirect("/auth/login?from_page=%s" %get_parmas) 
+            raise cherrypy.HTTPRedirect(cherrypy.request.script_name+"/auth/login?from_page=%s" %get_parmas) 
     
 cherrypy.tools.auth = cherrypy.Tool('before_handler', check_auth)
 
@@ -137,7 +137,7 @@ class AuthController(object):
         from_page = escape(from_page, True)
         username = escape(username, True)
         tmpl = lookup.get_template("login.html")
-        return tmpl.render(user_name=username, username=cherrypy.session.get('_cp_username'), from_page=from_page, msg=msg)
+        return tmpl.render(user_name=username, username=cherrypy.session.get('_cp_username'), from_page=from_page, msg=msg, webroot=cherrypy.request.script_name)
 
     def check_credentials(self, username, password):
         """Verifies credentials for username and password.
@@ -154,7 +154,10 @@ class AuthController(object):
             return "Incorrect username or password."
 
     @cherrypy.expose
-    def login(self, username=None, password=None, from_page="/"):
+    def login(self, username=None, password=None, from_page='/'):
+        if from_page == '/':
+            from_page = cherrypy.request.script_name
+
         if username is None or password is None:
             return self.get_loginform("", from_page=from_page)
         
@@ -164,14 +167,14 @@ class AuthController(object):
         else:
             cherrypy.session[SESSION_KEY] = cherrypy.request.login = username
             self.on_login(username)
-            raise cherrypy.HTTPRedirect(from_page or "/")
+            raise cherrypy.HTTPRedirect(from_page)
     
     @cherrypy.expose
-    def logout(self, from_page="/"):
+    def logout(self, from_page=cherrypy.request.script_name):
         sess = cherrypy.session
         username = sess.get(SESSION_KEY, None)
         sess[SESSION_KEY] = None
         if username:
             cherrypy.request.login = None
             self.on_logout(username)
-        raise cherrypy.HTTPRedirect(from_page or "/")
+        raise cherrypy.HTTPRedirect(cherrypy.request.script_name if cherrypy.request.script_name else '/' )

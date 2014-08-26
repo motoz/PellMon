@@ -37,7 +37,7 @@ class LogViewer(object):
     def logView(self):
         #Look for temlates in this directory
         tmpl = lookup.get_template("logview.html")
-        return tmpl.render(username = cherrypy.session.get('_cp_username'))
+        return tmpl.render(username = cherrypy.session.get('_cp_username'), webroot=cherrypy.request.script_name)
     
     @cherrypy.expose
     def getlines(self, linenum=100):    
@@ -57,7 +57,7 @@ class LogViewer(object):
                     seconds = None
                 timelines.append((seconds, line))
             tmpl = lookup.get_template("loglines.html")
-            return tmpl.render(lines=timelines)
+            return tmpl.render(lines=timelines, webroot=cherrypy.request.script_name)
         except Exception,e:
             return str(e)
 

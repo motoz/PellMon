@@ -153,9 +153,6 @@ logfile = @localstatedir@/log/pellmonsrv/pellmon.log
 # logging level = info/debug
 loglevel = info
 
-# Port number for the webserver
-port = 8081
-
 # rrd database update interval in seconds
 pollinterval = 30
 
@@ -274,3 +271,8 @@ d08 = #2F2FFF
 #accesslog = @localstatedir@/log/pellmonweb/access.log
 #errorlog = @localstatedir@/log/pellmonweb/error.log
 
+[conf]
+# Port number for the webserver
+port = 8081
+# set path for the pellmon web application
+webroot = /
