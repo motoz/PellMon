@@ -316,7 +316,8 @@ def sendmail_thread(msg, followup):
             else:
                 align = 'right'
                 timespan = conf.email_timespan
-            fd = urllib.urlopen("http://localhost:%s/graph?width=%u&height=%u&timespan=%u&legends=yes&bgcolor=ffffff%s&align=%s"%(conf.port, conf.email_width, conf.email_height, timespan, graphlines, align))
+                
+            fd = urllib.urlopen("http://localhost:%s%s+/graph?width=%u&height=%u&timespan=%u&legends=yes&bgcolor=ffffff%s&align=%s"%(conf.port, conf.webroot, conf.email_width, conf.email_height, timespan, graphlines, align))
             img = fd.read()
 
             msgImg = MIMEImage(img, 'png')
@@ -536,6 +537,14 @@ class config:
             self.port = parser.get('conf', 'port')
         except:
             self.port = None
+        try:
+            self.webroot = parser.get('conf', 'webroot')
+        except:
+            self.webroot = ""
+        if self.webroot[-1:] == '/':
+            self.webroot = self.webroot[:-1]
+        if len(self.webroot)>=1 and self.webroot[0] != '/':
+            self.webroot='/'+self.webroot
         try:
             self.email_mode = parser.get('email', 'mode')
         except:
