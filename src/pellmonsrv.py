@@ -317,7 +317,7 @@ def sendmail_thread(msg, followup):
                 align = 'right'
                 timespan = conf.email_timespan
                 
-            fd = urllib.urlopen("http://localhost:%s%s+/graph?width=%u&height=%u&timespan=%u&legends=yes&bgcolor=ffffff%s&align=%s"%(conf.port, conf.webroot, conf.email_width, conf.email_height, timespan, graphlines, align))
+            fd = urllib.urlopen("http://localhost:%s%s/graph?width=%u&height=%u&timespan=%u&legends=yes&bgcolor=ffffff%s&align=%s"%(conf.port, conf.webroot, conf.email_width, conf.email_height, timespan, graphlines, align))
             img = fd.read()
 
             msgImg = MIMEImage(img, 'png')
