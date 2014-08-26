@@ -154,7 +154,10 @@ class AuthController(object):
             return "Incorrect username or password."
 
     @cherrypy.expose
-    def login(self, username=None, password=None, from_page=cherrypy.request.script_name if cherrypy.request.script_name else '/'):
+    def login(self, username=None, password=None, from_page='/'):
+        if from_page == '/':
+            from_page = cherrypy.request.script_name
+
         if username is None or password is None:
             return self.get_loginform("", from_page=from_page)
         
