@@ -7,7 +7,6 @@ web_PYTHON = \
 webdir = $(pythondir)/Pellmonweb
 
 nobase_dist_foohtml_DATA = \
-	media/favicon.ico \
 	media/js/spin.js \
 	media/js/logview.js \
 	media/js/index.js \
@@ -18,6 +17,28 @@ nobase_dist_foohtml_DATA = \
 	media/img/pellmon.svg \
 	media/img/spinner.gif \
 	media/img/system.svg \
+	media/img/apple-touch-icon-114x114.png \
+	media/img/apple-touch-icon-120x120.png \
+	media/img/apple-touch-icon-144x144.png \
+	media/img/apple-touch-icon-152x152.png \
+	media/img/apple-touch-icon-57x57.png \
+	media/img/apple-touch-icon-60x60.png \
+	media/img/apple-touch-icon-72x72.png \
+	media/img/apple-touch-icon-76x76.png \
+	media/img/apple-touch-icon.png \
+	media/img/apple-touch-icon-precomposed.png \
+	media/img/browserconfig.xml \
+	media/img/favicon-160x160.png \
+	media/img/favicon-16x16.png \
+	media/img/favicon-196x196.png \
+	media/img/favicon-32x32.png \
+	media/img/favicon-96x96.png \
+	media/img/favicon.ico \
+	media/img/mstile-144x144.png \
+	media/img/mstile-150x150.png \
+	media/img/mstile-310x150.png \
+	media/img/mstile-310x310.png \
+	media/img/mstile-70x70.png \
 	media/jquery/jquery.js \
 	media/jquery/jquery.min.js \
 	media/bs3/fonts/glyphicons-halflings-regular.svg \

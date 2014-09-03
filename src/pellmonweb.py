@@ -781,9 +781,6 @@ if __name__ == '__main__':
     app_conf =  {'/media':
                     {'tools.staticdir.on': True,
                      'tools.staticdir.dir': MEDIA_DIR},
-                 '/favicon.ico':
-                    {'tools.staticfile.on':True,
-                     'tools.staticfile.filename': FAVICON},
                 }
 
     if websockets:
