@@ -198,7 +198,7 @@ class gpio_tachometer(Thread):
             s = b[20]
         else:
             s = b[0]
-        if s>1:
+        if s>1000:
             self.f = 1/float(s) * 1000000 * 60
         else:
             self.f=0
