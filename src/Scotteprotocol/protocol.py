@@ -32,6 +32,7 @@ class Protocol(threading.Thread):
     def __init__(self, device, version_string):   
         """Initialize the protocol and database according to given version"""
         self.dummyDevice=False
+        self.checksum=True
         if device == None:
             self.dummyDevice=True
             self.dataBase = self.createDataBase('6.99')
@@ -68,10 +69,26 @@ class Protocol(threading.Thread):
                 version_string = self.getItem('version').lstrip()
                 logger.info('chip version detected as: %s'%version_string)
             except:
-                version_string = '0.0'
-                logger.info('version detection failed')
+                self.checksum=False
+                try:
+                    version_string = self.getItem('version').lstrip()
+                    logger.info('protocol checksums turned off')
+                    logger.info('chip version detected as: %s'%version_string)
+                except:
+                    version_string = '0.0'
+                    logger.info('version detection failed')
         else:
             logger.info('chip version from config: %s'%version_string)
+            try:
+                testread = self.getItem('version').lstrip()
+                logger.info('Connected')
+            except:
+                self.checksum=False
+                try:
+                    testread = self.getItem('version').lstrip()
+                    logger.info('Connected with protocol checksums turned off')
+                except:
+                    logger.info('Not connected? Check the cables')
         self.dataBase = self.createDataBase(version_string)
         
     def getDataBase(self):
@@ -154,7 +171,7 @@ class Protocol(threading.Thread):
                     responseQueue = Queue.Queue() 
                     self.q.put(("PUT", dataparam.address + s, responseQueue))
                     response = responseQueue.get()
-                    if response == addCheckSum('OK'):
+                    if response == self.addCheckSum('OK'):
                         logger.info('Parameter %s = %s'%(param,s))
                         response = 'OK'                        
                     return response
@@ -185,7 +202,7 @@ class Protocol(threading.Thread):
             logger.debug('got command')
             # Write parameter/command       
             if commandqueue[0]=="PUT":
-                s=addCheckSum(commandqueue[1])
+                s=self.addCheckSum(commandqueue[1])
                 logger.debug('serial write'+s)
                 self.ser.flushInput()
                 self.ser.write(s+'\r')   
@@ -209,7 +226,7 @@ class Protocol(threading.Thread):
                 frame = commandqueue[1]
                 # This frame could have been read recently by a previous queued read request, so check again if it's necessary to read
                 if time.time()-frame.readtime > 8.0 or commandqueue[0]=="FORCE_GET":
-                    sendFrame = addCheckSum(frame.pollFrame)+"\r"
+                    sendFrame = self.addCheckSum(frame.pollFrame)+"\r"
                     logger.debug('sendFrame = '+sendFrame)
                     line=""
                     try:
@@ -217,14 +234,14 @@ class Protocol(threading.Thread):
                         logger.debug('serial write')
                         self.ser.write(sendFrame+'\r')   
                         logger.debug('serial written')  
-                        line=str(self.ser.read(frame.getLength())) 
+                        line=str(self.ser.read(frame.getLength(self))) 
                         logger.debug('serial read'+line)
                     except:
                         logger.debug('Serial read error')
                     result = False
                     if line:    
                         logger.debug('Got answer, parsing') 
-                        result=commandqueue[1].parse(line)
+                        result=commandqueue[1].parse(line, self)
                         if result:
                             try:
                                 responsequeue.put(result)
@@ -239,13 +256,13 @@ class Protocol(threading.Thread):
                             logger.debug('serial write')
                             self.ser.write(sendFrame+'\r')
                             logger.debug('serial written')
-                            line=str(self.ser.read(frame.getLength()))
+                            line=str(self.ser.read(frame.getLength(self)))
                             logger.debug('answer: '+line)
                         except:
                             logger.debug('Serial read error')
                         if line:
                             logger.debug('Got answer, parsing')
-                            result=commandqueue[1].parse(line)
+                            result=commandqueue[1].parse(line, self)
                             try:
                                 responsequeue.put(result)
                             except:
@@ -260,20 +277,23 @@ class Protocol(threading.Thread):
                 else: 
                     responsequeue.put(True) 
 
+    def addCheckSum(self, s):
+        if not self.checksum:
+            return s
+        else:
+            x=0;
+            logger.debug('addchecksum:')
+            for c in s: x=x^ord(c)
+            rs=s+chr(x)
+            logger.debug(rs)
+            return rs
 
-def addCheckSum(s):
-    x=0;
-    logger.debug('addchecksum:')
-    for c in s: x=x^ord(c)
-    rs=s+chr(x)
-    logger.debug(rs)
-    return rs
-
-def checkCheckSum(s):
-    x=0;
-    for c in s: 
-        x=x^ord(c)
-    return x
+    def checkCheckSum(self, s):
+        x=0;
+        if self.checksum:
+            for c in s: 
+                x=x^ord(c)
+        return x
 
 class Frame:
     """Handle parsing of response strings to the different frame formats, and 
@@ -288,27 +308,28 @@ class Frame:
         self.frameLength=0
         for i in self.dataDef:
             self.frameLength += i
-        #include checksum byte
-        self.frameLength+=1 
     
-    def getLength(self):
-        return self.frameLength
-            
-    def parse(self, s):
+    def getLength(self, protocol):
+        if protocol.checksum:
+            return self.frameLength+1
+        else:
+            return self.frameLength
+
+    def parse(self, s, protocol):
         logger.debug('Check checksum in parse '+s)
-        if checkCheckSum(s):
+        if protocol.checkCheckSum(s):
             logger.debug('Parse: checksum error on response message: ' + s)
             return False
         logger.debug('Checksum OK')
-        if s==addCheckSum('E1'):
+        if s==protocol.addCheckSum('E1'):
             logger.debug('Parse: response message = E1, data does not exist')    
             return False
-        if s==addCheckSum('E0'):
+        if s==protocol.addCheckSum('E0'):
             logger.debug('Parse: response message = E0, checksum fail')  
             return False                        
         index=0
         self.data=[]    
-        if self.frameLength == len(s):
+        if self.getLength(protocol) == len(s):
             logger.debug('Correct length')
             self.mutex.acquire()
             self.readtime=time.time()
@@ -321,7 +342,7 @@ class Frame:
             logger.debug('Return True from parser')
             return True
         else:
-            logger.debug("Parse: wrong length "+str(len(s))+', expected '+str(self.frameLength))
+            logger.debug("Parse: wrong length "+str(len(s))+', expected '+str(self.getLength(protocol)))
             return False
         
     def get(self, index):

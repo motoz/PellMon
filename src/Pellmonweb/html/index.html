@@ -12,7 +12,7 @@
     <div class="row">
         <div class="col-md-6">
         <h4>System</h4>
-            ${'<object id="systemimage" class="image-responsive" data="media/img/system.svg" data-websocket=%s type="image/svg+xml"> </object>' % ('1' if websockets else '0')}
+            ${'<object id="systemimage" class="image-responsive" data="systemimage" data-websocket=%s type="image/svg+xml"> </object>' % ('1' if websockets else '0')}
         </div>
 
         <div id="lines" data-url="${webroot}/logview/getlines?linenum=7" class="col-md-6">
