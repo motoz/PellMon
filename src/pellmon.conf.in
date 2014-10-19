@@ -274,5 +274,10 @@ d08 = #2F2FFF
 [conf]
 # Port number for the webserver
 port = 8081
+
 # set path for the pellmon web application
 webroot = /
+
+# Select system image. Set an absolute path to use your own.
+system_image = system.svg
+

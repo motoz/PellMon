@@ -19,7 +19,7 @@
 
 import os.path
 import cherrypy
-from cherrypy.lib.static import serve_file, serve_fileobj
+from cherrypy.lib.static import serve_file
 from cherrypy.process import plugins, servers
 import ConfigParser
 from mako.template import Template
@@ -590,6 +590,10 @@ class PellMonWeb:
                 timeName = timeNames[i]
                 break;
         return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name)
+        
+    @cherrypy.expose
+    def systemimage(self):
+        return serve_file(system_image)
 
 class WsHandler:
     @cherrypy.expose
@@ -740,6 +744,11 @@ if __name__ == '__main__':
         webroot = parser.get ('conf', 'webroot') 
     except:
         webroot = '/'
+
+    try:
+        system_image = os.path.join(os.path.join(MEDIA_DIR, 'img'), parser.get ('conf', 'system_image'))
+    except:
+        system_image = os.path.join(MEDIA_DIR, 'img/system.svg')
 
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
     timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
