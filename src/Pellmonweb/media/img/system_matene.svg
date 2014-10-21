@@ -14,7 +14,7 @@
    version="1.1"
    viewBox="0 0 440 280"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="system2.svg"
+   sodipodi:docname="system_matene.svg"
    width="100%"
    height="100%">
   <defs
@@ -326,9 +326,9 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="2.0000001"
-     inkscape:cx="207.41422"
-     inkscape:cy="112.03964"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="207.20485"
+     inkscape:cy="16.471147"
      inkscape:window-width="1280"
      inkscape:window-height="1000"
      inkscape:window-x="0"
@@ -562,15 +562,15 @@
          transform="scale(0.95877093,1.043002)"
          sodipodi:linespacing="125%"
          id="paramname:alarm"
-         y="164.4736"
-         x="68.689468"
-         style="font-size:17.33727646px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Alarm"
+         y="165.08487"
+         x="68.949463"
+         style="font-size:14.50497532px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Alarm"
          xml:space="preserve"><tspan
-           style="font-size:17.33727646px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold"
-           y="164.4736"
-           x="68.689468"
+           style="font-size:14.50497532px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans Bold"
+           y="165.08487"
+           x="68.949463"
            id="tspan3023"
-           sodipodi:role="line">--</tspan></text>
+           sodipodi:role="line">Connecting...</tspan></text>
       <text
          transform="scale(0.98872479,1.0114038)"
          sodipodi:linespacing="125%"

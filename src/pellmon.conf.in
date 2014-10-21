@@ -279,5 +279,6 @@ port = 8081
 webroot = /
 
 # Select system image. Set an absolute path to use your own.
+# Choices: system.svg|system_nbe.svg|system_nbe_2w.svg|system_nbe_3w.svg|system_matene.svg|/path/to/your_own_image.svg
 system_image = system.svg
 

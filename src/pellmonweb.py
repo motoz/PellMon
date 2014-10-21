@@ -766,6 +766,9 @@ if __name__ == '__main__':
     else:
         consumption_graph=False
     if websockets:
+        #make sure WebSocketPlugin runs after daemonizer plugin (priority 65)
+        #see cherrypy plugin documentation for default plugin priorities
+        WebSocketPlugin.start.__func__.priority = 66
         WebSocketPlugin(cherrypy.engine).subscribe()
         cherrypy.tools.websocket = WebSocketTool()
     global_conf = {
