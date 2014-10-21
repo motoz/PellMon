@@ -14,7 +14,7 @@
    version="1.1"
    viewBox="0 0 440 280"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="system_nbe_2w.svg"
+   sodipodi:docname="system_nbe.svg"
    width="100%"
    height="100%">
   <defs
@@ -341,9 +341,9 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="1.4142136"
-     inkscape:cx="362.89262"
-     inkscape:cy="27.570063"
+     inkscape:zoom="2.8284273"
+     inkscape:cx="278.0963"
+     inkscape:cy="73.681692"
      inkscape:window-width="1280"
      inkscape:window-height="1000"
      inkscape:window-x="0"
@@ -578,20 +578,7 @@
            height="98.643066"
            x="198.58408"
            y="84.011803" /></flowRegion><flowPara
-         id="flowPara3822" /></flowRoot>    <text
-       xml:space="preserve"
-       style="font-size:27.58484268px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
-       x="190.72913"
-       y="275.92511"
-       id="paramname:magazine_content"
-       sodipodi:linespacing="125%"
-       transform="scale(0.95877093,1.043002)"
-       inkscape:label="#text3092"><tspan
-         sodipodi:role="line"
-         id="tspan3094"
-         x="190.72913"
-         y="275.92511">---</tspan></text>
-    <g
+         id="flowPara3822" /></flowRoot>    <g
        id="g3993"
        transform="matrix(1.0818415,0,0,1.0818415,18.325954,-4.5112485)">
       <rect
@@ -776,7 +763,7 @@
        style="font-size:16.38264847px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        x="439.37628"
        y="253.73502"
-       id="paramname:magazine_content-8"
+       id="paramname:magazine_content"
        sodipodi:linespacing="125%"
        transform="scale(0.95877093,1.043002)"
        inkscape:label="#text3092"><tspan
@@ -868,7 +855,7 @@
        style="font-size:16.38264847px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        x="59.607918"
        y="274.74033"
-       id="paramname:hotwater_temp-6"
+       id="paramname:hotwater_temp"
        class="pellmon-param"
        sodipodi:linespacing="125%"
        transform="scale(0.95877093,1.043002)"
