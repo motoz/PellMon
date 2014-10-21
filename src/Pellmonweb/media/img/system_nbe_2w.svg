@@ -341,9 +341,9 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="1.4142136"
-     inkscape:cx="222.08637"
-     inkscape:cy="8.7580147"
+     inkscape:zoom="2.0000001"
+     inkscape:cx="175.09174"
+     inkscape:cy="108.70897"
      inkscape:window-width="1280"
      inkscape:window-height="1000"
      inkscape:window-x="0"
@@ -358,7 +358,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -578,20 +578,7 @@
            height="98.643066"
            x="198.58408"
            y="84.011803" /></flowRegion><flowPara
-         id="flowPara3822" /></flowRoot>    <text
-       xml:space="preserve"
-       style="font-size:27.58484268px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
-       x="190.72913"
-       y="275.92511"
-       id="paramname:magazine_content"
-       sodipodi:linespacing="125%"
-       transform="scale(0.95877093,1.043002)"
-       inkscape:label="#text3092"><tspan
-         sodipodi:role="line"
-         id="tspan3094"
-         x="190.72913"
-         y="275.92511">---</tspan></text>
-    <g
+         id="flowPara3822" /></flowRoot>    <g
        id="g3993"
        transform="matrix(1.0818415,0,0,1.0818415,18.325954,-4.5112485)">
       <rect
@@ -776,7 +763,7 @@
        style="font-size:16.38264847px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        x="439.37628"
        y="253.73502"
-       id="paramname:magazine_content-8"
+       id="paramname:magazine_content"
        sodipodi:linespacing="125%"
        transform="scale(0.95877093,1.043002)"
        inkscape:label="#text3092"><tspan
@@ -853,7 +840,7 @@
        sodipodi:cy="166.9174"
        sodipodi:rx="6.6519175"
        sodipodi:ry="6.6519175"
-       d="m 179.11505,166.9174 a 6.6519175,6.6519175 0 1 1 -13.30383,0 6.6519175,6.6519175 0 1 1 13.30383,0 z"
+       d="m 179.11505,166.9174 c 0,3.67376 -2.97816,6.65192 -6.65192,6.65192 -3.67375,0 -6.65191,-2.97816 -6.65191,-6.65192 0,-3.67375 2.97816,-6.65191 6.65191,-6.65191 3.67376,0 6.65192,2.97816 6.65192,6.65191 z"
        transform="matrix(1.2207615,0,0,1.2487627,-40.486359,51.647051)" />
     <text
        sodipodi:linespacing="125%"
@@ -872,7 +859,7 @@
        style="font-size:16.38264847px;font-style:normal;font-weight:normal;text-align:end;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#ffffff;fill-opacity:1;stroke:none;font-family:Sans"
        x="59.607918"
        y="274.74033"
-       id="paramname:hotwater_temp-6"
+       id="paramname:hotwater_temp"
        class="pellmon-param"
        sodipodi:linespacing="125%"
        transform="scale(0.95877093,1.043002)"
