@@ -32,3 +32,8 @@ a:link {text-decoration:none; outline: none;}
 {
     text-align: left"
 }
+
+/* fix for IE system image svg scaling error */
+object {
+    width: 100%;
+}
