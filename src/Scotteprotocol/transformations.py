@@ -30,7 +30,10 @@ class minutes_to_time:
         h,m = data.split(';')
         hours = int(h)
         minutes = int(m)
-        return str(hours*60+minutes)
+        if hours<=23 and minutes<=59:
+            return str(hours*60+minutes)
+        else:
+            return data
 
 dataTransformations = {
    # name                tranformation functions
