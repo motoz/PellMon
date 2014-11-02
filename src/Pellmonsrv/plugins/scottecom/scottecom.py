@@ -56,11 +56,11 @@ class scottecom(protocols):
         except:
             self.logger.info('scottecom protocol setup failed')
 
-    def getItem(self, item):
-        return self.protocol.getItem(item)
+    def getItem(self, item, raw=False):
+        return self.protocol.getItem(item, raw)
 
-    def setItem(self, item, value):
-        return self.protocol.setItem(item, value)
+    def setItem(self, item, value, raw=False):
+        return self.protocol.setItem(item, value, raw)
 
     def getDataBase(self):
         db = self.protocol.getDataBase()
@@ -115,13 +115,13 @@ class scottecom(protocols):
         for item in settings:
             try:
                 param = self.allparameters[item]
-                value = self.protocol.getItem(item)
+                value = self.protocol.getItem(item, raw=True)
                 if item in self.dbvalues:
                     if not value==self.dbvalues[item]:
                         log_change = True
                         # These are settings but their values are changed by the firmware also, 
                         # so small changes are suppressed from the log
-                        selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 2, 'magazine_content': 1}
+                        selfmodifying_params = {'feeder_capacity': 25, 'feeder_low': 0.5, 'feeder_high': 0.8, 'time_minutes': 3, 'magazine_content': 1}
                         try:
                             change = abs(float(value) - float(self.dbvalues[item]))
                             squelch = selfmodifying_params[item]

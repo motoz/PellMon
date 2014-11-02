@@ -55,5 +55,5 @@ dataEnumerations = {
                        'Scotte',
                        'Biocomfort/Woody with autocalc',
                        'Biocomfort/Woody without autocalc'),
-}   
+}
 

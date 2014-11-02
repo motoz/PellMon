@@ -23,6 +23,7 @@ import Queue
 import threading
 import serial
 from enumerations import dataEnumerations
+from transformations import dataTransformations
 logger = getLogger('pellMon')
 
 class Protocol(threading.Thread):
@@ -94,7 +95,7 @@ class Protocol(threading.Thread):
     def getDataBase(self):
         return self.dataBase  
                 
-    def getItem(self, param): 
+    def getItem(self, param, raw=False): 
         if self.dummyDevice:
             return '1234'
         """Read data/parameter value"""
@@ -138,7 +139,13 @@ class Protocol(threading.Thread):
                     except:                        
                         try:
                             formatStr="{:0."+str(dataparam.decimals)+"f}"
-                            return  formatStr.format( float(value) / pow(10, dataparam.decimals)  )
+                            data = formatStr.format( float(value) / pow(10, dataparam.decimals)  )
+                            try:
+                                if not raw:
+                                    data = dataTransformations[param].decode(value)
+                            except:
+                                pass
+                            return data
                         except:
                             raise IOError(0, "Getitem result is not a number")
             else:
@@ -146,7 +153,12 @@ class Protocol(threading.Thread):
         else: 
             raise IOError(0, "A command can't be read") 
 
-    def setItem(self, param, s):
+    def setItem(self, param, s, raw=False):
+        try:
+            if not raw:
+                s = dataTransformations[param].encode(s)
+        except:
+            pass
         if self.dummyDevice:
             return 'OK'
         """Write a parameter/command"""

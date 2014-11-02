@@ -135,7 +135,7 @@ class Dbus_handler:
         def on_signal(proxy, sender_name, signal_name, parameters):
             p = parameters[0]
             msg = []
-            l = p.split(';')
+            l = p.split('|')
             for ds in l:
                 d= ds.split(':')
                 msg.append({'name':d[0],'value':d[1]})
@@ -484,7 +484,10 @@ class PellMonWeb:
             cherrypy.session['level'] = 'Basic'
         level=cherrypy.session['level']
         try:
-            parameterlist = dbus.getFullDB([level,t1,t2,t3,t4])
+            if level == 'All':
+                parameterlist = dbus.getFullDB(['',t1,t2,t3,t4])
+            else:
+                parameterlist = dbus.getFullDB([level,t1,t2,t3,t4])
             # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
             paramQueue = Queue.Queue(300)
             # Store the queue in the session
