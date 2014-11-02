@@ -44,7 +44,7 @@ def dbus_msg_to_string(msg):
     ls = []
     for d in msg:
         ls.append(d['name'] + ':' + d['value'])
-    return ';'.join(ls)
+    return '|'.join(ls)
 
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
