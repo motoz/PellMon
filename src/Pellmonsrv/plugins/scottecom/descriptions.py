@@ -38,7 +38,7 @@ dataDescriptions = {          #name, unit, description
     'motor_time_perm':       ('motor time perm', 's',  ''),
     'el_time_perm':          ('el time perm', 's',  ''),
     'ignition_count':        ('number of ignitions', 'times',  'Total number of burner cold-startups'),
-    'reset_ignition':        ('clear the ignition count and the accumulated ignition time'),
+    'reset_ignition':        ('reset ignition', '', 'clear the ignition counter and the accumulated ignition time'),
     'boiler_return_temp':    ('boiler return temp', '°',  'Temperature of return flow to boiler'),
     'hotwater_temp':         ('hotwater temp', '°',  'Temperature in hotwater boiler'),
     'hotwater_temp_set':     ('hotwater desired temp', '°',  'The desired temperature in hotwater boiler'),
