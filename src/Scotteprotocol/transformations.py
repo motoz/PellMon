@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 class minutes_to_time:
-    def decode(data):
+    def decode(self, data):
         try:
             minutes = int(data)
             hours = minutes / 60
@@ -26,15 +26,15 @@ class minutes_to_time:
         except:
             return data
 
-    def encode(data):
-        h,m=':'.split(data)
+    def encode(self, data):
+        h,m = data.split(':')
         hours = int(h)
         minutes = int(m)
         return str(hours*60+minutes)
 
 dataTransformations = {
    # name                tranformation functions
-    'time_minutes':     minutes_to_time
+    'time_minutes':     minutes_to_time()
 }
 
 

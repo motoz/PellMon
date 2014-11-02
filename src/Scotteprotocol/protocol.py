@@ -95,7 +95,7 @@ class Protocol(threading.Thread):
     def getDataBase(self):
         return self.dataBase  
                 
-    def getItem(self, param): 
+    def getItem(self, param, raw=False): 
         if self.dummyDevice:
             return '1234'
         """Read data/parameter value"""
@@ -141,7 +141,8 @@ class Protocol(threading.Thread):
                             formatStr="{:0."+str(dataparam.decimals)+"f}"
                             data = formatStr.format( float(value) / pow(10, dataparam.decimals)  )
                             try:
-                                data = dataTransformations[param].decode(value)
+                                if not raw:
+                                    data = dataTransformations[param].decode(value)
                             except:
                                 pass
                             return data
@@ -152,9 +153,10 @@ class Protocol(threading.Thread):
         else: 
             raise IOError(0, "A command can't be read") 
 
-    def setItem(self, param, s):
+    def setItem(self, param, s, raw=False):
         try:
-            s = dataTransformations[param].encode(s)
+            if not raw:
+                s = dataTransformations[param].encode(s)
         except:
             pass
         if self.dummyDevice:
