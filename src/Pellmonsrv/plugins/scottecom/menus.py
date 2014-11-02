@@ -18,7 +18,7 @@
 """
 from datamenu import dataBaseTags
 
-Menutags = ['Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Cleaning', 'Temps'] 
+Menutags = ['Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Cleaning', 'Temperatures'] 
 Tags = ['Basic', 'All', 'Settings', 'Measurements']
 Alltags = Tags+Menutags
 
@@ -31,13 +31,11 @@ def getDbWithTags(wantedtags):
                 paramtags.append(Alltags[i])
         accepted=True
         for tag in wantedtags:
-            if tag=='':
-                break;
-            if not tag in paramtags:
+            if tag != '' and not tag in paramtags:
                 accepted=False
         if accepted:
             params.append(param)
     return params
 
 def getMenutags():
-    return Menutags
+    return Menutags + ['All']
