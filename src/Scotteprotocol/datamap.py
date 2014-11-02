@@ -142,4 +142,6 @@ dataBaseMap =  {
     'burner_off':           { ('4.99','zzzz') : command (                     'V00',   0,     0) },
     'burner_on':            { ('4.99','zzzz') : command (                     'V01',   0,     0) },
     'reset_alarm':          { ('4.99','zzzz') : command (                     'V02',   0,     0) },
+    'reset_ignition':       { ('4.99','zzzz') : command (                     'D03',   0,     0) },
+
 }
