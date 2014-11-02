@@ -22,7 +22,7 @@ class minutes_to_time:
             minutes = int(data)
             hours = minutes / 60
             minutes = minutes % 60
-            return "%u:%u"%(hours, minutes)
+            return "%02u:%02u"%(hours, minutes)
         except:
             return data
 

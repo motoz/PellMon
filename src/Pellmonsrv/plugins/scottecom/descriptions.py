@@ -78,7 +78,7 @@ dataDescriptions = {          #name, unit, description
     'cleaning_time':         ('cleaning time', 's',  'Time period with blower at cleaning speed setting when cleaning the grate'),
     'language':              ('language', '',  ''),
     'autocalculation':       ('autocalculation', '',  'When ON all feeder related settings are calculated from the feeder capacity setting'),
-    'time_minutes':          ('minutes since midnight', 'min',  'Real time clock setting in minutes since midnight'),
+    'time_minutes':          ('current time', 'hh:mm',  'Real time clock'),
     'oxygen_corr_10':        ('oxygen correction low', '%',  ''),
     'oxygen_corr_50':        ('oxygen correctin mid', '%',  ''),
     'oxygen_corr_100':       ('oxygen correction high', '%',  ''),
