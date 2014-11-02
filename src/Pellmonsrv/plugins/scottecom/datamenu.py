@@ -52,6 +52,8 @@ dataBaseTags = {
     'blower_cleaning':       ('X',   'X',      'X',       ' ',          ' ',     'X',   ' ',     ' ',   ' ',   ' ',  'X',     ' '),
     'boiler_temp_set':       ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     'X'),
     'boiler_temp_min':       (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     'X'),
+
+# Tags:                       Basic  All      Settings   Measurements  Overview Blower Ignition Feeder Oxygen Timer Cleaning  Temps
     'feeder_low':            (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     'X',   ' ',   ' ',  ' ',     ' '),
     'feeder_high':           (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     'X',   ' ',   ' ',  ' ',     ' '),
     'feed_per_minute':       (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     'X',   ' ',   ' ',  ' ',     ' '),
@@ -77,7 +79,7 @@ dataBaseTags = {
     'cleaning_time':         ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  'X',     ' '),
     'language':              ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
     'autocalculation':       (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     'X',   ' ',   ' ',  ' ',     ' '),
-    'time_minutes':          (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
+    'time_minutes':          ('X',   'X',      'X',       ' ',          'X',     ' ',   ' ',     ' ',   ' ',   'X',  ' ',     ' '),
     'oxygen_corr_10':        (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   'X',   ' ',  ' ',     ' '),
     'oxygen_corr_50':        (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   'X',   ' ',  ' ',     ' '),
     'oxygen_corr_100':       (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   'X',   ' ',  ' ',     ' '),
@@ -85,6 +87,8 @@ dataBaseTags = {
     'oxygen_regulation_P':   (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   'X',   ' ',  ' ',     ' '),
     'oxygen_regulation_D':   (' ',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   'X',   ' ',  ' ',     ' '),
     'blower_off_time':       (' ',   'X',      'X',       ' ',          ' ',     'X',   ' ',     ' ',   ' ',   ' ',  ' ',     ' '),
+
+# Tags:                       Basic  All      Settings   Measurements  Overview Blower Ignition Feeder Oxygen Timer Cleaning  Temps
     'timer_heating_period':  ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   'X',  ' ',     ' '),
     'timer_hotwater_period': ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   'X',  ' ',     ' '),
     'timer_heating_start_1': ('X',   'X',      'X',       ' ',          ' ',     ' ',   ' ',     ' ',   ' ',   'X',  ' ',     ' '),
