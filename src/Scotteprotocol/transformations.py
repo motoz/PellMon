@@ -27,12 +27,15 @@ class minutes_to_time:
             return data
 
     def encode(self, data):
-        h,m = data.split(';')
-        hours = int(h)
-        minutes = int(m)
-        if hours<=23 and minutes<=59:
-            return str(hours*60+minutes)
-        else:
+        try:
+            h,m = data.split(';')
+            hours = int(h)
+            minutes = int(m)
+            if hours<=23 and minutes<=59:
+                return str(hours*60+minutes)
+            else:
+                return data
+        except:
             return data
 
 dataTransformations = {
