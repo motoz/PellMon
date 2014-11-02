@@ -40,8 +40,15 @@ class minutes_to_time:
 
 dataTransformations = {
    # name                tranformation functions
-    'time_minutes':     minutes_to_time()
+    'time_minutes':           minutes_to_time()
+    'timer_heating_period':   minutes_to_time()
+    'timer_hotwater_period':  minutes_to_time()
+    'timer_heating_start_1':  minutes_to_time()
+    'timer_heating_start_2':  minutes_to_time()
+    'timer_heating_start_3':  minutes_to_time()
+    'timer_heating_start_4':  minutes_to_time()
+    'timer_hotwater_start_1': minutes_to_time()
+    'timer_hotwater_start_2': minutes_to_time()
+    'timer_hotwater_start_3': minutes_to_time()
 }
-
-
 
