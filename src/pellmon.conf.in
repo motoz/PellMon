@@ -215,7 +215,7 @@ d11 = _logtick
 
 [email]
 # Uncomment and set these for email on mode/alarm status changes
-# Uses TLS, this works for gmail:
+# This server:port works with gmail and TLS authentication
 #server=smtp.gmail.com:587
 #username=user
 #password=12345
@@ -223,7 +223,10 @@ d11 = _logtick
 #to=user@mail.com
 #subject=PellMon status
 
-# Send email when any of these change
+# TLS is used by default, to use SSL instead set this:
+#auth = SSL
+
+# Send email when any of these change (remove the unwanted conditions)
 #conditions=alarm,mode,parameter
 
 # set email mode to html/text, default is text.
@@ -238,7 +241,7 @@ d11 = _logtick
 # set graphlines to a comma separated list of data to include in the graph, by default all are included
 #graphlines = d01,d02,d03
 
-# set followup to send a new mail after the set number of seconds, by default no followup is sent
+# set followup to send a new mail with a new graph after the set number of seconds, by default no followup is sent
 #followup = 3600
 
 ############################################################################################

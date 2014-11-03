@@ -26,7 +26,7 @@ import logging.handlers
 import sys
 import ConfigParser
 import time
-from smtplib import SMTP 
+from smtplib import SMTP, SMTP_SSL
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -342,8 +342,12 @@ def sendmail_thread(msg, followup):
         if msgImg:
             msgRoot.attach(msgImg)
 
-        mailserver = SMTP(conf.emailserver)
-        mailserver.starttls() 
+        if conf.emailauth == 'TLS':
+            mailserver = SMTP(conf.emailserver)
+            mailserver.starttls()
+        else: 
+            mailserver = SMTP_SSL(conf.emailserver)
+
         mailserver.login(conf.emailusername, conf.emailpassword)
         mailserver.sendmail(msgRoot['From'], msgRoot['To'], msgRoot.as_string())
         mailserver.quit()
@@ -533,6 +537,11 @@ class config:
             self.email=True
         except ConfigParser.NoOptionError:
             self.email=False
+        try:
+            self.emailauth = parser.get('email', 'auth')
+        except ConfigParser.NoOptionError:
+            self.emailauth = 'TLS'
+
         try:
             self.port = parser.get('conf', 'port')
         except:
