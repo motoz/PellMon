@@ -227,7 +227,7 @@ function changeSystemImageText(name, value)
     var subdoc = getSubDocument(svgElement)
     if (subdoc) {
         var sub2 = subdoc.getElementById("paramname:" + name)
-        if (sub2) sub2.textContent = value;
+        if (sub2) sub2.textContent = +parseFloat(value).toFixed(1);
     }
 }
 
