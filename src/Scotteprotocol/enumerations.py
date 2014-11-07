@@ -27,7 +27,8 @@ dataEnumerations = {
                        'Light sensor error',
                        'Chute temperature sensor error',
                        'No fire',
-                       'Motor output error'),
+                       'Motor output error',
+                       'Out of pellet'),
 
     'mode':           ('Waiting', 
                        'Waiting_', 
@@ -47,11 +48,12 @@ dataEnumerations = {
                        'Error - Boiler sensor',
                        'Error - Light sensor',
                        'Error - Chute temperature sensor',
-                       '',  
                        'Error - Motor output',
-                       'Running on battery'),
-                       
-    'model':          ('Boink',
+                       'Running on battery',
+                       'Error - Out of pellet'),
+
+    'model':          ('0',
+                       'Boink',
                        'Scotte',
                        'Biocomfort/Woody with autocalc',
                        'Biocomfort/Woody without autocalc'),
