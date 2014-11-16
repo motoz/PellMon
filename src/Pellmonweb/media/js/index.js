@@ -55,6 +55,10 @@ var refreshGraph = function(getdata) {
                 }],
         legend: { 
                     show: false
+                },
+        grid:   {
+                hoverable: true,
+                clickable: true
                 }
     };
 
@@ -73,6 +77,29 @@ var refreshGraph = function(getdata) {
             }
         }
         var plot = $("#graph").plot(plotdata, options);
+
+		$("<div id='tooltip'></div>").css({
+			position: "absolute",
+			display: "none",
+			border: "1px solid #dddddd",
+			padding: "2px",
+			"background-color": "#f9f9f9",
+			opacity: 0.80
+		}).appendTo("body");
+
+		$("#graph").bind("plothover", function (event, pos, item) {
+			if (item) {
+				var x = item.datapoint[0].toFixed(2),
+					y = item.datapoint[1].toFixed(2);
+
+				$("#tooltip").html(item.series.label + " = " + y) 
+					.css({top: item.pageY-25, left: item.pageX+10})
+					.fadeIn(200);
+			} else {
+				$("#tooltip").hide();
+			}
+		});
+
     }
 
     if (getdata) {
@@ -388,6 +415,5 @@ else
 {
     setupPolling();
 }
-
 
 refreshGraph();
