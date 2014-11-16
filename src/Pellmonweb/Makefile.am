@@ -55,6 +55,8 @@ nobase_dist_foohtml_DATA = \
 	media/bs3/css/bootstrap.css \
 	media/bs3/css/bootstrap-theme.css \
 	media/bs3/css/bootstrap.min.css \
+	media/flot/jquery.flot.js \
+	media/flot/jquery.flot.time.js \
 	html/layout.html \
 	html/parameters.html \
 	html/consumption.html \

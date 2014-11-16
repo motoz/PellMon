@@ -1,6 +1,6 @@
 <%inherit file="layout.html"/>
 <%! 
-    scripts = ['reconnectingwebsocket.js','index.js','logview.js'] 
+    scripts = ['js/reconnectingwebsocket.js','js/index.js','js/logview.js','flot/jquery.flot.js', 'flot/jquery.flot.time.js'] 
 %>
 
 <%def name="title()">
@@ -23,9 +23,8 @@
     <div class="row">
         <div class="col-md-12">
             <h4 class="graphtitle">Graph</h4>
-            <div>
-                ${'<img style="margin-bottom:8px" class="graph image-responsive image-lazy" id="graph" data-title="%s" data-offset=0 data-timespan=%u data-src="%s/graph" src="%s/media/img/spinner.gif"'%(timeName, timeChoice, webroot, webroot)} />
-            </div>
+                        
+            ${'<div id="graph" data-title="%s" data-offset=0 data-timespan=%u style="height:400px"></div>'%(timeName, timeChoice)}
             <div id="center">
                 <div class="col-centered">
                     <p style="text-align: left">

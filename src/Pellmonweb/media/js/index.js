@@ -20,7 +20,7 @@ $(window).on('resize', function(e) {
 
 	windowResizeTimer = setTimeout(function() {
 		refreshAll();
-	}, 300);
+	}, 100);
 });
 
 var getMaxWidth = function(name) {
@@ -28,17 +28,65 @@ var getMaxWidth = function(name) {
 }
 
 var refreshAll = function() {
-	refreshGraph();
+	refreshGraph(false);
 	refreshConsumption();
 	refreshSilolevel();
 }
 
-var refreshGraph = function() {
-	var graph = getGraph(),
-	offset = graph.data('offset')
-	maxWidth = getMaxWidth('#graph');
+var data = []
 
-	graph.attr('src', graph.data('src') + '?width=' + maxWidth + '&timeoffset=' + offset + '&legends=no' + '&random=' + Math.random() );
+var refreshGraph = function(getdata) {
+    getdata = typeof getdata !== 'undefined' ? getdata : true;
+    var graph = getGraph(),
+    offset = graph.data('offset')
+    maxWidth = getMaxWidth('#graph');
+    var dayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thr", "Fri", "Sat"];
+
+    var options = {
+        series: {
+                    lines: { show: true, lineWidth: 1 },
+                    points: { show: false },
+                    shadowSize: 0,
+                },
+        xaxes:  [{
+                    mode: "time",       
+                    color: "black",
+                    position: "top",       
+                }],
+        legend: { 
+                    show: false
+                }
+    };
+
+    function plotGraph() {
+        plotdata = [];
+        selected = []
+        $('.lineselection').each(function() {
+            if ($(this).data('selected')=='yes') {
+                selected.push($( this ).text());
+            }
+        });
+        for (series in data) {
+            if ( selected.indexOf(data[series]['label']) != -1 ) {
+                plotdata.push(data[series]);
+                console.log(data[series]['label']);
+            }
+        }
+        var plot = $("#graph").plot(plotdata, options);
+    }
+
+    if (getdata) {
+        $.get(
+            'export'+'?width=' + maxWidth + '&timeoffset=' + offset,
+            function(getdata) {
+                data = JSON.parse(getdata);
+                plotGraph();
+            }
+        )
+    } else {
+        plotGraph();
+    }
+    setGraphTitle();
 }
 
 var refreshConsumption = function() {
@@ -104,12 +152,13 @@ $('.lineselection').click(function(e) {
             s = s + $(this).data('linename')+',';
         }
     });
+    console.log(s)
 
     $.post(
             'graphsession?lines='+s,
             function(data) {
                 getGraph().data('time-choice', me.data('time-choice'));
-                refreshGraph();
+                refreshGraph(false);
             }
     )
 });
@@ -340,3 +389,5 @@ else
     setupPolling();
 }
 
+
+refreshGraph();

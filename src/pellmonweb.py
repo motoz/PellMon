@@ -42,6 +42,8 @@ from datetime import datetime
 from cgi import escape
 from threading import Timer
 import signal
+import simplejson as json
+import re
 
 try:
     from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
@@ -368,6 +370,174 @@ class PellMonWeb:
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
+
+    @cherrypy.expose
+    def export(self, **args):
+        if not polling:
+            return None
+        if len(colorsDict) == 0:
+            return None
+
+        # Set x axis time span with ?timespan=xx 
+        try:
+            timespan = int(args['timespan'])
+        except:
+            try:
+                timespan = int(cherrypy.session['timespan'])
+            except:
+                timespan = 3600
+
+        # Set x axis end time with ?time=xx 
+        try:
+            graphtime = int(args['time'])
+        except:
+            graphtime = int(time.time())
+        
+        # Offset x-axis with ?timeoffset=xx 
+        try:
+            timeoffset = int(args['timeoffset'])
+        except:
+            try:
+                timeoffset = int(cherrypy.session['timeoffset'])
+            except:
+                timeoffset = 0
+
+        # Set graph width with ?width=xx 
+        try:
+            graphWidth = int(args['width'])
+        except:
+            try:
+                graphWidth = int(cherrypy.session['width'])
+            except:
+                graphWidth = 440 # Default bootstrap 3 grid size
+        if graphWidth > 5000:
+            graphWidth = 5000
+
+        # Set graph height with ?height=xx 
+        try:
+            graphHeight = int(args['height'])
+        except:
+            try:
+                graphHeight = int(cherrypy.session['height'])
+            except:
+                graphHeight = 400
+        if graphHeight > 2000:
+            graphHeight = 2000
+
+        # Set plotlines with ?lines=line1,line2,line3
+        try:
+            lines = args['lines'].split(',')
+        except:
+            try:
+                lines = cherrypy.session['lines']
+            except:
+                lines = '__all__'
+        if graphHeight > 2000:
+            graphHeight = 2000
+
+        # Hide legends with ?legends=no
+        legends = ''
+        try:
+            if args['legends'] == 'no':
+                legends = ' --no-legend '
+        except:
+            pass
+
+        # Set background color with ?bgcolor=rrbbgg (hex color)
+        try:
+            bgcolor =  args['bgcolor']
+            if len(bgcolor) == 6:
+                test = int(bgcolor, 16)
+            bgcolor = ' --color BACK#'+bgcolor
+        except:
+            bgcolor = ' '
+
+        # Set background color with ?bgcolor=rrbbgg (hex color)
+        try:
+            if args['align'] in ['left','center','right']:
+                align = args['align']
+        except:
+            align = 'right'
+
+        if align == 'left':
+            graphtime += timespan
+        elif align == 'center':
+            graphtime += timespan/2
+        if graphtime > int(time.time()):
+            graphtime=int(time.time())
+        graphtime =str(graphtime)
+
+        graphTimeStart=str(timespan + timeoffset)
+        graphTimeEnd=str(timeoffset)
+
+        # scale the right y-axis according to the first scaled item if found, otherwise unscaled
+        if int(graphWidth)>500:
+            rightaxis = '--right-axis'
+            scalestr = ' 1:0'
+            for line in graph_lines:
+                if line['name'] in lines and 'scale' in line:
+                    scale = line['scale'].split(':')
+                    try:
+                        gain = float(scale[1])
+                        offset = -float(scale[0])
+                    except:
+                        gain = 1
+                        offset = 0
+                    scalestr = " %s:%s"%(str(gain),str(offset))
+                    break
+            rightaxis += scalestr
+        else:
+            rightaxis = ''
+
+        #Build the command string to make a graph from the database
+        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
+        RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
+        RrdGraphString1 += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
+        RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
+
+        RrdGraphString1 =  "rrdtool xport --json "
+        RrdGraphString1 += "--end %s-"%(graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
+
+        for line in graph_lines:
+            if True: #lines == '__all__' or line['name'] in lines:
+                RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
+                if 'scale' in line:
+                    scale = line['scale'].split(':')
+                    try:
+                        gain = float(scale[1])
+                        offset = float(scale[0])
+                    except:
+                        gain = 1
+                        offset = 0
+                    RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)    
+                    #RrdGraphString1+="LINE1:%s_s%s:\"%s\" "% (line['name'], line['color'], line['name'])
+                    RrdGraphString1+="XPORT:%s_s:%s "% (line['name'], line['name'])
+                else:
+                    #RrdGraphString1+="LINE1:%s%s:\"%s\" "% (line['name'], line['color'], line['name'])
+                    RrdGraphString1+="XPORT:%s:%s "% (line['name'], line['name'])
+        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        #cherrypy.response.headers['Content-Type'] = "image/png"
+        out = cmd.communicate()[0]
+        out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
+        out = re.sub(r"'", r'"', out)
+        out= json.loads(out)
+        data = out['data']
+        start = int(out['meta']['start'])*1000
+        step = int(out['meta']['step'])*1000
+        legends = out['meta']['legend']
+        t = start
+        flotdata=[]
+        colors = {line['name']: line['color'] for line in graph_lines}
+        for i in range(len(legends)):
+            flotdata.append({'label':legends[i], 'color':colors[legends[i]], 'data':[]})
+        for s in data:
+            for i in range(len(s)):
+                flotdata[i]['data'].append([t, s[i]])
+            t += step
+        s = json.dumps(flotdata)
+        #cherrypy.response.headers['Content-Type'] = "application/json"
+        return s
 
     @cherrypy.expose
     def silolevel(self, **args):
