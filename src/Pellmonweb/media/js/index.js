@@ -78,27 +78,38 @@ var refreshGraph = function(getdata) {
         }
         var plot = $("#graph").plot(plotdata, options);
 
-		$("<div id='tooltip'></div>").css({
-			position: "absolute",
-			display: "none",
-			border: "1px solid #dddddd",
-			padding: "2px",
-			"background-color": "#f9f9f9",
-			opacity: 0.80
-		}).appendTo("body");
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltip">' + contents + '</div>').css({
 
-		$("#graph").bind("plothover", function (event, pos, item) {
-			if (item) {
-				var x = item.datapoint[0].toFixed(2),
-					y = item.datapoint[1].toFixed(2);
+                border: "1px solid #dddddd",
+                "background-color": "#f9f9f9",
+                opacity: 0.80,
+                position: 'absolute',
+                display: 'none',
+                top: y -25,
+                left: x + 10,
+                padding: '2px',
+            }).appendTo("body").fadeIn(200);
+        }
 
-				$("#tooltip").html(item.series.label + " = " + y) 
-					.css({top: item.pageY-25, left: item.pageX+10})
-					.fadeIn(200);
-			} else {
-				$("#tooltip").hide();
-			}
-		});
+        var previousPoint = null;
+        $("#graph").bind("plothover", function (event, pos, item) {
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(0),
+                        y = item.datapoint[1].toFixed(0);
+
+                    showTooltip(item.pageX, item.pageY, item.series.label + " = " + y);
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;
+            }
+        });
 
     }
 
