@@ -34,15 +34,7 @@ var refreshAll = function() {
 }
 
 var data = []
-
-var refreshGraph = function(getdata) {
-    getdata = typeof getdata !== 'undefined' ? getdata : true;
-    var graph = getGraph(),
-    offset = graph.data('offset')
-    maxWidth = getMaxWidth('#graph');
-    var dayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thr", "Fri", "Sat"];
-
-    var options = {
+var options = {
         series: {
                     lines: { show: true, lineWidth: 1 },
                     points: { show: false },
@@ -50,7 +42,6 @@ var refreshGraph = function(getdata) {
                 },
         xaxes:  [{
                     mode: "time",       
-                    color: "black",
                     position: "top",       
                 }],
         legend: { 
@@ -58,13 +49,18 @@ var refreshGraph = function(getdata) {
                 },
         grid:   {
                 hoverable: true,
-                clickable: true
                 }
     };
 
+var refreshGraph = function(getdata) {
+    var getdata = typeof getdata !== 'undefined' ? getdata : true;
+    var graph = getGraph();
+    var offset = graph.data('offset')
+    var maxWidth = getMaxWidth('#graph');
+
     function plotGraph() {
-        plotdata = [];
-        selected = []
+        var plotdata = [];
+        var selected = []
         $('.lineselection').each(function() {
             if ($(this).data('selected')=='yes') {
                 selected.push($( this ).text());
@@ -76,11 +72,10 @@ var refreshGraph = function(getdata) {
                 console.log(data[series]['label']);
             }
         }
-        var plot = $("#graph").plot(plotdata, options);
+        var plot = graph.plot(plotdata, options);
 
         function showTooltip(x, y, contents) {
             $('<div id="tooltip">' + contents + '</div>').css({
-
                 border: "1px solid #dddddd",
                 "background-color": "#f9f9f9",
                 opacity: 0.80,
@@ -93,15 +88,14 @@ var refreshGraph = function(getdata) {
         }
 
         var previousPoint = null;
-        $("#graph").bind("plothover", function (event, pos, item) {
+        graph.bind("plothover", function (event, pos, item) {
             if (item) {
-                if (previousPoint != item.dataIndex) {
-                    previousPoint = item.dataIndex;
-
+                var x = item.datapoint[0].toFixed(0),
+                    y = item.datapoint[1].toFixed(1);
+                var point = x+':'+y;
+                if (previousPoint != point) {
                     $("#tooltip").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(0);
-
+                    previousPoint = point;
                     showTooltip(item.pageX, item.pageY, item.series.label + " = " + y);
                 }
             }
@@ -110,14 +104,13 @@ var refreshGraph = function(getdata) {
                 previousPoint = null;
             }
         });
-
     }
 
     if (getdata) {
         $.get(
             'export'+'?width=' + maxWidth + '&timeoffset=' + offset,
-            function(getdata) {
-                data = JSON.parse(getdata);
+            function(jsondata) {
+                data = JSON.parse(jsondata);
                 plotGraph();
             }
         )
