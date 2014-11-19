@@ -49,6 +49,7 @@ var options = {
                 },
         grid:   {
                 hoverable: true,
+                backgroundColor:'#f9f9f9'
                 }
     };
 
