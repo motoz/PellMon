@@ -1,36 +1,49 @@
 var refreshTimer = null,
-	windowResizeTimer = null;
+    windowResizeTimer = null,
+    params="",
+    plot=null;
 
 /**
  * Refresh/lazy load graphs at page load
  */
 $(function() {
-	refreshGraph();
-	refreshConsumption();
-	refreshSilolevel();
+    refreshGraph();
+    refreshConsumption();
+    refreshSilolevel();
+    plot = $.plot($('#graph'), data, options);
+    svgElement = document.getElementById("systemimage");
+
+    if ($("#systemimage").data('websocket')) 
+    {
+        setupWebSocket();
+    }
+    else 
+    {
+        setupPolling();
+    }
 });
 
 /**
  * Refresh graphs when the window is resized
  */
 $(window).on('resize', function(e) {
-	if(windowResizeTimer !== null) {
-		clearTimeout(windowResizeTimer);
-	}
+    if(windowResizeTimer !== null) {
+    clearTimeout(windowResizeTimer);
+    }
 
-	windowResizeTimer = setTimeout(function() {
-		refreshAll();
-	}, 100);
+    windowResizeTimer = setTimeout(function() {
+    refreshAll();
+    }, 100);
 });
 
 var getMaxWidth = function(name) {
-	return 	$(name).closest('div').innerWidth();
+    return  $(name).closest('div').innerWidth();
 }
 
 var refreshAll = function() {
-	refreshGraph(false);
-	refreshConsumption();
-	refreshSilolevel();
+    refreshGraph(false);
+    refreshConsumption();
+    refreshSilolevel();
 }
 
 var data = []
@@ -125,25 +138,25 @@ var refreshGraph = function(getdata) {
 }
 
 var refreshConsumption = function() {
-	var consumption = $('#consumption'),
-		maxWidth = getMaxWidth('#consumption');
+    var consumption = $('#consumption'),
+    maxWidth = getMaxWidth('#consumption');
 
-	consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+    consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var refreshSilolevel = function() {
-	var silolevel = $('#silolevel'),
-		maxWidth = getMaxWidth('#silolevel');
+    var silolevel = $('#silolevel'),
+        maxWidth = getMaxWidth('#silolevel');
 
-	silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+    silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
 }
 
 var startImageRefresh = function() {
-	refreshTimer = setInterval(refreshGraph, 10000);
+    refreshTimer = setInterval(refreshGraph, 10000);
 }
 
 var getGraph = function() {
-	return $('#graph');
+    return $('#graph');
 }
 
 $('.timeChoice').click(function(e) {
@@ -410,21 +423,4 @@ function setupPolling() {
         setTimeout(setupWebSocket, 1000);
     }
 }
-
-var params="";
-var svgElement = document.getElementById("systemimage");
-var plot=null;
-
-$( document ).ready(function(){
-    plot = $.plot($('#graph'), data, options);
-    refreshGraph();
-    if ($("#systemimage").data('websocket')) 
-    {
-        setupWebSocket();
-    }
-    else 
-    {
-        setupPolling();
-    }
-});
 
