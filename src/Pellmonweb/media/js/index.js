@@ -69,7 +69,6 @@ var refreshGraph = function(getdata) {
         for (series in data) {
             if ( selected.indexOf(data[series]['label']) != -1 ) {
                 plotdata.push(data[series]);
-                console.log(data[series]['label']);
             }
         }
         var plot = graph.plot(plotdata, options);
@@ -183,7 +182,6 @@ $('.lineselection').click(function(e) {
             s = s + $(this).data('linename')+',';
         }
     });
-    console.log(s)
 
     $.post(
             'graphsession?lines='+s,
