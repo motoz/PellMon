@@ -53,6 +53,8 @@ var options = {
                 }
     };
 
+
+
 var refreshGraph = function(getdata) {
     var getdata = typeof getdata !== 'undefined' ? getdata : true;
     var graph = getGraph();
@@ -72,7 +74,9 @@ var refreshGraph = function(getdata) {
                 plotdata.push(data[series]);
             }
         }
-        var plot = graph.plot(plotdata, options);
+        plot.setData(plotdata);
+        plot.setupGrid();
+        plot.draw();
 
         function showTooltip(x, y, contents) {
             $('<div id="tooltip">' + contents + '</div>').css({
@@ -409,14 +413,18 @@ function setupPolling() {
 
 var params="";
 var svgElement = document.getElementById("systemimage");
-//svgElement.addEventListener("load", setupWebSocket);
-if ($("#systemimage").data('websocket')) 
-{
-    setupWebSocket();
-}
-else 
-{
-    setupPolling();
-}
+var plot=null;
 
-refreshGraph();
+$( document ).ready(function(){
+    plot = $.plot($('#graph'), data, options);
+    refreshGraph();
+    if ($("#systemimage").data('websocket')) 
+    {
+        setupWebSocket();
+    }
+    else 
+    {
+        setupPolling();
+    }
+});
+
