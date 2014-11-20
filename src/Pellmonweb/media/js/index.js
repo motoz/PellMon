@@ -55,15 +55,15 @@ var options = {
                 },
         xaxes:  [{
                     mode: "time",       
-                    position: "top",       
+                    position: "top",
                 }],
         legend: { 
                     show: false
                 },
         grid:   {
                 hoverable: true,
-                backgroundColor:'#f9f9f9'
-                }
+                backgroundColor:'#f9f9f9',
+                },
     };
 
 
@@ -87,9 +87,9 @@ var refreshGraph = function(getdata) {
                 plotdata.push(data[series]);
             }
         }
-        plot.setData(plotdata);
-        plot.setupGrid();
-        plot.draw();
+        graph.unbind();
+        graph.unbind("plothover");
+        plot = $.plot($('#graph'), plotdata, options);
 
         function showTooltip(x, y, contents) {
             $('<div id="tooltip">' + contents + '</div>').css({
@@ -113,7 +113,11 @@ var refreshGraph = function(getdata) {
                 if (previousPoint != point) {
                     $("#tooltip").remove();
                     previousPoint = point;
-                    showTooltip(item.pageX, item.pageY, item.series.label + " = " + y);
+                    var tooltipX = item.pageX;
+                    if (tooltipX - plot.offset().left > plot.width() - 75) {
+                        tooltipX -= 150;
+                    }
+                    showTooltip(tooltipX, item.pageY, item.series.label + " = " + y);
                 }
             }
             else {
