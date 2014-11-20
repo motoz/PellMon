@@ -64,6 +64,12 @@ var options = {
                 hoverable: true,
                 backgroundColor:'#f9f9f9',
                 },
+        zoom: {
+        interactive: true
+            },
+            pan: {
+                interactive: true
+            }
     };
 
 
@@ -186,8 +192,8 @@ $('.timeChoice').click(function(e) {
 });
 
 $('.lineselection').click(function(e) {
-	e.preventDefault();
-	var me = $(this);
+    e.preventDefault();
+    var me = $(this);
 
     a = me.data('selected')
     if (a == 'yes')
@@ -198,7 +204,7 @@ $('.lineselection').click(function(e) {
         { me.data('selected', 'yes') 
           me.addClass('selected')
         } 
-	var s = ''
+    var s = ''
     $('.lineselection').each(function() {
         if ($(this).data('selected')=='yes')  {
             s = s + $(this).data('linename')+',';
@@ -217,8 +223,8 @@ $('.lineselection').click(function(e) {
 
 $('.left').click(function(e) {
     var graph = getGraph()
-	e.preventDefault();
-	offset = graph.data('offset')
+    e.preventDefault();
+    offset = graph.data('offset')
     offset = parseInt(offset, 10)
     timespan = graph.data('timespan')
     offset = offset + timespan
@@ -230,9 +236,9 @@ $('.left').click(function(e) {
 });
 
 $('.right').click(function(e) {
-	e.preventDefault();
-	var graph=getGraph()
-	offset = graph.data('offset')
+    e.preventDefault();
+    var graph=getGraph()
+    offset = graph.data('offset')
     offset = parseInt(offset, 10)
     timespan = graph.data('timespan')
     offset = offset - timespan
@@ -245,47 +251,47 @@ $('.right').click(function(e) {
 });
 
 $('.autorefresh').click(function(e) {
-	e.preventDefault();
-	var me = $(this),
-		input = $('input.autorefresh');
+    e.preventDefault();
+    var me = $(this),
+        input = $('input.autorefresh');
 
-	var setAutorefresh = function(state, callback) {
-		$.post(
-			'autorefresh',
-			{
-				autorefresh: state
-			},
-			function(data) {
-				me.data('processing', false);
-				if(typeof callback === 'function') {
-					callback();
-				}
-			}
-		);
-	};
+    var setAutorefresh = function(state, callback) {
+        $.post(
+            'autorefresh',
+            {
+                autorefresh: state
+            },
+            function(data) {
+                me.data('processing', false);
+                if(typeof callback === 'function') {
+                    callback();
+                }
+            }
+        );
+    };
 
-	if(me.data('processing')) {
-		return;
-	}
+    if(me.data('processing')) {
+        return;
+    }
 
-	me.data('processing', true);
+    me.data('processing', true);
 
-	if(me.hasClass('selected')) {
-		me.removeClass('selected');
-		setAutorefresh('no', function() {
-			clearInterval(refreshTimer);
-		});
-	} else {
-		me.addClass('selected');
-		setAutorefresh('yes', function() {
-			startImageRefresh();
-		});
-		refreshGraph();
-	}
+    if(me.hasClass('selected')) {
+        me.removeClass('selected');
+        setAutorefresh('no', function() {
+            clearInterval(refreshTimer);
+        });
+    } else {
+        me.addClass('selected');
+        setAutorefresh('yes', function() {
+            startImageRefresh();
+        });
+        refreshGraph();
+    }
 });
 
 if($('.autorefresh').hasClass('selected')) {
-	startImageRefresh();
+    startImageRefresh();
 }
 
 var setGraphTitle = function() {
@@ -308,18 +314,18 @@ $('#graph').load(function() {
 
 function getSubDocument(embedding_element)
 {
-	if (embedding_element.contentDocument) 
-	{
-		return embedding_element.contentDocument;
-	} 
-	else 
-	{
-		var subdoc = null;
-		try {
-			subdoc = embedding_element.getSVGDocument();
-		} catch(e) {}
-		return subdoc;
-	}
+    if (embedding_element.contentDocument) 
+    {
+        return embedding_element.contentDocument;
+    } 
+    else 
+    {
+        var subdoc = null;
+        try {
+            subdoc = embedding_element.getSVGDocument();
+        } catch(e) {}
+        return subdoc;
+    }
 }
 
 function changeSystemImageText(name, value)
