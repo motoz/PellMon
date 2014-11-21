@@ -523,10 +523,14 @@ class PellMonWeb:
         out = re.sub(r"'", r'"', out)
         out= json.loads(out)
         data = out['data']
+
+        is_dst = time.daylight and time.localtime().tm_isdst > 0
+        utc_offset = - (time.altzone if is_dst else time.timezone)
+
         start = int(out['meta']['start'])*1000
         step = int(out['meta']['step'])*1000
         legends = out['meta']['legend']
-        t = start
+        t = start + (utc_offset * 1000)
         flotdata=[]
         colors = {line['name']: line['color'] for line in graph_lines}
         for i in range(len(legends)):
