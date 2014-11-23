@@ -610,7 +610,7 @@ class PellMonWeb:
         if consumption_graph:
             now = int(time.time())
             aligned1h = now/3600*3600
-            jsondata = self.barchartdata(start=aligned1h, period=3600, bars=24)
+            jsondata = self.consumptionview.barchartdata(start=aligned1h, period=3600, bars=24)
             cherrypy.response.headers['Pragma'] = 'no-cache'
             return jsondata
 
@@ -784,28 +784,6 @@ class PellMonWeb:
     def systemimage(self):
         return serve_file(system_image)
 
-    def barchartdata(self, start=0, period=3600, bars=1):
-        try:
-            period = int(period)
-            start = int(start)
-            bars = int(bars)
-            if start==0:
-                start = int(time.time())
-            bardata=[]
-            for i in range(bars)[::-1]:
-                to_time = start - period*i
-                from_time = to_time - period 
-                try:
-                    total = float(rrd_total(from_time, to_time)[1:][:-1])
-                    if math.isnan(total):
-                        total = 0
-                except Exception,e:
-                    total=0
-                bardata.append([from_time*1000, total])
-            return json.dumps(bardata)
-        except Exception, e:
-            return None
-
 class WsHandler:
     @cherrypy.expose
     def ws(self, parameters='', events='no'):
@@ -824,18 +802,6 @@ def parameterReader(q, parameterlist):
             value='error'
         q.put((item['name'],value))
     q.put(('**end**','**end**'))
-
-def rrd_total(start, end):
-    start = str(start)
-    end = str(end)
-    print int(end)-int(start)
-    command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%db,'DEF:b=%s:feeder_capacity:AVERAGE'%db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
-    print command
-    cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
-    try:
-        return cmd.communicate()[0].splitlines()[1]
-    except:
-        return None
 
 HERE = os.path.dirname(webpath)
 MEDIA_DIR = os.path.join(HERE, 'media')

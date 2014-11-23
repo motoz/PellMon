@@ -1,4 +1,8 @@
 <%inherit file="layout.html"/>
+<%! 
+    scripts = ['js/consumption.js','flot/jquery.flot.js', 'flot/jquery.flot.time.js','flot/jquery.flot.resize.js','flot/jquery.flot.navigate.js'] 
+%>
+
 <%def name="title()">
 Consumption
 </%def>
@@ -24,9 +28,10 @@ Consumption
     </div>
     <div class="col-md-6">
 	    <h1>Last year</h1>
-        <div id="consumption1y">
-            <img class="img-responsive" src="consumption1y"/>
+        <div id="consumption1y" style="height:400px">
 	    </div>
     </div>
 	</div>
 </div>
+
+

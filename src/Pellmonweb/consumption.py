@@ -25,7 +25,8 @@ from mako.lookup import TemplateLookup
 from time import time,localtime
 from tempfile import NamedTemporaryFile
 import subprocess
-
+from math import isnan
+import json
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
 
@@ -155,5 +156,46 @@ class Consumption(object):
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
 
+    @cherrypy.expose
+    def flotconsumption1y(self):    
+        if not self.polling:
+             return None
+        now = int(time())
+        align1y=now/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        jsondata = self.barchartdata(start=align1y, period=3600*24*30, bars=12)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
 
+    def barchartdata(self, start=0, period=3600, bars=1):
+        try:
+            period = int(period)
+            start = int(start)
+            bars = int(bars)
+            if start==0:
+                start = int(time.time())
+            bardata=[]
+            for i in range(bars)[::-1]:
+                to_time = start - period*i
+                from_time = to_time - period 
+                try:
+                    total = float(self.rrd_total(from_time, to_time)[1:][:-1])
+                    if isnan(total):
+                        total = 0
+                except Exception,e:
+                    print str(e)
+                    total=0
+                bardata.append([from_time*1000, total])
+            return json.dumps(bardata)
+        except Exception, e:
+            return None
+
+    def rrd_total(self, start, end):
+        start = str(start)
+        end = str(end)
+        command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
+        cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
+        try:
+            return cmd.communicate()[0].splitlines()[1]
+        except:
+            return None
 
