@@ -797,7 +797,7 @@ class PellMonWeb:
                 from_time = to_time - period 
                 try:
                     total = float(rrd_total(from_time, to_time)[1:][:-1])
-                    if math.isnan(a):
+                    if math.isnan(total):
                         total = 0
                 except Exception,e:
                     total=0
