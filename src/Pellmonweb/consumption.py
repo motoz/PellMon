@@ -155,3 +155,5 @@ class Consumption(object):
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
 
+
+

@@ -72,6 +72,24 @@ var options = {
             }
     };
 
+var baroptions = {
+     series: {
+         bars: {
+             show: true,
+             barWidth: 3000000, 
+             //align: 'center'
+         },
+     },
+     yaxes: {
+         min: 0
+     },
+     xaxis: {
+         mode: 'time',
+         //timeformat: "%y",
+         //tickSize: [1, "year"],
+         //autoscaleMargin: .10 // allow space left and right
+     }
+ };
 
 
 var refreshGraph = function(getdata) {
@@ -148,10 +166,12 @@ var refreshGraph = function(getdata) {
 }
 
 var refreshConsumption = function() {
-    var consumption = $('#consumption'),
-    maxWidth = getMaxWidth('#consumption');
-
-    consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+    $.get(
+        'flotconsumption'+'?period=3600&bars=24',
+        function(jsondata) {
+            data = JSON.parse(jsondata);
+            plot = $.plot($('#consumption'), [data], baroptions);
+        })
 }
 
 var refreshSilolevel = function() {
