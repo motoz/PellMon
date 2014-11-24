@@ -22,7 +22,7 @@ import cherrypy
 from cherrypy.lib.static import serve_file, serve_fileobj
 from mako.template import Template
 from mako.lookup import TemplateLookup
-from time import time,localtime
+import time
 from tempfile import NamedTemporaryFile
 import subprocess
 from math import isnan
@@ -113,7 +113,7 @@ class Consumption(object):
     def consumption24h(self):
         if not self.polling:
              return None
-        now=int(time())
+        now=int(time.time())
         align=now/3600*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 3600, 24, '-', 550, '24h consumption', 'kg/h')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
@@ -125,7 +125,7 @@ class Consumption(object):
     def flotconsumption24h(self):
         if not self.polling:
              return None
-        now=int(time())
+        now=int(time.time())
         align=now/3600*3600
         jsondata = self.barchartdata(start=align, period=3600, bars=24)
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -135,8 +135,8 @@ class Consumption(object):
     def consumption7d(self):
         if not self.polling:
              return None
-        now=int(time())
-        align=int(now)/86400*86400-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        now=int(time.time())
+        align=int(now)/86400*86400-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 86400, 7, '-', 550, 'last week', 'kg/day')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -147,8 +147,8 @@ class Consumption(object):
     def flotconsumption7d(self):
         if not self.polling:
              return None
-        now=int(time())
-        align=int(now)/86400*86400-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        now=int(time.time())
+        align=int(now)/86400*86400-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
         jsondata = self.barchartdata(start=align, period=3600*24, bars=7)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return jsondata
@@ -157,9 +157,9 @@ class Consumption(object):
     def consumption1m(self):    
         if not self.polling:
              return None
-        now = int(time())
-        align=int(now+4*86400)/(86400*7)*(86400*7)-(localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
-        RrdGraphString = make_barchart_string(self.db, time(), align, 86400*7, 8, '-', 550, 'last two months', 'kg/week')
+        now = int(time.time())
+        align=int(now+4*86400)/(86400*7)*(86400*7)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+        RrdGraphString = make_barchart_string(self.db, time.time(), align, 86400*7, 8, '-', 550, 'last two months', 'kg/week')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
@@ -169,8 +169,8 @@ class Consumption(object):
     def flotconsumption1m(self):
         if not self.polling:
              return None
-        now = int(time())
-        align=int(now+4*86400)/(86400*7)*(86400*7)-(localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+        now = int(time.time())
+        align=int(now+4*86400)/(86400*7)*(86400*7)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
         jsondata = self.barchartdata(start=align, period=3600*24*7, bars=8)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return jsondata
@@ -179,8 +179,8 @@ class Consumption(object):
     def consumption1y(self):    
         if not self.polling:
              return None
-        now = int(time())
-        align=now/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        now = int(time.time())
+        align=now/int(31556952/12)*int(31556952/12)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 2628000, 12, '-', 550, 'last year', 'kg/month')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -191,13 +191,15 @@ class Consumption(object):
     def flotconsumption1y(self):    
         if not self.polling:
              return None
-        now = int(time())
-        align1y=now/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        now = int(time.time())
+        align1y=now/int(31556952/12)*int(31556952/12)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
         jsondata = self.barchartdata(start=align1y, period=3600*24*30, bars=12)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return jsondata
 
     def barchartdata(self, start=0, period=3600, bars=1):
+        is_dst = time.daylight and time.localtime().tm_isdst > 0
+        utc_offset = - (time.altzone if is_dst else time.timezone)
         try:
             period = int(period)
             start = int(start)
@@ -215,7 +217,7 @@ class Consumption(object):
                 except Exception,e:
                     print str(e)
                     total=0
-                bardata.append([from_time*1000, total])
+                bardata.append([(from_time + utc_offset)*1000, total])
             return json.dumps(bardata)
         except Exception, e:
             return None
