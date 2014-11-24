@@ -32,18 +32,12 @@ $(window).on('resize', function(e) {
     }
 
     windowResizeTimer = setTimeout(function() {
-    refreshAll();
+    refreshSilolevel();
     }, 100);
 });
 
 var getMaxWidth = function(name) {
     return  $(name).closest('div').innerWidth();
-}
-
-var refreshAll = function() {
-    refreshGraph(false);
-    refreshConsumption();
-    refreshSilolevel();
 }
 
 var data = []
