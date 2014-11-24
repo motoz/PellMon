@@ -100,6 +100,7 @@ class Consumption(object):
     def __init__(self, polling, db):
         self.polling=polling
         self.db = db
+        self.totals={}
         
     @cherrypy.expose
     def consumption(self):
@@ -192,10 +193,20 @@ class Consumption(object):
     def rrd_total(self, start, end):
         start = str(start)
         end = str(end)
-        command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
-        cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
         try:
-            return cmd.communicate()[0].splitlines()[1]
+            total = self.totals[start][end]
+            print 'retrieved', total
         except:
-            return None
+            command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
+            cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
+            try:
+                total = cmd.communicate()[0].splitlines()[1]
+            except:
+                total = None
+            if total:
+                if not start in self.totals:
+                    self.totals[start] = {}
+                self.totals[start][end] = total
+                print 'inserted: ', total
 
+        return total
