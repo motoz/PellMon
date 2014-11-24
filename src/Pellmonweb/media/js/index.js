@@ -71,7 +71,7 @@ var baroptions = {
          color: '#9a9afa', 
          bars: {
              show: true,
-             barWidth: 3000000, 
+             barWidth: 3600000, 
              //align: 'center'
          },
      },
