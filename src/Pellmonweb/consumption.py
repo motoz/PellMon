@@ -122,6 +122,16 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
+    def flotconsumption24h(self):
+        if not self.polling:
+             return None
+        now=int(time())
+        align=now/3600*3600
+        jsondata = self.barchartdata(start=align, period=3600, bars=24)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
+    @cherrypy.expose
     def consumption7d(self):
         if not self.polling:
              return None
@@ -134,6 +144,16 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
+    def flotconsumption7d(self):
+        if not self.polling:
+             return None
+        now=int(time())
+        align=int(now)/86400*86400-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        jsondata = self.barchartdata(start=align, period=3600*24, bars=7)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
+    @cherrypy.expose
     def consumption1m(self):    
         if not self.polling:
              return None
@@ -144,7 +164,17 @@ class Consumption(object):
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
-        
+
+    @cherrypy.expose
+    def flotconsumption1m(self):
+        if not self.polling:
+             return None
+        now = int(time())
+        align=int(now+4*86400)/(86400*7)*(86400*7)-(localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+        jsondata = self.barchartdata(start=align, period=3600*24*7, bars=8)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
     @cherrypy.expose
     def consumption1y(self):    
         if not self.polling:
@@ -195,7 +225,6 @@ class Consumption(object):
         end = str(end)
         try:
             total = self.totals[start][end]
-            print 'retrieved', total
         except:
             command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
             cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
@@ -207,6 +236,4 @@ class Consumption(object):
                 if not start in self.totals:
                     self.totals[start] = {}
                 self.totals[start][end] = total
-                print 'inserted: ', total
-
         return total

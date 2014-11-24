@@ -3,7 +3,7 @@ var baroptions = {
      series: {
          bars: {
              show: true,
-             barWidth: 3000000*24*30, 
+             //barWidth: 3000000*24*30, 
              align: 'center'
          },
      },
@@ -18,14 +18,21 @@ var baroptions = {
      }
  };
 
-var drawConsumption = function() {
+var drawConsumption = function(url, graph, width) {
     $.get(
-        'flotconsumption1y',
+        url,
         function(jsondata) {
             data = JSON.parse(jsondata);
-            plot = $.plot($('#consumption1y'), [data], baroptions);
+            options = baroptions;
+            options.series.bars.barWidth = width * 1000;
+            plot = $.plot($(graph), [data], options);
         })
 }
 
-drawConsumption();
+$(function() {
+    drawConsumption('flotconsumption24h', '#consumption24h', 3000);
+    drawConsumption('flotconsumption7d', '#consumption7d', 3000*24);
+    drawConsumption('flotconsumption1m', '#consumption1m', 3000*24*7);
+    drawConsumption('flotconsumption1y', '#consumption1y', 3000*24*30);
+});
 
