@@ -23,19 +23,6 @@ $(function() {
     }
 });
 
-/**
- * Refresh graphs when the window is resized
- */
-$(window).on('resize', function(e) {
-    if(windowResizeTimer !== null) {
-    clearTimeout(windowResizeTimer);
-    }
-
-    windowResizeTimer = setTimeout(function() {
-    refreshSilolevel();
-    }, 100);
-});
-
 var getMaxWidth = function(name) {
     return  $(name).closest('div').innerWidth();
 }
@@ -91,6 +78,31 @@ var baroptions = {
 
  };
 
+var siloleveloptions = {
+        series: {
+                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(154, 154, 250, 0.6)"},
+                    color:"#9a9afa",
+                    points: { show: false },
+                    shadowSize: 0,
+                },
+        xaxes:  [{
+                    mode: "time",       
+                    position: "bottom",
+                }],
+        legend: { 
+                    show: false,
+                },
+        grid:   {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                },
+        zoom: {
+        interactive: true
+            },
+            pan: {
+                interactive: true
+            }
+    };
 
 var refreshGraph = function(getdata) {
     var getdata = typeof getdata !== 'undefined' ? getdata : true;
@@ -175,10 +187,12 @@ var refreshConsumption = function() {
 }
 
 var refreshSilolevel = function() {
-    var silolevel = $('#silolevel'),
-        maxWidth = getMaxWidth('#silolevel');
-
-    silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+    $.get(
+        'flotsilolevel',
+        function(jsondata) {
+            data = JSON.parse(jsondata);
+            plot = $.plot($('#silolevel'), data, siloleveloptions);
+        })
 }
 
 var startImageRefresh = function() {

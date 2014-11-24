@@ -518,7 +518,6 @@ class PellMonWeb:
                     RrdGraphString1+="XPORT:%s:%s "% (line['name'], line['name'])
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        #cherrypy.response.headers['Content-Type'] = "image/png"
         out = cmd.communicate()[0]
         out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
         out = re.sub(r"'", r'"', out)
@@ -581,6 +580,54 @@ class PellMonWeb:
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
+
+    @cherrypy.expose
+    def flotsilolevel(self, **args):
+        if not polling:
+            return None
+        try:
+            reset_level=dbus.getItem('silo_reset_level')
+            reset_time=dbus.getItem('silo_reset_time')
+            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
+            reset_time = mktime(reset_time.timetuple())
+        except:
+            return None
+
+        now=int(time.time())
+        start=int(reset_time)
+        RrdGraphString1=  "rrdtool xport --json --end %u --start %u "%(now, start)   
+        RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
+        RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
+        RrdGraphString1+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
+        RrdGraphString1+=" CDEF:s=a,b,*,360000,/,i,*" 
+        RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
+        RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF "
+        RrdGraphString1+=" XPORT:c:level"
+        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+
+        out = cmd.communicate()[0]
+        out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
+        out = re.sub(r"'", r'"', out)
+        out= json.loads(out)
+        data = out['data']
+
+        is_dst = time.daylight and time.localtime().tm_isdst > 0
+        utc_offset = - (time.altzone if is_dst else time.timezone)
+
+        start = int(out['meta']['start'])*1000
+        step = int(out['meta']['step'])*1000
+        legends = out['meta']['legend']
+        t = start + (utc_offset * 1000)
+        flotdata=[]
+        for i in range(len(legends)):
+            flotdata.append({'label':legends[i], 'data':[]})
+        for s in data:
+            for i in range(len(s)):
+                flotdata[i]['data'].append([t, s[i]])
+            t += step
+        s = json.dumps(flotdata)
+        return s
 
     @cherrypy.expose
     def consumption(self, **args):
