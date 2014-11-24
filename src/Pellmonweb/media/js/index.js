@@ -83,7 +83,12 @@ var baroptions = {
          //timeformat: "%y",
          //tickSize: [1, "year"],
          //autoscaleMargin: .10 // allow space left and right
-     }
+     },
+    grid:   {
+            hoverable: true,
+            backgroundColor:'#f9f9f9',
+            },
+
  };
 
 
