@@ -4,7 +4,7 @@ var baroptions = {
          bars: {
              show: true,
              barWidth: 3000000*24*30, 
-             //align: 'center'
+             align: 'center'
          },
      },
      yaxes: {
