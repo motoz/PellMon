@@ -74,6 +74,7 @@ var options = {
 
 var baroptions = {
      series: {
+         color: '#9a9afa', 
          bars: {
              show: true,
              barWidth: 3000000, 
