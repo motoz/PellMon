@@ -44,6 +44,8 @@ var options = {
         grid:   {
                 hoverable: true,
                 backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
                 },
         zoom: {
         interactive: true
@@ -55,11 +57,12 @@ var options = {
 
 var baroptions = {
      series: {
-         color: '#9a9afa', 
+         color: '#6989b7', 
          bars: {
              show: true,
-             barWidth: 3600000, 
-             //align: 'center'
+             barWidth: 3300000, 
+             //align: 'center',
+             lineWidth: 0,
          },
      },
      yaxes: {
@@ -67,6 +70,7 @@ var baroptions = {
      },
      xaxis: {
          mode: 'time',
+         tickColor: '#f9f9f9',
          //timeformat: "%y",
          //tickSize: [1, "year"],
          //autoscaleMargin: .10 // allow space left and right
@@ -74,13 +78,15 @@ var baroptions = {
     grid:   {
             hoverable: true,
             backgroundColor:'#f9f9f9',
+            borderWidth: 1,
+            borderColor: '#e7e7e7'
             },
 
  };
 
 var siloleveloptions = {
         series: {
-                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(131, 137, 183, 0.6)"},
+                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
                     color:"#9a9afa",
                     points: { show: false },
                     shadowSize: 0,
@@ -95,13 +101,9 @@ var siloleveloptions = {
         grid:   {
                 hoverable: true,
                 backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
                 },
-        zoom: {
-        interactive: true
-            },
-            pan: {
-                interactive: true
-            }
     };
 
 var refreshGraph = function(getdata) {
@@ -169,19 +171,20 @@ var refreshGraph = function(getdata) {
             function(jsondata) {
                 data = JSON.parse(jsondata);
                 plotGraph();
+                setGraphTitle();
             }
         )
     } else {
         plotGraph();
+        setGraphTitle();
     }
-    setGraphTitle();
 }
 
 var refreshConsumption = function() {
     $.get(
         'flotconsumption'+'?period=3600&bars=24',
         function(jsondata) {
-            data = JSON.parse(jsondata);
+            var data = JSON.parse(jsondata);
             plot = $.plot($('#consumption'), [data], baroptions);
         })
 }
@@ -190,7 +193,7 @@ var refreshSilolevel = function() {
     $.get(
         'flotsilolevel',
         function(jsondata) {
-            data = JSON.parse(jsondata);
+            var data = JSON.parse(jsondata);
             plot = $.plot($('#silolevel'), data, siloleveloptions);
         })
 }
@@ -248,11 +251,9 @@ $('.lineselection').click(function(e) {
 
     $.post(
             'graphsession?lines='+s,
-            function(data) {
-                getGraph().data('time-choice', me.data('time-choice'));
-                refreshGraph(false);
-            }
-    )
+            function(data) {}
+    );
+    refreshGraph(false);
 });
 
 
