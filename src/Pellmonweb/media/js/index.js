@@ -80,7 +80,7 @@ var baroptions = {
 
 var siloleveloptions = {
         series: {
-                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(154, 154, 250, 0.6)"},
+                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(131, 137, 183, 0.6)"},
                     color:"#9a9afa",
                     points: { show: false },
                     shadowSize: 0,
@@ -107,7 +107,7 @@ var siloleveloptions = {
 var refreshGraph = function(getdata) {
     var getdata = typeof getdata !== 'undefined' ? getdata : true;
     var graph = getGraph();
-    var offset = graph.data('offset')
+    var offset = $("#graphdiv").data('offset')
     var maxWidth = getMaxWidth('#graph');
 
     function plotGraph() {
@@ -205,18 +205,19 @@ var getGraph = function() {
 
 $('.timeChoice').click(function(e) {
     e.preventDefault();
+    var graphdiv = $("#graphdiv");
     $('.timeChoice').each( function() {
         $(this).removeClass('selected')
     });
     var me = $(this);
     var graph=getGraph()
     me.addClass('selected')
-    graph.data('title', me.data('title-text')+'...');
+    graphdiv.data('title', me.data('title-text')+'...');
     setGraphTitle()
-    graph.data('title', me.data('title-text'));
+    graphdiv.data('title', me.data('title-text'));
 
     timespan =  me.data('time-choice');
-    graph.data('timespan', timespan);
+    graphdiv.data('timespan', timespan);
     $.post(
             'graphsession?timespan='+timespan,
             function(data) {
@@ -256,31 +257,33 @@ $('.lineselection').click(function(e) {
 
 
 $('.left').click(function(e) {
-    var graph = getGraph()
     e.preventDefault();
-    offset = graph.data('offset')
+    var graph = getGraph();
+    var graphdiv = $("#graphdiv");
+    offset = graphdiv.data('offset')
     offset = parseInt(offset, 10)
-    timespan = graph.data('timespan')
+    timespan = graphdiv.data('timespan')
     offset = offset + timespan
     ofs = offset.toString()
-    graph.data('offset', ofs+'...');
+    graphdiv.data('offset', ofs+'...');
     setGraphTitle();
-    graph.data('offset', ofs);
+    graphdiv.data('offset', ofs);
     refreshGraph();
 });
 
 $('.right').click(function(e) {
     e.preventDefault();
-    var graph=getGraph()
-    offset = graph.data('offset')
+    var graph=getGraph();
+    var graphdiv = $("#graphdiv");
+    offset = graphdiv.data('offset')
     offset = parseInt(offset, 10)
-    timespan = graph.data('timespan')
+    timespan = graphdiv.data('timespan')
     offset = offset - timespan
     if (offset < 0) {offset = 0}
     ofs = offset.toString()
-    graph.data('offset', ofs+'...');
+    graphdiv.data('offset', ofs+'...');
     setGraphTitle();
-    graph.data('offset', ofs);
+    graphdiv.data('offset', ofs);
     refreshGraph();
 });
 
@@ -329,15 +332,16 @@ if($('.autorefresh').hasClass('selected')) {
 }
 
 var setGraphTitle = function() {
-    var graph = getGraph()
-    offset = graph.data('offset')
+    var graph = getGraph();
+    var graphdiv = $("#graphdiv");
+    offset = graphdiv.data('offset');
     if (offset == '0')
     {
-        title = graph.data('title')
+        title = graphdiv.data('title')
     }
     else
     {
-        title = graph.data('title') + ' - ' + offset + 's'
+        title = graphdiv.data('title') + ' - ' + offset + 's'
     }
     $('h4.graphtitle').text(title);
 }

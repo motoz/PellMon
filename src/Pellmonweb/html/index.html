@@ -23,8 +23,9 @@
     <div class="row">
         <div class="col-md-12">
             <h4 class="graphtitle">Graph</h4>
-                        
-            ${'<div id="graph" data-title="%s" data-offset=0 data-timespan=%u style="height:400px"></div>'%(timeName, timeChoice)}
+            ${'<div id="graphdiv" data-offset=0 data-title="%s" data-timespan=%u>'%(timeName, timeChoice)}
+            <div id="graph" style="height:400px"></div>
+            <div>
             <div id="center">
                 <div class="col-centered">
                     <p style="text-align: left">

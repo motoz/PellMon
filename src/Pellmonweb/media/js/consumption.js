@@ -1,7 +1,7 @@
 
 var baroptions = {
      series: {
-         color: '#9a9afa', 
+         color: '#8389b7',//#9a9afa', 
          bars: {
              show: true,
              //align: 'center'
