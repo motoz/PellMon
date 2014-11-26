@@ -204,8 +204,9 @@ class Consumption(object):
             period = int(period)
             start = int(start)
             bars = int(bars)
+            now = int(time.time())
             if start==0:
-                start = int(time.time())
+                start = now
             bardata=[]
             total=0
             for i in range(bars)[::-1]:
@@ -220,12 +221,23 @@ class Consumption(object):
                     bar=0
                 bardata.append([(from_time + utc_offset)*1000, bar])
                 total += bar
+            lastbar = float(self.rrd_total(start, now, cache=False)[1:][:-1])
+            if isnan(lastbar):
+                lastbar = 0
+            if now-start > 100:
+                predictedbar = (float(period) / (now-start)) * lastbar
+            else:
+                predictedbar = 0
+            bardata_ = []
+            bardata_.append( { 'bars':{'barWidth':(now-start)*1000}, 'color':"#cdcdcd", 'data':[[(start+utc_offset)*1000, predictedbar]]} )
+            bardata_.append( { 'bars':{'barWidth':(now-start)*1000}, 'data':[[(start+utc_offset)*1000, lastbar]]} )
+            bardata_.append( {'data':bardata} ) 
             average = total / bars
-            return json.dumps({'bardata':bardata, 'total':total, 'average':average})
+            return json.dumps({'bardata':bardata_, 'total':total, 'average':average})
         except Exception, e:
             return None
 
-    def rrd_total(self, start, end):
+    def rrd_total(self, start, end, cache=True):
         start = str(start)
         end = str(end)
         try:
@@ -237,7 +249,7 @@ class Consumption(object):
                 total = cmd.communicate()[0].splitlines()[1]
             except:
                 total = None
-            if total:
+            if total and cache:
                 if not start in self.totals:
                     self.totals[start] = {}
                 self.totals[start][end] = total

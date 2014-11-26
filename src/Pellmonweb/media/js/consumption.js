@@ -28,22 +28,23 @@ var baroptions = {
         },
  };
 
-var drawConsumption = function(url, graph, width) {
+var drawConsumption = function(url, graph, width, label, totalunit, averageunit) {
     $.get(
         url,
         function(jsondata) {
             var data = JSON.parse(jsondata);
             options = baroptions;
             options.series.bars.barWidth = width * 1000;
-            plot = $.plot($(graph), [data.bardata], options);
-            $('<p>Total: ' + data.total.toFixed(1).toString() + ', Average: ' + data.average.toFixed(1).toString() + '</p>').insertAfter($(graph));
-        })
+            plot = $.plot($(graph), data.bardata, options);
+            $('<p>' + label + data.total.toFixed(1).toString() + totalunit + '</p>').insertAfter($(graph));
+            $('<p> average ' + data.average.toFixed(1).toString() + averageunit + '</p>').insertAfter($(graph)).css('float', 'right');
+        });
 }
 
 $(function() {
-    drawConsumption('flotconsumption24h', '#consumption24h', 3300);
-    drawConsumption('flotconsumption7d', '#consumption7d', 3500*24);
-    drawConsumption('flotconsumption1m', '#consumption1m', 3500*24*7);
-    drawConsumption('flotconsumption1y', '#consumption1y', 3400*24*30);
+    drawConsumption('flotconsumption24h', '#consumption24h', 3300, 'last 24h: ', ' kg', ' kg/h ');
+    drawConsumption('flotconsumption7d', '#consumption7d', 3500*24, 'last week: ', ' kg', ' kg/day ');
+    drawConsumption('flotconsumption1m', '#consumption1m', 3500*24*7, 'last two months: ', ' kg', ' kg/week ');
+    drawConsumption('flotconsumption1y', '#consumption1y', 3400*24*30, 'last year: ', ' kg', ' kg/month ');
 });
 
