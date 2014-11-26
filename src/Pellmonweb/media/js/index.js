@@ -185,7 +185,8 @@ var refreshConsumption = function() {
         'flotconsumption'+'?period=3600&bars=24',
         function(jsondata) {
             var data = JSON.parse(jsondata);
-            plot = $.plot($('#consumption'), [data], baroptions);
+            plot = $.plot($('#consumption'), [data.bardata], baroptions);
+            $('<p>Total: ' + data.total.toFixed(1).toString() + 'kg, Average: ' + data.average.toFixed(1).toString() + 'kg/h</p>').insertAfter($('#consumption'));
         })
 }
 
