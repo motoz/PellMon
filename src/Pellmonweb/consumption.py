@@ -207,18 +207,21 @@ class Consumption(object):
             if start==0:
                 start = int(time.time())
             bardata=[]
+            total=0
             for i in range(bars)[::-1]:
                 to_time = start - period*i
                 from_time = to_time - period 
                 try:
-                    total = float(self.rrd_total(from_time, to_time)[1:][:-1])
-                    if isnan(total):
-                        total = 0
+                    bar = float(self.rrd_total(from_time, to_time)[1:][:-1])
+                    if isnan(bar):
+                        bar = 0
                 except Exception,e:
                     print str(e)
-                    total=0
-                bardata.append([(from_time + utc_offset)*1000, total])
-            return json.dumps(bardata)
+                    bar=0
+                bardata.append([(from_time + utc_offset)*1000, bar])
+                total += bar
+            average = total / bars
+            return json.dumps({'bardata':bardata, 'total':total, 'average':average})
         except Exception, e:
             return None
 

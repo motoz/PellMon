@@ -32,10 +32,11 @@ var drawConsumption = function(url, graph, width) {
     $.get(
         url,
         function(jsondata) {
-            data = JSON.parse(jsondata);
+            var data = JSON.parse(jsondata);
             options = baroptions;
             options.series.bars.barWidth = width * 1000;
-            plot = $.plot($(graph), [data], options);
+            plot = $.plot($(graph), [data.bardata], options);
+            $('<p>Total: ' + data.total.toFixed(1).toString() + ', Average: ' + data.average.toFixed(1).toString() + '</p>').insertAfter($(graph));
         })
 }
 
