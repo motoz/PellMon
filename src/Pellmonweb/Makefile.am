@@ -13,6 +13,7 @@ nobase_dist_foohtml_DATA = \
 	media/js/parameters.js \
 	media/js/websocket.js \
 	media/js/reconnectingwebsocket.js \
+	media/js/consumption.js \
 	media/css/pellmon.css \
 	media/img/pellmon.svg \
 	media/img/spinner.gif \
@@ -55,6 +56,10 @@ nobase_dist_foohtml_DATA = \
 	media/bs3/css/bootstrap.css \
 	media/bs3/css/bootstrap-theme.css \
 	media/bs3/css/bootstrap.min.css \
+	media/flot/jquery.flot.js \
+	media/flot/jquery.flot.time.js \
+	media/flot/jquery.flot.resize.js \
+	media/flot/jquery.flot.navigate.js \
 	html/layout.html \
 	html/parameters.html \
 	html/consumption.html \

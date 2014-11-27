@@ -22,9 +22,14 @@ import cherrypy
 from cherrypy.lib.static import serve_file, serve_fileobj
 from mako.template import Template
 from mako.lookup import TemplateLookup
-from time import time,localtime
+import time
 from tempfile import NamedTemporaryFile
 import subprocess
+from math import isnan
+import json
+from weakref import WeakValueDictionary
+from random import randrange
+import threading
 
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
@@ -94,12 +99,21 @@ def make_barchart_string(db, end, align, div, bars, out='-', width=440, tot_txt=
     return RrdGraphString1
 
 
-class Consumption(object):    
+class Consumption(object):
+
+    class Bardata(object):
+        def __init__(self, data):
+            self.data = data
+        def store_ref(self, ref):
+            self.ref = ref
 
     def __init__(self, polling, db):
         self.polling=polling
         self.db = db
-        
+        self.totals=WeakValueDictionary()
+        self.totals_fifo=[None]*200
+        self.cache_lock = threading.Lock()
+
     @cherrypy.expose
     def consumption(self):
         if not self.polling:
@@ -111,7 +125,7 @@ class Consumption(object):
     def consumption24h(self):
         if not self.polling:
              return None
-        now=int(time())
+        now=int(time.time())
         align=now/3600*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 3600, 24, '-', 550, '24h consumption', 'kg/h')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
@@ -120,11 +134,21 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
+    def flotconsumption24h(self):
+        if not self.polling:
+             return None
+        now=int(time.time())
+        align=now/3600*3600
+        jsondata = self.barchartdata(start=align, period=3600, bars=24)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
+    @cherrypy.expose
     def consumption7d(self):
         if not self.polling:
              return None
-        now=int(time())
-        align=int(now)/86400*86400-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        now=int(time.time())
+        align=int(now)/86400*86400-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 86400, 7, '-', 550, 'last week', 'kg/day')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -132,26 +156,124 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
+    def flotconsumption7d(self):
+        if not self.polling:
+             return None
+        now=int(time.time())
+        align=int(now)/86400*86400-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
+        jsondata = self.barchartdata(start=align, period=3600*24, bars=7)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
+    @cherrypy.expose
     def consumption1m(self):    
         if not self.polling:
              return None
-        now = int(time())
-        align=int(now+4*86400)/(86400*7)*(86400*7)-(localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
-        RrdGraphString = make_barchart_string(self.db, time(), align, 86400*7, 8, '-', 550, 'last two months', 'kg/week')
+        now = int(time.time())
+        align=int(now+4*86400)/(86400*7)*(86400*7)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+        RrdGraphString = make_barchart_string(self.db, time.time(), align, 86400*7, 8, '-', 550, 'last two months', 'kg/week')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
-        
+
+    @cherrypy.expose
+    def flotconsumption1m(self):
+        if not self.polling:
+             return None
+        now = int(time.time())
+        align=int(now+4*86400)/(86400*7)*(86400*7)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+        jsondata = self.barchartdata(start=align, period=3600*24*7, bars=8)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
     @cherrypy.expose
     def consumption1y(self):    
         if not self.polling:
              return None
-        now = int(time())
-        align=now/int(31556952/12)*int(31556952/12)-(localtime(now).tm_hour-int(now)%86400/3600)*3600
+        now = int(time.time())
+        align=now/int(31556952/12)*int(31556952/12)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
         RrdGraphString = make_barchart_string(self.db, now, align, 2628000, 12, '-', 550, 'last year', 'kg/month')
         cmd = subprocess.Popen(RrdGraphString +"--height 320", shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
 
+    @cherrypy.expose
+    def flotconsumption1y(self):    
+        if not self.polling:
+             return None
+        now = int(time.time())
+        align1y=now/int(31556952/12)*int(31556952/12)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
+        jsondata = self.barchartdata(start=align1y, period=3600*24*30, bars=12)
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return jsondata
+
+    def barchartdata(self, start=0, period=3600, bars=1):
+        is_dst = time.daylight and time.localtime().tm_isdst > 0
+        utc_offset = - (time.altzone if is_dst else time.timezone)
+        try:
+            period = int(period)
+            start = int(start)
+            bars = int(bars)
+            now = int(time.time())
+            if start==0:
+                start = now
+            bardata=[]
+            total=0
+            for i in range(bars)[::-1]:
+                to_time = start - period*i
+                from_time = to_time - period 
+                try:
+                    bar = float(self.rrd_total(from_time, to_time)[1:][:-1])
+                    if isnan(bar):
+                        bar = 0
+                except Exception,e:
+                    bar=0
+                bardata.append([(from_time + utc_offset)*1000, bar])
+                total += bar
+            lastbar = float(self.rrd_total(start, now, cache=False)[1:][:-1])
+            if isnan(lastbar):
+                lastbar = 0
+            if now-start > 100:
+                predictedbar = (float(period) / (now-start)) * lastbar
+            else:
+                predictedbar = 0
+            bardata_ = []
+            bardata_.append( { 'bars':{'barWidth':(now-start)*1000}, 'color':"#cdcdcd", 'data':[[(start+utc_offset)*1000, predictedbar]]} )
+            bardata_.append( { 'bars':{'barWidth':(now-start)*1000}, 'data':[[(start+utc_offset)*1000, lastbar]]} )
+            bardata_.append( {'data':bardata} ) 
+            average = total / bars
+            return json.dumps({'bardata':bardata_, 'total':total, 'average':average})
+        except Exception, e:
+            return None
+
+    def rrd_total(self, start, end, cache=True):
+        start = str(start)
+        end = str(end)
+        with self.cache_lock:
+            try:
+                starts = self.totals[start]
+                total = starts.data[end].data
+            except Exception, e:
+                command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
+                cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
+                try:
+                    total = cmd.communicate()[0].splitlines()[1]
+                    if cache:
+                        totalcontainer = self.Bardata(total)
+                        try:
+                            starts = self.totals[start]
+                        except:
+                            starts = self.Bardata(WeakValueDictionary())
+                            #store a reference to the starts dict so it's not freed until empty
+                            totalcontainer.store_ref(starts)
+                            self.totals[start] = starts
+                        starts.data[end] = totalcontainer
+                        self.totals_fifo[randrange(0,len(self.totals_fifo))] = totalcontainer
+                except Exception, e:
+                    total = None
+        if total:
+            return total
+        else:
+            return None
