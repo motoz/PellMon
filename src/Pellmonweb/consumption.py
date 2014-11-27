@@ -27,6 +27,10 @@ from tempfile import NamedTemporaryFile
 import subprocess
 from math import isnan
 import json
+from weakref import WeakValueDictionary
+from random import randrange
+import threading
+
 lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
 
 
@@ -95,13 +99,21 @@ def make_barchart_string(db, end, align, div, bars, out='-', width=440, tot_txt=
     return RrdGraphString1
 
 
-class Consumption(object):    
+class Consumption(object):
+
+    class Bardata(object):
+        def __init__(self, data):
+            self.data = data
+        def store_ref(self, ref):
+            self.ref = ref
 
     def __init__(self, polling, db):
         self.polling=polling
         self.db = db
-        self.totals={}
-        
+        self.totals=WeakValueDictionary()
+        self.totals_fifo=[None]*200
+        self.cache_lock = threading.Lock()
+
     @cherrypy.expose
     def consumption(self):
         if not self.polling:
@@ -217,7 +229,6 @@ class Consumption(object):
                     if isnan(bar):
                         bar = 0
                 except Exception,e:
-                    print str(e)
                     bar=0
                 bardata.append([(from_time + utc_offset)*1000, bar])
                 total += bar
@@ -240,17 +251,29 @@ class Consumption(object):
     def rrd_total(self, start, end, cache=True):
         start = str(start)
         end = str(end)
-        try:
-            total = self.totals[start][end]
-        except:
-            command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
-            cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
+        with self.cache_lock:
             try:
-                total = cmd.communicate()[0].splitlines()[1]
-            except:
-                total = None
-            if total and cache:
-                if not start in self.totals:
-                    self.totals[start] = {}
-                self.totals[start][end] = total
-        return total
+                starts = self.totals[start]
+                total = starts.data[end].data
+            except Exception, e:
+                command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
+                cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
+                try:
+                    total = cmd.communicate()[0].splitlines()[1]
+                    if cache:
+                        totalcontainer = self.Bardata(total)
+                        try:
+                            starts = self.totals[start]
+                        except:
+                            starts = self.Bardata(WeakValueDictionary())
+                            #store a reference to the starts dict so it's not freed until empty
+                            totalcontainer.store_ref(starts)
+                            self.totals[start] = starts
+                        starts.data[end] = totalcontainer
+                        self.totals_fifo[randrange(0,len(self.totals_fifo))] = totalcontainer
+                except Exception, e:
+                    total = None
+        if total:
+            return total
+        else:
+            return None
