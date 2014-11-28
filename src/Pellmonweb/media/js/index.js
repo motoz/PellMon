@@ -121,7 +121,7 @@ var refreshGraph = function(getdata) {
             }
         });
         for (series in data) {
-            if ( selected.indexOf(data[series]['label']) != -1 ) {
+            if ( selected.indexOf(data[series]['label']) != -1  || data[series]['label'] == 'logtick') {
                 plotdata.push(data[series]);
             }
         }

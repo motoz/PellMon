@@ -500,22 +500,25 @@ class PellMonWeb:
         RrdGraphString1 += "--end %s-"%(graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
 
         for line in graph_lines:
-            if True: #lines == '__all__' or line['name'] in lines:
-                RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
-                if 'scale' in line:
-                    scale = line['scale'].split(':')
-                    try:
-                        gain = float(scale[1])
-                        offset = float(scale[0])
-                    except:
-                        gain = 1
-                        offset = 0
-                    RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)    
-                    #RrdGraphString1+="LINE1:%s_s%s:\"%s\" "% (line['name'], line['color'], line['name'])
-                    RrdGraphString1+="XPORT:%s_s:%s "% (line['name'], line['name'])
-                else:
-                    #RrdGraphString1+="LINE1:%s%s:\"%s\" "% (line['name'], line['color'], line['name'])
-                    RrdGraphString1+="XPORT:%s:%s "% (line['name'], line['name'])
+            RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
+            if 'scale' in line:
+                scale = line['scale'].split(':')
+                try:
+                    gain = float(scale[1])
+                    offset = float(scale[0])
+                except:
+                    gain = 1
+                    offset = 0
+                RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)    
+                RrdGraphString1+="XPORT:%s_s:%s "% (line['name'], line['name'])
+            else:
+                RrdGraphString1+="XPORT:%s:%s "% (line['name'], line['name'])
+        RrdGraphString1+=" DEF:logtick="+db+":_logtick:AVERAGE "
+        RrdGraphString1+=" CDEF:prevtick=PREV\(logtick\)"
+        RrdGraphString1+=" CDEF:tick=prevtick,logtick,GT,"
+        RrdGraphString1+=" XPORT:tick:logtick "
+        print RrdGraphString1
+
         cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         out = cmd.communicate()[0]
@@ -534,7 +537,10 @@ class PellMonWeb:
         flotdata=[]
         colors = {line['name']: line['color'] for line in graph_lines}
         for i in range(len(legends)):
-            flotdata.append({'label':legends[i], 'color':colors[legends[i]], 'data':[]})
+            if legends[i] in colors:
+                flotdata.append({'label':legends[i], 'color':colors[legends[i]], 'data':[]})
+            elif legends[i] == 'logtick':
+                flotdata.append({'lines':{'show':False},'bars':{'show':True,'align':'center'}, 'label':legends[i], 'color':'#000000', 'data':[]})
         for s in data:
             for i in range(len(s)):
                 flotdata[i]['data'].append([t, s[i]])
