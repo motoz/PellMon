@@ -348,13 +348,13 @@ class PellMonWeb:
             rightaxis = ''
 
         #Build the command string to make a graph from the database
-        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
-        RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
-        RrdGraphString1 += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
-        RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
+        RRD_command =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
+        RRD_command += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
+        RRD_command += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
+        RRD_command += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
         for line in graph_lines:
             if lines == '__all__' or line['name'] in lines:
-                RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
+                RRD_command+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
                 if 'scale' in line:
                     scale = line['scale'].split(':')
                     try:
@@ -363,11 +363,11 @@ class PellMonWeb:
                     except:
                         gain = 1
                         offset = 0
-                    RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)    
-                    RrdGraphString1+="LINE1:%s_s%s:\"%s\" "% (line['name'], line['color'], line['name'])
+                    RRD_command+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)
+                    RRD_command+="LINE1:%s_s%s:\"%s\" "% (line['name'], line['color'], line['name'])
                 else:
-                    RrdGraphString1+="LINE1:%s%s:\"%s\" "% (line['name'], line['color'], line['name'])
-        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+                    RRD_command+="LINE1:%s%s:\"%s\" "% (line['name'], line['color'], line['name'])
+        cmd = subprocess.Popen(RRD_command, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
@@ -495,17 +495,17 @@ class PellMonWeb:
 
         now=int(time.time())
         start=int(reset_time)
-        RrdGraphString1=  "rrdtool graph - --border 0 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
-        RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
-        RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
-        #RrdGraphString1+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
-        #RrdGraphString1+=" CDEF:a2=t,%u,GT,tt,%u,LE,3000,0,IF,0,IF"%(start+864000*7,start+864000*7)
-        #RrdGraphString1+=" CDEF:s1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start, start, reset_level)
-        RrdGraphString1+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
-        RrdGraphString1+=" CDEF:s=a,b,*,360000,/,i,*" 
-        RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
-        RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
-        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        RRD_command=  "rrdtool graph - --border 0 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
+        RRD_command+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
+        RRD_command+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
+        #RRD_command+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
+        #RRD_command+=" CDEF:a2=t,%u,GT,tt,%u,LE,3000,0,IF,0,IF"%(start+864000*7,start+864000*7)
+        #RRD_command+=" CDEF:s1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start, start, reset_level)
+        RRD_command+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
+        RRD_command+=" CDEF:s=a,b,*,360000,/,i,*"
+        RRD_command+=" CDEF:fs=s,UN,0,s,IF"
+        RRD_command+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
+        cmd = subprocess.Popen(RRD_command, shell=True, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         cherrypy.response.headers['Content-Type'] = "image/png"
         return cmd.communicate()[0]
@@ -522,18 +522,21 @@ class PellMonWeb:
         except:
             return None
 
-        now=int(time.time())
-        start=int(reset_time)
-        RrdGraphString1=  "rrdtool xport --json --end %u --start %u "%(now, start)   
-        RrdGraphString1+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
-        RrdGraphString1+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
-        RrdGraphString1+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
-        RrdGraphString1+=" CDEF:s=a,b,*,360000,/,i,*" 
-        RrdGraphString1+=" CDEF:fs=s,UN,0,s,IF" 
-        RrdGraphString1+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF "
-        RrdGraphString1+=" XPORT:c:level"
-        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
-        cherrypy.response.headers['Pragma'] = 'no-cache'
+        now=str(int(time.time()))
+        start=str(int(reset_time))
+        RRD_command=  ['rrdtool', 'xport', '--json', '--end',str(now) , '--start', start]
+        RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)
+        RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)
+        RRD_command.append("CDEF:t=a,POP,TIME")
+        RRD_command.append("CDEF:tt=PREV(t)")
+        RRD_command.append("CDEF:i=t,tt,-")
+        RRD_command.append("CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level)
+        RRD_command.append("CDEF:s=a,b,*,360000,/,i,*")
+        RRD_command.append("CDEF:fs=s,UN,0,s,IF")
+        RRD_command.append("CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF")
+        RRD_command.append("XPORT:c:level")
+
+        cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
 
         out = cmd.communicate()[0]
         out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
@@ -556,6 +559,8 @@ class PellMonWeb:
                 flotdata[i]['data'].append([t, s[i]])
             t += step
         s = json.dumps(flotdata)
+
+        cherrypy.response.headers['Pragma'] = 'no-cache'
         return s
 
     @cherrypy.expose
