@@ -514,6 +514,9 @@ class PellMonWeb:
     def flotsilolevel(self, **args):
         if not polling:
             return None
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        return dbus.getItem('siloLevelData')
+
         try:
             reset_level=dbus.getItem('silo_reset_level')
             reset_time=dbus.getItem('silo_reset_time')

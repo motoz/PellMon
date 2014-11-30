@@ -97,7 +97,7 @@ class Database(threading.Thread):
             changed_params = []
             for item_name in self.items:
                 try:
-                    value = self.items[item_name].getItem()
+                    self.items[item_name].getItem()
                     if item_name in self.values:
                         if value != self.values[item_name]:
                             changed_params.append({'name':item_name, 'value':value})
