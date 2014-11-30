@@ -403,57 +403,6 @@ class PellMonWeb:
             except:
                 timeoffset = 0
 
-        # Set graph width with ?width=xx 
-        try:
-            graphWidth = int(args['width'])
-        except:
-            try:
-                graphWidth = int(cherrypy.session['width'])
-            except:
-                graphWidth = 440 # Default bootstrap 3 grid size
-        if graphWidth > 5000:
-            graphWidth = 5000
-
-        # Set graph height with ?height=xx 
-        try:
-            graphHeight = int(args['height'])
-        except:
-            try:
-                graphHeight = int(cherrypy.session['height'])
-            except:
-                graphHeight = 400
-        if graphHeight > 2000:
-            graphHeight = 2000
-
-        # Set plotlines with ?lines=line1,line2,line3
-        try:
-            lines = args['lines'].split(',')
-        except:
-            try:
-                lines = cherrypy.session['lines']
-            except:
-                lines = '__all__'
-        if graphHeight > 2000:
-            graphHeight = 2000
-
-        # Hide legends with ?legends=no
-        legends = ''
-        try:
-            if args['legends'] == 'no':
-                legends = ' --no-legend '
-        except:
-            pass
-
-        # Set background color with ?bgcolor=rrbbgg (hex color)
-        try:
-            bgcolor =  args['bgcolor']
-            if len(bgcolor) == 6:
-                test = int(bgcolor, 16)
-            bgcolor = ' --color BACK#'+bgcolor
-        except:
-            bgcolor = ' '
-
-        # Set background color with ?bgcolor=rrbbgg (hex color)
         try:
             if args['align'] in ['left','center','right']:
                 align = args['align']
@@ -471,36 +420,11 @@ class PellMonWeb:
         graphTimeStart=str(timespan + timeoffset)
         graphTimeEnd=str(timeoffset)
 
-        # scale the right y-axis according to the first scaled item if found, otherwise unscaled
-        if int(graphWidth)>500:
-            rightaxis = '--right-axis'
-            scalestr = ' 1:0'
-            for line in graph_lines:
-                if line['name'] in lines and 'scale' in line:
-                    scale = line['scale'].split(':')
-                    try:
-                        gain = float(scale[1])
-                        offset = -float(scale[0])
-                    except:
-                        gain = 1
-                        offset = 0
-                    scalestr = " %s:%s"%(str(gain),str(offset))
-                    break
-            rightaxis += scalestr
-        else:
-            rightaxis = ''
-
-        #Build the command string to make a graph from the database
-        RrdGraphString1 =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
-        RrdGraphString1 += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
-        RrdGraphString1 += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
-        RrdGraphString1 += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
-
-        RrdGraphString1 =  "rrdtool xport --json "
-        RrdGraphString1 += "--end %s-"%(graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
+        RRD_command =  ['rrdtool', 'xport', '--json']
+        RRD_command += ['--end', '%s-%ss'%(graphtime, graphTimeEnd), '--start', '%s-'%graphtime + graphTimeStart + "s"]
 
         for line in graph_lines:
-            RrdGraphString1+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
+            RRD_command.append("DEF:%s="%line['name']+db+":%s:AVERAGE"%line['ds_name'])
             if 'scale' in line:
                 scale = line['scale'].split(':')
                 try:
@@ -509,17 +433,16 @@ class PellMonWeb:
                 except:
                     gain = 1
                     offset = 0
-                RrdGraphString1+="CDEF:%s_s=%s,%d,+,%d,/ "%(line['name'], line['name'], offset, gain)    
-                RrdGraphString1+="XPORT:%s_s:%s "% (line['name'], line['name'])
+                RRD_command.append("CDEF:%s_s=%s,%d,+,%d,/"%(line['name'], line['name'], offset, gain))
+                RRD_command.append("XPORT:%s_s:%s"%(line['name'], line['name']))
             else:
-                RrdGraphString1+="XPORT:%s:%s "% (line['name'], line['name'])
-        RrdGraphString1+=" DEF:logtick="+db+":_logtick:AVERAGE "
-        RrdGraphString1+=" CDEF:prevtick=PREV\(logtick\)"
-        RrdGraphString1+=" CDEF:tick=prevtick,logtick,GT,"
-        RrdGraphString1+=" XPORT:tick:logtick "
-        print RrdGraphString1
+                RRD_command.append("XPORT:%s:%s"% (line['name'], line['name']))
+        RRD_command.append("DEF:logtick="+db+":_logtick:AVERAGE")
+        RRD_command.append("CDEF:prevtick=PREV(logtick)")
+        RRD_command.append("CDEF:tick=prevtick,logtick,GT")
+        RRD_command.append("XPORT:tick:logtick")
 
-        cmd = subprocess.Popen(RrdGraphString1, shell=True, stdout=subprocess.PIPE)
+        cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
         out = cmd.communicate()[0]
         out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
@@ -537,6 +460,7 @@ class PellMonWeb:
         flotdata=[]
         colors = {line['name']: line['color'] for line in graph_lines}
         for i in range(len(legends)):
+            
             if legends[i] in colors:
                 flotdata.append({'label':legends[i], 'color':colors[legends[i]], 'data':[]})
             elif legends[i] == 'logtick':
@@ -546,7 +470,6 @@ class PellMonWeb:
                 flotdata[i]['data'].append([t, s[i]])
             t += step
         s = json.dumps(flotdata)
-        #cherrypy.response.headers['Content-Type'] = "application/json"
         return s
 
     @cherrypy.expose
