@@ -91,7 +91,7 @@ class Database(threading.Thread):
             changed_params = []
             for item_name in self.items:
                 try:
-                    self.items[item_name].getItem()
+                    value = self.items[item_name].getItem()
                     if item_name in self.values:
                         if value != self.values[item_name]:
                             changed_params.append({'name':item_name, 'value':value})
@@ -99,11 +99,11 @@ class Database(threading.Thread):
                     else:
                         changed_params.append({'name':item_name, 'value':value})
                         self.values[item_name] = value
-                except:
+                except Exception, e:
                     pass
             if changed_params:
                 if self.dbus_service:
-                    s = json.dumps(dbus_msg_to_string(changed_params))
+                    s = json.dumps(changed_params)
                     self.dbus_service.changed_parameters(s)
 
     def terminate(self):

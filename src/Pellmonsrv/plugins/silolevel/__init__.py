@@ -31,6 +31,7 @@ import subprocess
 import simplejson as json
 import re
 import math
+import random
 
 logger = getLogger('pellMon')
 
