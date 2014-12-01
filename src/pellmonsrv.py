@@ -103,8 +103,7 @@ class Database(threading.Thread):
                     pass
             if changed_params:
                 if self.dbus_service:
-                    s = dbus_msg_to_string(changed_params)
-                    #self.dbus_service.changed_parameters(changed_params)
+                    s = json.dumps(dbus_msg_to_string(changed_params))
                     self.dbus_service.changed_parameters(s)
 
     def terminate(self):
