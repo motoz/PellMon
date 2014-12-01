@@ -136,7 +136,7 @@ class Dbus_handler:
             'org.pellmon.int',
             None)
         def on_signal(proxy, sender_name, signal_name, parameters):
-            msg = simplejson.loads(parameters)
+            msg = simplejson.loads(parameters[0])
             #msg = []
             #l = p.split('|')
             #for ds in l:
