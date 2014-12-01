@@ -38,7 +38,7 @@ itemList=[{'name':'silo_reset_level',  'longname':'Silo fill up level',
            'type':'R/W',   'unit':'kg'   ,   'value':'0', 'min':'0', 'max':'50000'},
           {'name':'silo_reset_time',   'longname':'Silo fill up time', 
            'type':'R/W',   'unit':''    ,   'value':'01/01/14 12:00', 'min':'0', 'max':'-'},
-          {'name':'silo_level',   'longname':'Remaining amount of pellets in silo', 
+          {'name':'silo_level',   'longname':'Silo level',
            'type':'R',   'unit':'kg'    ,   'value':'0', 'min':'0', 'max':'-'},
          ]
 
@@ -49,6 +49,7 @@ itemTags = {'silo_reset_level' :    ['All', 'Basic', 'SiloLevel'],
 
 itemDescriptions = {'silo_reset_level':     'Silo fill up to this amount',
                     'silo_reset_time' :     'dd/mm/yy hh:mm Automatically set when setting fill up level',
+                    'silo_level' :          'Remaining amount of pellets in silo',
                    }
 
 itemValues={}
