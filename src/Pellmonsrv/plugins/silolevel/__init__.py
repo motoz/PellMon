@@ -84,7 +84,6 @@ class silolevelplugin(protocols):
 
     def getItem(self, itemName):
         if itemName == 'silo_level':
-            print 'sdffff'
             a = self.getItem('siloLevelData')
             return str(int(self.siloData[0]['data'][-1:][0][1] ))
         for i in itemList:
@@ -164,7 +163,6 @@ class silolevelplugin(protocols):
         cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
 
         out = cmd.communicate()[0]
-        #print out
         out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
         out = re.sub(r"'", r'"', out)
         out= json.loads(out)

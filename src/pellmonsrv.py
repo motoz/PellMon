@@ -38,13 +38,8 @@ from Pellmonsrv import Daemon
 import subprocess
 import sys, traceback
 import urllib2 as urllib
+import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
-
-def dbus_msg_to_string(msg):
-    ls = []
-    for d in msg:
-        ls.append(d['name'] + ':' + d['value'])
-    return '|'.join(ls)
 
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
@@ -53,8 +48,7 @@ class dbus_signal_handler(logging.Handler):
         self.dbus_service = dbus_service
     def emit(self, record):
         msg = self.format(record)
-        #self.dbus_service.changed_parameters([{'name':'__event__', 'value':msg}])
-        s = dbus_msg_to_string([{'name':'__event__', 'value':msg}])
+        s = json.dumps([{'name':'__event__', 'value':msg}])
         self.dbus_service.changed_parameters(s)
 
 class Database(threading.Thread):

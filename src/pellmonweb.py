@@ -136,12 +136,12 @@ class Dbus_handler:
             'org.pellmon.int',
             None)
         def on_signal(proxy, sender_name, signal_name, parameters):
-            p = parameters[0]
-            msg = []
-            l = p.split('|')
-            for ds in l:
-                d= ds.split(':')
-                msg.append({'name':d[0],'value':d[1]})
+            msg = simplejson.loads(parameters)
+            #msg = []
+            #l = p.split('|')
+            #for ds in l:
+            #    d= ds.split(':')
+            #    msg.append({'name':d[0],'value':d[1]})
             for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
                 sensor = Sensor.sensorlist[i]
                 #if not sensor.send(p):
