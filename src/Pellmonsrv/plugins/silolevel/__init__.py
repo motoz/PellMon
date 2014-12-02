@@ -96,6 +96,7 @@ class silolevelplugin(protocols):
 
     def setItem(self, item, value):
         try:
+            self.updateTime = 0
             if itemValues.has_key(item):
                 itemValues[item] = value
                 return 'OK'
@@ -105,7 +106,7 @@ class silolevelplugin(protocols):
                 self.valuestore.write(f)
                 f.close()
                 if item=='silo_reset_level':
-                    d = datetime.fromtimestamp(time())
+                    d = datetime.fromtimestamp(time.time())
                     s = d.strftime('%d/%m/%y %H:%M')
                     self.setItem('silo_reset_time', s)
                 return 'OK'
