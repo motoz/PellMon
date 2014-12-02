@@ -1,82 +1,229 @@
 var refreshTimer = null,
-	windowResizeTimer = null;
+    windowResizeTimer = null,
+    params="",
+    plot=null;
 
 /**
  * Refresh/lazy load graphs at page load
  */
 $(function() {
-	refreshGraph();
-	refreshConsumption();
-	refreshSilolevel();
-});
+    refreshGraph();
+    refreshConsumption();
+    refreshSilolevel();
+    plot = $.plot($('#graph'), data, options);
+    svgElement = document.getElementById("systemimage");
 
-/**
- * Refresh graphs when the window is resized
- */
-$(window).on('resize', function(e) {
-	if(windowResizeTimer !== null) {
-		clearTimeout(windowResizeTimer);
-	}
-
-	windowResizeTimer = setTimeout(function() {
-		refreshAll();
-	}, 300);
+    if ($("#systemimage").data('websocket')) 
+    {
+        setupWebSocket();
+    }
+    else 
+    {
+        setupPolling();
+    }
 });
 
 var getMaxWidth = function(name) {
-	return 	$(name).closest('div').innerWidth();
+    return  $(name).closest('div').innerWidth();
 }
 
-var refreshAll = function() {
-	refreshGraph();
-	refreshConsumption();
-	refreshSilolevel();
-}
+var data = []
+var options = {
+        series: {
+                    lines: { show: true, lineWidth: 1 },
+                    points: { show: false },
+                    shadowSize: 0,
+                },
+        xaxes:  [{
+                    mode: "time",       
+                    position: "top",
+                }],
+        legend: { 
+                    show: false
+                },
+        grid:   {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
+                },
+        zoom: {
+        interactive: true
+            },
+            pan: {
+                interactive: true
+            }
+    };
 
-var refreshGraph = function() {
-	var graph = getGraph(),
-	offset = graph.data('offset')
-	maxWidth = getMaxWidth('#graph');
+var baroptions = {
+     series: {
+         color: '#6989b7', 
+         bars: {
+             show: true,
+             barWidth: 3300000, 
+             //align: 'center',
+             lineWidth: 0,
+         },
+     },
+     yaxes: {
+         min: 0
+     },
+     xaxis: {
+         mode: 'time',
+         tickColor: '#f9f9f9',
+         //timeformat: "%y",
+         //tickSize: [1, "year"],
+         //autoscaleMargin: .10 // allow space left and right
+     },
+    grid:   {
+            hoverable: true,
+            backgroundColor:'#f9f9f9',
+            borderWidth: 1,
+            borderColor: '#e7e7e7'
+            },
 
-	graph.attr('src', graph.data('src') + '?width=' + maxWidth + '&timeoffset=' + offset + '&legends=no' + '&random=' + Math.random() );
+ };
+
+var siloleveloptions = {
+        series: {
+                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
+                    color:"#9a9afa",
+                    points: { show: false },
+                    shadowSize: 0,
+                },
+        xaxes:  [{
+                    mode: "time",       
+                    position: "bottom",
+                }],
+        legend: { 
+                    show: false,
+                },
+        grid:   {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
+                },
+    };
+
+var refreshGraph = function(getdata) {
+    var getdata = typeof getdata !== 'undefined' ? getdata : true;
+    var graph = getGraph();
+    var offset = $("#graphdiv").data('offset')
+    var maxWidth = getMaxWidth('#graph');
+
+    function plotGraph() {
+        var plotdata = [];
+        var selected = []
+        $('.lineselection').each(function() {
+            if ($(this).data('selected')=='yes') {
+                selected.push($( this ).text());
+            }
+        });
+        for (series in data) {
+            if ( selected.indexOf(data[series]['label']) != -1  || data[series]['label'] == 'logtick') {
+                plotdata.push(data[series]);
+            }
+        }
+        graph.unbind();
+        graph.unbind("plothover");
+        plot = $.plot($('#graph'), plotdata, options);
+
+        function showTooltip(x, y, contents) {
+            $('<div id="tooltip">' + contents + '</div>').css({
+                border: "1px solid #dddddd",
+                "background-color": "#f9f9f9",
+                opacity: 0.80,
+                position: 'absolute',
+                display: 'none',
+                top: y -25,
+                left: x + 10,
+                padding: '2px',
+            }).appendTo("body").fadeIn(200);
+        }
+
+        var previousPoint = null;
+        graph.bind("plothover", function (event, pos, item) {
+            if (item) {
+                var x = item.datapoint[0].toFixed(0),
+                    y = item.datapoint[1].toFixed(1);
+                var point = x+':'+y;
+                if (previousPoint != point) {
+                    $("#tooltip").remove();
+                    previousPoint = point;
+                    var tooltipX = item.pageX;
+                    if (tooltipX - plot.offset().left > plot.width() - 75) {
+                        tooltipX -= 150;
+                    }
+                    showTooltip(tooltipX, item.pageY, item.series.label + " = " + y);
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;
+            }
+        });
+    }
+
+    if (getdata) {
+        $.get(
+            'export'+'?width=' + maxWidth + '&timeoffset=' + offset,
+            function(jsondata) {
+                data = JSON.parse(jsondata);
+                plotGraph();
+                setGraphTitle();
+            }
+        )
+    } else {
+        plotGraph();
+        setGraphTitle();
+    }
 }
 
 var refreshConsumption = function() {
-	var consumption = $('#consumption'),
-		maxWidth = getMaxWidth('#consumption');
-
-	consumption.attr('src', consumption.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+    $.get(
+        'flotconsumption'+'?period=3600&bars=24',
+        function(jsondata) {
+            var data = JSON.parse(jsondata);
+            var graph = $('#consumption');
+            plot = $.plot($(graph), data.bardata, baroptions);
+            $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter($(graph));
+            $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter($(graph)).css('float', 'right');
+        })
 }
 
 var refreshSilolevel = function() {
-	var silolevel = $('#silolevel'),
-		maxWidth = getMaxWidth('#silolevel');
-
-	silolevel.attr('src', silolevel.data('src') + '?random=' + Math.random() + '&maxWidth=' + maxWidth);
+    $.get(
+        'flotsilolevel',
+        function(jsondata) {
+            var data = JSON.parse(jsondata);
+            plot = $.plot($('#silolevel'), data, siloleveloptions);
+        })
 }
 
 var startImageRefresh = function() {
-	refreshTimer = setInterval(refreshGraph, 10000);
+    refreshTimer = setInterval(refreshGraph, 10000);
 }
 
 var getGraph = function() {
-	return $('#graph');
+    return $('#graph');
 }
 
 $('.timeChoice').click(function(e) {
     e.preventDefault();
+    var graphdiv = $("#graphdiv");
     $('.timeChoice').each( function() {
         $(this).removeClass('selected')
     });
     var me = $(this);
     var graph=getGraph()
     me.addClass('selected')
-    graph.data('title', me.data('title-text')+'...');
+    graphdiv.data('title', me.data('title-text')+'...');
     setGraphTitle()
-    graph.data('title', me.data('title-text'));
+    graphdiv.data('title', me.data('title-text'));
 
     timespan =  me.data('time-choice');
-    graph.data('timespan', timespan);
+    graphdiv.data('timespan', timespan);
     $.post(
             'graphsession?timespan='+timespan,
             function(data) {
@@ -86,8 +233,8 @@ $('.timeChoice').click(function(e) {
 });
 
 $('.lineselection').click(function(e) {
-	e.preventDefault();
-	var me = $(this);
+    e.preventDefault();
+    var me = $(this);
 
     a = me.data('selected')
     if (a == 'yes')
@@ -98,7 +245,7 @@ $('.lineselection').click(function(e) {
         { me.data('selected', 'yes') 
           me.addClass('selected')
         } 
-	var s = ''
+    var s = ''
     $('.lineselection').each(function() {
         if ($(this).data('selected')=='yes')  {
             s = s + $(this).data('linename')+',';
@@ -107,97 +254,98 @@ $('.lineselection').click(function(e) {
 
     $.post(
             'graphsession?lines='+s,
-            function(data) {
-                getGraph().data('time-choice', me.data('time-choice'));
-                refreshGraph();
-            }
-    )
+            function(data) {}
+    );
+    refreshGraph(false);
 });
 
 
 $('.left').click(function(e) {
-    var graph = getGraph()
-	e.preventDefault();
-	offset = graph.data('offset')
+    e.preventDefault();
+    var graph = getGraph();
+    var graphdiv = $("#graphdiv");
+    offset = graphdiv.data('offset')
     offset = parseInt(offset, 10)
-    timespan = graph.data('timespan')
+    timespan = graphdiv.data('timespan')
     offset = offset + timespan
     ofs = offset.toString()
-    graph.data('offset', ofs+'...');
+    graphdiv.data('offset', ofs+'...');
     setGraphTitle();
-    graph.data('offset', ofs);
+    graphdiv.data('offset', ofs);
     refreshGraph();
 });
 
 $('.right').click(function(e) {
-	e.preventDefault();
-	var graph=getGraph()
-	offset = graph.data('offset')
+    e.preventDefault();
+    var graph=getGraph();
+    var graphdiv = $("#graphdiv");
+    offset = graphdiv.data('offset')
     offset = parseInt(offset, 10)
-    timespan = graph.data('timespan')
+    timespan = graphdiv.data('timespan')
     offset = offset - timespan
     if (offset < 0) {offset = 0}
     ofs = offset.toString()
-    graph.data('offset', ofs+'...');
+    graphdiv.data('offset', ofs+'...');
     setGraphTitle();
-    graph.data('offset', ofs);
+    graphdiv.data('offset', ofs);
     refreshGraph();
 });
 
 $('.autorefresh').click(function(e) {
-	e.preventDefault();
-	var me = $(this),
-		input = $('input.autorefresh');
+    e.preventDefault();
+    var me = $(this),
+        input = $('input.autorefresh');
 
-	var setAutorefresh = function(state, callback) {
-		$.post(
-			'autorefresh',
-			{
-				autorefresh: state
-			},
-			function(data) {
-				me.data('processing', false);
-				if(typeof callback === 'function') {
-					callback();
-				}
-			}
-		);
-	};
+    var setAutorefresh = function(state, callback) {
+        $.post(
+            'autorefresh',
+            {
+                autorefresh: state
+            },
+            function(data) {
+                me.data('processing', false);
+                if(typeof callback === 'function') {
+                    callback();
+                }
+            }
+        );
+    };
 
-	if(me.data('processing')) {
-		return;
-	}
+    if(me.data('processing')) {
+        return;
+    }
 
-	me.data('processing', true);
+    me.data('processing', true);
 
-	if(me.hasClass('selected')) {
-		me.removeClass('selected');
-		setAutorefresh('no', function() {
-			clearInterval(refreshTimer);
-		});
-	} else {
-		me.addClass('selected');
-		setAutorefresh('yes', function() {
-			startImageRefresh();
-		});
-		refreshGraph();
-	}
+    if(me.hasClass('selected')) {
+        me.removeClass('selected');
+        setAutorefresh('no', function() {
+            clearInterval(refreshTimer);
+        });
+    } else {
+        me.addClass('selected');
+        setAutorefresh('yes', function() {
+            startImageRefresh();
+        });
+        refreshGraph();
+    }
 });
 
 if($('.autorefresh').hasClass('selected')) {
-	startImageRefresh();
+    startImageRefresh();
 }
 
 var setGraphTitle = function() {
-    var graph = getGraph()
-    offset = graph.data('offset')
+    var graph = getGraph();
+    var graphdiv = $("#graphdiv");
+    offset = graphdiv.data('offset');
     if (offset == '0')
     {
-        title = graph.data('title')
+        title = graphdiv.data('title')
     }
     else
     {
-        title = graph.data('title') + ' - ' + offset + 's'
+        title = graphdiv.data('title') + ' - ' + offset + 's'
     }
     $('h4.graphtitle').text(title);
 }
@@ -208,18 +356,18 @@ $('#graph').load(function() {
 
 function getSubDocument(embedding_element)
 {
-	if (embedding_element.contentDocument) 
-	{
-		return embedding_element.contentDocument;
-	} 
-	else 
-	{
-		var subdoc = null;
-		try {
-			subdoc = embedding_element.getSVGDocument();
-		} catch(e) {}
-		return subdoc;
-	}
+    if (embedding_element.contentDocument) 
+    {
+        return embedding_element.contentDocument;
+    } 
+    else 
+    {
+        var subdoc = null;
+        try {
+            subdoc = embedding_element.getSVGDocument();
+        } catch(e) {}
+        return subdoc;
+    }
 }
 
 function changeSystemImageText(name, value)
@@ -326,17 +474,5 @@ function setupPolling() {
     {
         setTimeout(setupWebSocket, 1000);
     }
-}
-
-var params="";
-var svgElement = document.getElementById("systemimage");
-//svgElement.addEventListener("load", setupWebSocket);
-if ($("#systemimage").data('websocket')) 
-{
-    setupWebSocket();
-}
-else 
-{
-    setupPolling();
 }
 
