@@ -89,7 +89,7 @@ var baroptions = {
 var siloleveloptions = {
         series: {
                     lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
-                    color:"#9a9afa",
+                    color:"rgba(105, 137, 183, 0)",
                     points: { show: false },
                     shadowSize: 0,
                 },

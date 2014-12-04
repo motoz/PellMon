@@ -148,26 +148,30 @@ class silolevelplugin(protocols):
         except:
             return None
 
-        now=str(int(time.time()))
-        start=str(int(reset_time))
-        db = self.glob['conf'].db
-        RRD_command =  ['rrdtool', 'xport', '--json', '--end', now , '--start', start]
-        RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)
-        RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)
-        RRD_command.append("CDEF:t=a,POP,TIME")
-        RRD_command.append("CDEF:tt=PREV(t)")
-        RRD_command.append("CDEF:i=t,tt,-")
-        RRD_command.append("CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level)
-        RRD_command.append("CDEF:s=a,b,*,360000,/,i,*")
-        RRD_command.append("CDEF:fs=s,UN,0,s,IF")
-        RRD_command.append("CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF")
-        RRD_command.append("XPORT:c:level")
-        cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
+        def siloLevelData(from_time, to_time, from_level):
+            db = self.glob['conf'].db
+            RRD_command =  ['rrdtool', 'xport', '--json', '--end', str(int(to_time)) , '--start', str(int(from_time))]
+            RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)
+            RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)
+            RRD_command.append("CDEF:t=a,POP,TIME")
+            RRD_command.append("CDEF:tt=PREV(t)")
+            RRD_command.append("CDEF:i=t,tt,-")
+            RRD_command.append("CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%str(from_level))
+            RRD_command.append("CDEF:s=a,b,*,360000,/,i,*")
+            RRD_command.append("CDEF:fs=s,UN,0,s,IF")
+            RRD_command.append("CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF")
+            RRD_command.append("XPORT:c:level")
+            cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
+            out = cmd.communicate()[0]
+            out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
+            out = re.sub(r"'", r'"', out)
+            out= json.loads(out)
+            return out
 
-        out = cmd.communicate()[0]
-        out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
-        out = re.sub(r"'", r'"', out)
-        out= json.loads(out)
+        now=int(time.time())
+        start=int(reset_time)
+        out = siloLevelData(start, now, reset_level)
+
         data = out['data']
         is_dst = time.daylight and time.localtime().tm_isdst > 0
         utc_offset = - (time.altzone if is_dst else time.timezone)
@@ -183,7 +187,42 @@ class silolevelplugin(protocols):
             for i in range(len(s)):
                 flotdata[i]['data'].append([t, s[i]])
             t += step
+
+        # current level
+        level = float(flotdata[0]['data'][-1][1])
+
+        # estimate the future with data from last year
+        def getFutureData(start, period, level):
+            future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
+            data = future['data']
+            futuredata=[]
+            start = (int(future['meta']['start']) + 3600*24*365)*1000
+            step = int(future['meta']['step'])*1000
+            t = start + (utc_offset * 1000)
+            for s in data:
+                for i in range(len(s)):
+                    futuredata.append([t, s[i]])
+                t += step
+            level = float(futuredata[-1][1])
+            return futuredata, level
+
+        futuredata = ({'label':'future','data':[]})
+        futuredata['lines'] = {'fillColor': "rgba(225, 225, 225, 0.6)"}
+
+        start = now
+        period = 3600*24*30
+
+        for a in range(0,12):
+            if level < 0:
+                break
+            data, level = getFutureData(start, period, level)
+            start += period
+            futuredata['data'] += data
+        while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
+            del futuredata['data'][-1]
+        flotdata.append(futuredata)
         self.siloData = flotdata
         self.updateTime=time.time()
+
         return json.dumps(self.siloData)
 
