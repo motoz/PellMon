@@ -198,7 +198,7 @@ class PellMonWeb:
     def __init__(self):
         self.logview = LogViewer(logfile)
         self.auth = AuthController(credentials)
-        self.consumptionview = Consumption(polling, db)
+        self.consumptionview = Consumption(polling, db, dbus)
 
     @cherrypy.expose
     def autorefresh(self, **args):
@@ -592,11 +592,8 @@ class PellMonWeb:
         if not polling:
              return None
         if consumption_graph:
-            now = int(time.time())
-            aligned1h = now/3600*3600
-            jsondata = self.consumptionview.barchartdata(start=aligned1h, period=3600, bars=24)
             cherrypy.response.headers['Pragma'] = 'no-cache'
-            return jsondata
+            return dbus.getItem('consumptionData24h')
 
     @cherrypy.expose
     @require() #requires valid login

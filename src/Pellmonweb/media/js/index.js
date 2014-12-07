@@ -58,33 +58,31 @@ var options = {
     };
 
 var baroptions = {
-     series: {
-         color: '#6989b7', 
-         bars: {
-             show: true,
-             barWidth: 3300000, 
-             //align: 'center',
-             lineWidth: 0,
-         },
-     },
-     yaxes: {
-         min: 0
-     },
-     xaxis: {
-         mode: 'time',
-         tickColor: '#f9f9f9',
-         //timeformat: "%y",
-         //tickSize: [1, "year"],
-         //autoscaleMargin: .10 // allow space left and right
-     },
-    grid:   {
+        series: {
+            color: '#6989b7', 
+            bars: {
+                show: true,
+                barWidth: 3300000, 
+                lineWidth: 0,
+            },
+        },
+        legend: { 
+            show: false,
+        },
+        yaxes: {
+            min: 0
+        },
+        xaxis: {
+            mode: 'time',
+            tickColor: '#f9f9f9',
+        },
+        grid: {
             hoverable: true,
             backgroundColor:'#f9f9f9',
             borderWidth: 1,
             borderColor: '#e7e7e7'
-            },
-
- };
+        },
+};
 
 var siloleveloptions = {
         series: {
