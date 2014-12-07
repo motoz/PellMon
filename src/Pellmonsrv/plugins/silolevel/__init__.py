@@ -191,36 +191,44 @@ class silolevelplugin(protocols):
         # current level
         level = float(flotdata[0]['data'][-1][1])
 
-        # estimate the future with data from last year
-        def getFutureData(start, period, level):
-            future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
-            data = future['data']
-            futuredata=[]
-            start = (int(future['meta']['start']) + 3600*24*365)*1000
-            step = int(future['meta']['step'])*1000
-            t = start + (utc_offset * 1000)
-            for s in data:
-                for i in range(len(s)):
-                    futuredata.append([t, s[i]])
-                t += step
-            level = float(futuredata[-1][1])
-            return futuredata, level
-
-        futuredata = ({'label':'future','data':[]})
-        futuredata['lines'] = {'fillColor': "rgba(225, 225, 225, 0.6)"}
-
-        start = now
-        period = 3600*24*30
-
-        for a in range(0,12):
-            if level < 0:
+        year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
+        for data in year_data:
+            if data['label'] == 'last 12':
                 break
-            data, level = getFutureData(start, period, level)
-            start += period
-            futuredata['data'] += data
-        while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
-            del futuredata['data'][-1]
-        flotdata.append(futuredata)
+        # if there is consumption logged a year ago, use it to make an estimation
+        if data['data'][0]>20:
+
+            def getFutureData(start, period, level):
+                future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
+                data = future['data']
+                futuredata=[]
+                start = (int(future['meta']['start']) + 3600*24*365)*1000
+                step = int(future['meta']['step'])*1000
+                t = start + (utc_offset * 1000)
+                for s in data:
+                    for i in range(len(s)):
+                        futuredata.append([t, s[i]])
+                    t += step
+                level = float(futuredata[-1][1])
+                return futuredata, level
+
+            futuredata = ({'label':'future','data':[]})
+            futuredata['lines'] = {'fillColor': "rgba(225, 225, 225, 0.6)"}
+
+            start = now
+            period = 3600*24*30
+
+            for a in range(0,12):
+                if level < 0:
+                    break
+                data, level = getFutureData(start, period, level)
+                start += period
+                futuredata['data'] += data
+            while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
+                del futuredata['data'][-1]
+            if level<= 0:
+                flotdata.append(futuredata)
+
         self.siloData = flotdata
         self.updateTime=time.time()
 
