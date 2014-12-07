@@ -41,16 +41,20 @@ itemList=[{'name':'silo_reset_level',  'longname':'Silo fill up level',
            'type':'R/W',   'unit':''    ,   'value':'01/01/14 12:00', 'min':'0', 'max':'-'},
           {'name':'silo_level',   'longname':'Silo level',
            'type':'R',   'unit':'kg'    ,   'value':'0', 'min':'0', 'max':'-'},
+          {'name':'silo_days_left',   'longname':'Silo days left',
+           'type':'R',   'unit':'days'    ,   'value':'0', 'min':'0', 'max':'-'},
          ]
 
 itemTags = {'silo_reset_level' :    ['All', 'Basic', 'SiloLevel'],
             'silo_reset_time' :     ['All', 'Basic', 'SiloLevel'],
             'silo_level' :          ['All', 'Basic', 'SiloLevel'],
+            'silo_days_left' :      ['All', 'Basic', 'SiloLevel'],
            }
 
 itemDescriptions = {'silo_reset_level':     'Silo fill up to this amount',
                     'silo_reset_time' :     'dd/mm/yy hh:mm Automatically set when setting fill up level',
                     'silo_level' :          'Remaining amount of pellets in silo',
+                    'silo_days_left' :      'Remaining days until the silo is empty',
                    }
 
 itemValues={}
@@ -64,6 +68,7 @@ class silolevelplugin(protocols):
         protocols.activate(self, conf, glob)
         self.updateTime = 0
         self.siloData = None
+        self.silo_days_left = None
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
@@ -87,6 +92,8 @@ class silolevelplugin(protocols):
         if itemName == 'silo_level':
             a = self.getItem('siloLevelData')
             return str(int(self.siloData[0]['data'][-1:][0][1] ))
+        elif itemName == 'silo_days_left':
+            return self.silo_days_left
         for i in itemList:
             if i['name'] == itemName:
                 return str(self.valuestore.get('values', itemName))
@@ -226,6 +233,11 @@ class silolevelplugin(protocols):
                 futuredata['data'] += data
             while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
                 del futuredata['data'][-1]
+            try:
+                self.silo_days_left = str(int(((int(futuredata['data'][-1][0])/1000 - time.time()) / (3600*24))))
+            except Exception, e:
+                self.silo_days_left = None
+
             if level<= 0:
                 flotdata.append(futuredata)
 
