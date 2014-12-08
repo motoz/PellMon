@@ -1,3 +1,5 @@
+$.ajaxSetup({ cache: false });
+
 // Escapes special characters and returns a valid jQuery selector
 function jqSelector(str)
 {

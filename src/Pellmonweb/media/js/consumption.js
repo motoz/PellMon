@@ -1,3 +1,4 @@
+$.ajaxSetup({ cache: false });
 
 var baroptions = {
      series: {

@@ -134,7 +134,7 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
-    def flotconsumption24h(self):
+    def flotconsumption24h(self, **args):
         if not self.polling:
              return None
         now=int(time.time())
@@ -156,7 +156,7 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
-    def flotconsumption7d(self):
+    def flotconsumption7d(self, **args):
         if not self.polling:
              return None
         now=int(time.time())
@@ -178,7 +178,7 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
-    def flotconsumption1m(self):
+    def flotconsumption1m(self, **args):
         if not self.polling:
              return None
         now = int(time.time())
@@ -200,7 +200,7 @@ class Consumption(object):
         return cmd.communicate()[0]
 
     @cherrypy.expose
-    def flotconsumption1y(self):    
+    def flotconsumption1y(self, **args):    
         if not self.polling:
              return None
         now = int(time.time())
