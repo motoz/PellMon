@@ -1,3 +1,5 @@
+$.ajaxSetup({ cache: false });
+
 var getParam = function(param) {
 	$.get(webroot + '/getparam/' + param,
 		function(data) {

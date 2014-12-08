@@ -712,7 +712,7 @@ class PellMonWeb:
     # Empty the item/value queue, call several times until all data is retrieved
     @cherrypy.expose
     @require() #requires valid login
-    def getparams(self):
+    def getparams(self, **args):
         parameterlist=dbus.getdb()
         paramReaderQueue = cherrypy.session.get('paramReaderQueue')
         params={}

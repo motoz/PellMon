@@ -40,7 +40,7 @@ class LogViewer(object):
         return tmpl.render(username = cherrypy.session.get('_cp_username'), webroot=cherrypy.request.script_name)
     
     @cherrypy.expose
-    def getlines(self, linenum=100):    
+    def getlines(self, linenum=100, **args):    
         fmt = '%Y-%m-%d %H:%M:%S'
         f = open(self.logfile, "r")
         try:

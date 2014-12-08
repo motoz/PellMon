@@ -1,3 +1,5 @@
+$.ajaxSetup({ cache: false });
+
 var refreshTimer = null,
     windowResizeTimer = null,
     params="",
