@@ -186,9 +186,9 @@ var refreshConsumption = function() {
         function(jsondata) {
             var data = JSON.parse(jsondata);
             var graph = $('#consumption');
-            plot = $.plot($(graph), data.bardata, baroptions);
-            $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter($(graph));
-            $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter($(graph)).css('float', 'right');
+            plot = $.plot(graph, data.bardata, baroptions);
+            $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter(graph);
+            $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter(graph).css('float', 'right');
         })
 }
 
@@ -197,7 +197,10 @@ var refreshSilolevel = function() {
         'flotsilolevel',
         function(jsondata) {
             var data = JSON.parse(jsondata);
-            plot = $.plot($('#silolevel'), data, siloleveloptions);
+            var graph = $('#silolevel');
+            plot = $.plot(graph, data.graphdata, siloleveloptions);
+            $('<p>' + 'current level: ' + data.silo_level + ' kg' + '</p>').insertAfter(graph);
+            $('<p>' + data.silo_days_left + ' days to empty' + '</p>').insertAfter(graph).css('float', 'right');
         })
 }
 

@@ -69,6 +69,7 @@ class silolevelplugin(protocols):
         self.updateTime = 0
         self.siloData = None
         self.silo_days_left = None
+        self.silo_level = 0
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
@@ -90,9 +91,10 @@ class silolevelplugin(protocols):
 
     def getItem(self, itemName):
         if itemName == 'silo_level':
-            a = self.getItem('siloLevelData')
-            return str(int(self.siloData[0]['data'][-1:][0][1] ))
+            self.getItem('siloLevelData')
+            return self.silo_level
         elif itemName == 'silo_days_left':
+            self.getItem('siloLevelData')
             return self.silo_days_left
         for i in itemList:
             if i['name'] == itemName:
@@ -197,6 +199,7 @@ class silolevelplugin(protocols):
 
         # current level
         level = float(flotdata[0]['data'][-1][1])
+        self.silo_level = int(level)
 
         year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
         for data in year_data:
@@ -241,7 +244,11 @@ class silolevelplugin(protocols):
             if level<= 0:
                 flotdata.append(futuredata)
 
-        self.siloData = flotdata
+        self.siloData = {
+            'graphdata':flotdata,
+            'silo_level': self.silo_level,
+            'silo_days_left': self.silo_days_left
+        }
         self.updateTime=time.time()
 
         return json.dumps(self.siloData)
