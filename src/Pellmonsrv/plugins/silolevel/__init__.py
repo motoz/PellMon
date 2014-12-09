@@ -92,7 +92,7 @@ class silolevelplugin(protocols):
     def getItem(self, itemName):
         if itemName == 'silo_level':
             self.getItem('siloLevelData')
-            return self.silo_level
+            return str(self.silo_level)
         elif itemName == 'silo_days_left':
             self.getItem('siloLevelData')
             return self.silo_days_left
@@ -216,12 +216,12 @@ class silolevelplugin(protocols):
             if self.silo_level < last_week * 3:
                 # make an estimate based on last weeks consumption when there is less than three weeks left
                 level = self.silo_level
-                t = time.time()
                 while level > 0:
-                    level = level - last_week / (7*24)
-                    t += 3600
                     futuredata['data'].append([t, level])
-                self.silo_days_left = str(int((t - time.time()) / (3600*24)))
+                    level = level - last_week / (7*24)
+                    t += 3600000
+                self.silo_days_left = str(int((t/1000 - time.time()) / (3600*24)))
+                flotdata.append(futuredata)
             else:
                 year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
                 for data in year_data:
