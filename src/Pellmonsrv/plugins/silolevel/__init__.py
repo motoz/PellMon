@@ -147,14 +147,14 @@ class silolevelplugin(protocols):
         return Menutags
 
     def graphData(self):
-        if time.time() - self.updateTime < 300:
-            return json.dumps(self.siloData)
         try:
+            if time.time() - self.updateTime < 300:
+                return json.dumps(self.siloData)
             reset_level=self.getItem('silo_reset_level')
             reset_time=self.getItem('silo_reset_time')
             reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
             reset_time = mktime(reset_time.timetuple())
-        except:
+        except Exception, e:
             return None
 
         def siloLevelData(from_time, to_time, from_level):
@@ -201,49 +201,69 @@ class silolevelplugin(protocols):
         level = float(flotdata[0]['data'][-1][1])
         self.silo_level = int(level)
 
-        year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
-        for data in year_data:
-            if data['label'] == 'last 12':
-                break
-        # if there is consumption logged a year ago, use it to make an estimation
-        if data['data'][0]>20:
+        futuredata = {
+            'label':'future',
+            'data':[],
+            'lines':{'fillColor': "rgba(225, 225, 225, 0.6)"}
+        }
 
-            def getFutureData(start, period, level):
-                future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
-                data = future['data']
-                futuredata=[]
-                start = (int(future['meta']['start']) + 3600*24*365)*1000
-                step = int(future['meta']['step'])*1000
-                t = start + (utc_offset * 1000)
-                for s in data:
-                    for i in range(len(s)):
-                        futuredata.append([t, s[i]])
-                    t += step
-                level = float(futuredata[-1][1])
-                return futuredata, level
+        try:
+            w_data = json.loads(self.getGlobalItem('consumptionData8w')['bardata'])
+            last_week = 0
+            for data in w_data:
+                if data['label'] == 'last 8':
+                    if data['data'][6] > 2:
+                        last_week = data['data'][7]
+            if self.silo_level < last_week * 3:
+                # make an estimate based on last weeks consumption when there is less than three weeks left
+                level = self.silo_level
+                t = time.time()
+                while level > 0:
+                    level = level - last_week / (7*24)
+                    t += 3600
+                    futuredata['data'].append([t, level])
+                self.silo_days_left = str(int((t - time.time()) / (3600*24)))
+            else:
+                year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
+                for data in year_data:
+                    if data['label'] == 'last 12':
+                        # if there is consumption logged a year ago, use that to make an estimation
+                        if data['data'][0] > 20:
 
-            futuredata = ({'label':'future','data':[]})
-            futuredata['lines'] = {'fillColor': "rgba(225, 225, 225, 0.6)"}
+                            def getFutureData(start, period, level):
+                                future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
+                                data = future['data']
+                                futuredata=[]
+                                start = (int(future['meta']['start']) + 3600*24*365)*1000
+                                step = int(future['meta']['step'])*1000
+                                t = start + (utc_offset * 1000)
+                                for s in data:
+                                    for i in range(len(s)):
+                                        futuredata.append([t, s[i]])
+                                    t += step
+                                level = float(futuredata[-1][1])
+                                return futuredata, level
 
-            start = now
-            period = 3600*24*30
+                            start = now
+                            period = 3600*24*30
 
-            for a in range(0,12):
-                if level < 0:
-                    break
-                data, level = getFutureData(start, period, level)
-                start += period
-                futuredata['data'] += data
-            while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
-                del futuredata['data'][-1]
-            try:
-                self.silo_days_left = str(int(((int(futuredata['data'][-1][0])/1000 - time.time()) / (3600*24))))
-            except Exception, e:
-                self.silo_days_left = None
-
-            if level<= 0:
-                flotdata.append(futuredata)
-
+                            for a in range(0,12):
+                                if level < 0:
+                                    break
+                                data, level = getFutureData(start, period, level)
+                                start += period
+                                futuredata['data'] += data
+                            while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
+                                del futuredata['data'][-1]
+                            try:
+                                self.silo_days_left = str(int(((int(futuredata['data'][-1][0])/1000 - time.time()) / (3600*24))))
+                            except Exception, e:
+                                self.silo_days_left = '0'
+                            if level<= 0:
+                                flotdata.append(futuredata)
+                        break
+        except Exception, e:
+            print str(e)
         self.siloData = {
             'graphdata':flotdata,
             'silo_level': self.silo_level,
