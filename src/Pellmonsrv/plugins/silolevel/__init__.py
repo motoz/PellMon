@@ -206,14 +206,13 @@ class silolevelplugin(protocols):
             'data':[],
             'lines':{'fillColor': "rgba(225, 225, 225, 0.6)"}
         }
-
         try:
-            w_data = json.loads(self.getGlobalItem('consumptionData8w')['bardata'])
+            w_data = json.loads(self.getGlobalItem('consumptionData8w'))['bardata']
             last_week = 0
             for data in w_data:
                 if data['label'] == 'last 8':
                     if data['data'][6] > 2:
-                        last_week = data['data'][7]
+                        last_week = data['data'][7][1]
             if self.silo_level < last_week * 3:
                 # make an estimate based on last weeks consumption when there is less than three weeks left
                 level = self.silo_level
@@ -263,7 +262,7 @@ class silolevelplugin(protocols):
                                 flotdata.append(futuredata)
                         break
         except Exception, e:
-            print str(e)
+            pass
         self.siloData = {
             'graphdata':flotdata,
             'silo_level': self.silo_level,
