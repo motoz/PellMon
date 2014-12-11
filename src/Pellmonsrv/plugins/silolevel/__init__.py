@@ -23,10 +23,9 @@ from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import getLogger
 from time import mktime
-from datetime import datetime
 import subprocess
 import simplejson as json
 import re
@@ -147,16 +146,6 @@ class silolevelplugin(protocols):
         return Menutags
 
     def graphData(self):
-        try:
-            if time.time() - self.updateTime < 300:
-                return json.dumps(self.siloData)
-            reset_level=self.getItem('silo_reset_level')
-            reset_time=self.getItem('silo_reset_time')
-            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
-            reset_time = mktime(reset_time.timetuple())
-        except Exception, e:
-            return None
-
         def siloLevelData(from_time, to_time, from_level):
             db = self.glob['conf'].db
             RRD_command =  ['rrdtool', 'xport', '--json', '--end', str(int(to_time)) , '--start', str(int(from_time))]
@@ -177,6 +166,30 @@ class silolevelplugin(protocols):
             out= json.loads(out)
             return out
 
+        def getFutureData(start, period, level):
+            future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
+            data = future['data']
+            futuredata=[]
+            start = (int(future['meta']['start']) + 3600*24*365)*1000
+            step = int(future['meta']['step'])*1000
+            t = start + (utc_offset * 1000)
+            for s in data:
+                for i in range(len(s)):
+                    futuredata.append([t, s[i]])
+                t += step
+            level = float(futuredata[-1][1])
+            return futuredata, level
+
+        try:
+            if time.time() - self.updateTime < 300:
+                return json.dumps(self.siloData)
+            reset_level=self.getItem('silo_reset_level')
+            reset_time=self.getItem('silo_reset_time')
+            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
+            reset_time = mktime(reset_time.timetuple())
+        except Exception, e:
+            return None
+
         now=int(time.time())
         start=int(reset_time)
         out = siloLevelData(start, now, reset_level)
@@ -196,6 +209,7 @@ class silolevelplugin(protocols):
             for i in range(len(s)):
                 flotdata[i]['data'].append([t, s[i]])
             t += step
+        start_prediction_at = t/1000
 
         # current level
         level = float(flotdata[0]['data'][-1][1])
@@ -206,62 +220,82 @@ class silolevelplugin(protocols):
             'data':[],
             'lines':{'fillColor': "rgba(225, 225, 225, 0.6)"}
         }
+
         try:
             w_data = json.loads(self.getGlobalItem('consumptionData8w'))['bardata']
+
             last_week = 0
+            last_month = 0
+
             for data in w_data:
                 if data['label'] == 'last 8':
                     if data['data'][6] > 2:
                         last_week = data['data'][7][1]
+                    if data['data'][3] > 2:
+                        last_month = data['data'][4][1] + data['data'][5][1] + data['data'][6][1] + data['data'][7][1]
+
+            year_old_data = False
+            year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
+            for data in year_data:
+                # if there is consumption logged a year ago, use that to make an estimation
+                if data['label'] == 'last 12':
+                    if data['data'][0] > 20:
+                        year_old_data = True
+
+            # make an estimate based on last weeks consumption when there is less than three weeks left
             if self.silo_level < last_week * 3:
-                # make an estimate based on last weeks consumption when there is less than three weeks left
+                #print 'last week estimate', last_week
                 level = self.silo_level
+                t = start_prediction_at
                 while level > 0:
-                    futuredata['data'].append([t, level])
+                    futuredata['data'].append([t*1000, level])
                     level = level - last_week / (7*24)
-                    t += 3600000
-                self.silo_days_left = str(int((t/1000 - time.time()) / (3600*24)))
+                    t += 3600
+                self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
                 flotdata.append(futuredata)
-            else:
-                year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
-                for data in year_data:
-                    if data['label'] == 'last 12':
-                        # if there is consumption logged a year ago, use that to make an estimation
-                        if data['data'][0] > 20:
 
-                            def getFutureData(start, period, level):
-                                future = siloLevelData(start-3600*24*365, start+period-3600*24*365, level)
-                                data = future['data']
-                                futuredata=[]
-                                start = (int(future['meta']['start']) + 3600*24*365)*1000
-                                step = int(future['meta']['step'])*1000
-                                t = start + (utc_offset * 1000)
-                                for s in data:
-                                    for i in range(len(s)):
-                                        futuredata.append([t, s[i]])
-                                    t += step
-                                level = float(futuredata[-1][1])
-                                return futuredata, level
+            # if there is data from last year use that for the estimate
+            elif year_old_data:
+                #print 'last year estimate', last_month
 
-                            start = now
-                            period = 3600*24*30
+                start = start_prediction_at
+                period = 3600*24*30
 
-                            for a in range(0,12):
-                                if level < 0:
-                                    break
-                                data, level = getFutureData(start, period, level)
-                                start += period
-                                futuredata['data'] += data
-                            while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
-                                del futuredata['data'][-1]
-                            try:
-                                self.silo_days_left = str(int(((int(futuredata['data'][-1][0])/1000 - time.time()) / (3600*24))))
-                            except Exception, e:
-                                self.silo_days_left = '0'
-                            if level<= 0:
-                                flotdata.append(futuredata)
+                for a in range(0,12):
+                    if level < 0:
                         break
+                    data, level = getFutureData(start, period, level)
+                    start += period
+                    futuredata['data'] += data
+                while len(futuredata['data']) > 0 and float(futuredata['data'][-1][1]) < 0:
+                    del futuredata['data'][-1]
+                try:
+                    self.silo_days_left = str(int(((int(futuredata['data'][-1][0])/1000 - start_prediction_at) / (3600*24))))
+                except Exception, e:
+                    self.silo_days_left = '0'
+                if level<= 0:
+                    flotdata.append(futuredata)
+
+            # otherwise estimate based on last month consumption with weighted monthly estimates
+            elif last_month > 0:
+                #print 'last month estimate', last_month
+                month_weights = (10,9,7,6,4,2,1,1,2,4,5,6)
+                now = datetime.today()
+                future = now
+                time_12h = timedelta(hours=12)
+                level = self.silo_level
+                t = start_prediction_at
+                while level > 0:
+                    futuredata['data'].append([t*1000, level])
+                    weighted_month = last_month / month_weights[now.month-1] * month_weights[future.month-1]
+                    level = level - weighted_month / (28*2)
+                    t += 12*3600
+                    future += time_12h
+                self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
+                flotdata.append(futuredata)
+
         except Exception, e:
+            #print str(e)
             pass
         self.siloData = {
             'graphdata':flotdata,

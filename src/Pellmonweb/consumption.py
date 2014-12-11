@@ -44,9 +44,9 @@ class Consumption(object):
         return self.dbus.getItem('consumptionData7d')
 
     @cherrypy.expose
-    def flotconsumption8w(self):
+    def flotconsumption8w(self, **args):
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        return self.dbus.getItem('consumptionData8w', **args)
+        return self.dbus.getItem('consumptionData8w')
 
     @cherrypy.expose
     def flotconsumption1y(self, **args):

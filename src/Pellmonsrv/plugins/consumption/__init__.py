@@ -150,7 +150,7 @@ class Consumption_plugin(protocols):
                         starts.data[end] = totalcontainer
                         self.totals_fifo[randrange(0,len(self.totals_fifo))] = totalcontainer
                 except Exception, e:
-                    print 'asdasfd', str(e)
+                    #print str(e)
                     total = None
         if total:
             return total
