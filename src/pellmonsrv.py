@@ -342,9 +342,9 @@ def sendmail_thread(msg, followup):
             mailserver = SMTP_SSL(conf.emailserver)
 
         mailserver.login(conf.emailusername, conf.emailpassword)
-        mailserver.sendmail(msgRoot['From'], msgRoot['To'], msgRoot.as_string())
+        mailserver.sendmail(msgRoot['From'], msgRoot['To'].split(","), msgRoot.as_string())
         mailserver.quit()
-        logger.info('status email sent')
+        logger.info('status email sent to :'+msgRoot['To'])
     except Exception, e:
         logger.info('error trying to send email')
         logger.info(str(e))
