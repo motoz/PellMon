@@ -65,13 +65,16 @@ plugindata1 = 123
 #alarm1_enum = OK|Boiler temperature too high
 
 [plugin_RaspberryGPIO]
-# xxx_function = input|latched_input|output|counter|tachometer, all inputs have the internal pullup activated
+# xxx_function = input|latched_input|output|counter|tachometer|timer, all inputs have the internal pullup activated
 # xxx_item = item name for pin
 # xxx_pin = board pin number
+# A timer input counts seconds when it is in the active state. The timer can be reset by writing a new value to it
+# The active state can be set with xxx_active = 1|0 (only for timer inputs)
 #example:
 #gpio22_function = counter
 #gpio22_item = counter1
 #gpio22_pin = 15
+
 
 [plugin_Calculate]
 # This plugin implements a simple stack engine. 

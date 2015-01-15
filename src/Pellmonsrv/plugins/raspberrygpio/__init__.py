@@ -29,6 +29,7 @@ import mmap
 import signal
 import sys
 from logging import getLogger
+import ctypes, os
 
 logger = getLogger('pellMon')
 
@@ -42,6 +43,25 @@ def signal_handler(signal, frame):
     GPIO.cleanup()
     sys.exit(0)
 
+
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_nsec', ctypes.c_long)
+    ]
+
+librt = ctypes.CDLL('librt.so.1', use_errno=True)
+clock_gettime = librt.clock_gettime
+clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+
+def monotonic_time():
+    CLOCK_MONOTONIC_RAW = 4 # see <linux/time.h>
+    t = timespec()
+    if clock_gettime(CLOCK_MONOTONIC_RAW , ctypes.pointer(t)) != 0:
+        errno_ = ctypes.get_errno()
+        raise OSError(errno_, os.strerror(errno_))
+    return t.tv_sec + t.tv_nsec * 1e-9
+    
 class gpio_input(Thread):
     def __init__(self, pin):
         Thread.__init__(self)
@@ -237,6 +257,60 @@ class gpio_output(object):
         GPIO.output(self.pin, self.value)
         return 'OK'
 
+
+class gpio_timer(Thread):
+    def __init__(self, pin, active=0):
+        Thread.__init__(self)
+        self.pin = pin
+        self.ev = Event()
+        self.state = 0
+        GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+        GPIO.add_event_detect(self.pin, GPIO.FALLING, callback = self.edge_callback)
+        self.setDaemon(True)
+        self.start()
+        self.state = GPIO.input(self.pin)
+        self.oldstate = self.state
+        self.startclock = monotonic_time()
+        self.timerstate = 'off'
+        self.timervalue = 0
+        self.mutex = Lock()
+
+    def read(self):
+        with self.mutex:
+            if self.running:
+                return timervalue + (monotonic_time() - self.timerstart)
+            else:
+                return timervalue + (self.timerstop - self.timerstart)
+
+    def write(self, timervalue):
+        self.startclock = monotonic_time() - timervalue
+        return 'OK'
+
+    def edge_callback(self, channel):
+        """Called by RpiGPIO interrupt handle on """
+        self.last_edge = time()
+        self.ev.set()
+
+    def run(self):
+        """Handle debounce filtering of the inputs"""
+        while True:
+            self.ev.wait()
+            if time() - self.last_edge > 0.1:
+                self.ev.clear()
+                self.state = GPIO.input(self.pin)
+                if self.state != self.oldstate:
+                    if self.state == self.activestate:
+                        with self.mutex:
+                            self.running = True
+                            self.timerstart = monotonic_time()
+                    else:
+                        with self.mutex:
+                            self.running = False
+                            self.timerstop = monotonic_time()
+                    self.oldstate = self.state
+            else:
+                 sleep(0.05)
+
 class root(Process):
     """GPIO needs root, so we fork off this process before the server drops privileges"""
     def __init__(self, request, response, itemList):
@@ -262,6 +336,11 @@ class root(Process):
                 self.pin[pin] = gpio_latched_input(pin)
             elif item['function'] == 'output':
                 self.pin[pin] = gpio_output(pin)
+            elif item['function'] == 'timer':
+                try:
+                    self.pin[pin] = gpio_timer(pin, int(item['active']))
+                except KeyError:
+                    self.pin[pin] = gpio_timer(pin, '0')
 
         #Wait for a request 
         req = self.request.get()
@@ -293,7 +372,7 @@ class raspberry_gpio(protocols):
                     self.pin2index[pin_name] = len(itemList)-1
                 if pin_data == 'function':
                     itemList[self.pin2index[pin_name]]['function'] = value
-                    if value in ['counter', 'output']:
+                    if value in ['counter', 'output', 'timer']:
                         itemList[self.pin2index[pin_name]]['type'] = 'R/W'
                 elif pin_data == 'item':
                     itemList[self.pin2index[pin_name]]['name'] = value
@@ -301,6 +380,8 @@ class raspberry_gpio(protocols):
                     self.name2index[value]=self.pin2index[pin_name]
                 elif pin_data == 'pin':
                     itemList[self.pin2index[pin_name]]['pin'] = int(value)
+                elif pin_data == 'active':
+                    itemList[self.pin2index[pin_name]]['active'] = int(value)
             except Exception,e:
                 logger.info(str(e))
         signal.signal(signal.SIGINT, signal_handler)
