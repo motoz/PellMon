@@ -29,27 +29,33 @@ from logging import getLogger
 
 logger = getLogger('pellMon')
 
-itemList=[{'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': 5.56 },
-          {'name':'feeder_rpm',           'longname':'feeder rpm',               'type':'R',   'unit':'/60s',   'value': 30   },
-          
+itemList=[
           {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',    'type':'R/W', 'unit':'g/360s', 'value': 1000, 'min':'0', 'max':'5000' },
-          {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',     'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
-          
-          {'name':'feeder_rev',           'longname':'feeder rev count',         'type':'R',   'unit':' ',      'value': '',    'min':'0', 'max':'-'    },
           {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': 0    },
           {'name':'power_kW',             'longname':'power',                    'type':'R',   'unit':'kW',     'value': 0    }, 
           {'name':'mode',                 'longname':'mode',                     'type':'R',   'unit':'',       'value': '-'  }, 
          ]
 
-itemTags = {'feeder_rev_capacity' : ['All', 'pelletCalc'],
-            'feeder_rpm' :          ['All', 'pelletCalc'],
-            'feeder_capacity' :     ['All', 'pelletCalc', 'Basic'],
-            'feeder_rp6m' :         ['All', 'pelletCalc', 'Basic'],
-            'feeder_rev' :          ['All', 'pelletCalc', 'Basic'],
+counter_mode_items = [
+        {'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': 5.56 },
+        {'name':'feeder_rpm',           'longname':'feeder rpm',               'type':'R',   'unit':'/60s',   'value': 30   },
+        {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',     'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
+          
+        {'name':'feeder_rev',           'longname':'feeder rev count',         'type':'R',   'unit':' ',      'value': '',    'min':'0', 'max':'-'    },
+]
+
+itemTags = {'feeder_capacity' :     ['All', 'pelletCalc', 'Basic'],
             'feeder_time' :         ['All', 'pelletCalc'],
-            'power_kW' :            ['All', 'pelletCalc'],
+            'power_kW' :            ['All', 'pelletCalc', 'Basic'],
             'mode' :                ['All', 'pelletCalc', 'Basic'],
            }
+
+counter_mode_tags = {
+        'feeder_rev_capacity' : ['All', 'pelletCalc'],
+        'feeder_rpm' :          ['All', 'pelletCalc'],
+        'feeder_rp6m' :         ['All', 'pelletCalc', 'Basic'],
+        'feeder_rev' :          ['All', 'pelletCalc', 'Basic'],
+}
 
 itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution',
                     'feeder_rpm' :          'Feeder screw rotation speed',
@@ -76,21 +82,26 @@ class pelletcalc(protocols):
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
+        if not 'timer' in conf:
+            global itemList
+            itemList += counter_mode_items
+            itemTags.update(counter_mode_tags)
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
         for item in itemList:
-            self.valuestore.set('values', item['name'], item['value'])
+            if item['type'] == 'R/W':
+                self.valuestore.set('values', item['name'], item['value'])
         self.valuestore.read(self.valuesfile)
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
         try:
             uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
             gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
+        f = open(self.valuesfile, 'w')
+        self.valuestore.write(f)
+        f.close()
 
         t = Timer(5, self.calc_thread)
         t.setDaemon(True)
@@ -103,10 +114,13 @@ class pelletcalc(protocols):
         if item == 'feeder_rev':
             return self.getGlobalItem(self.conf['counter'])
         elif item == 'feeder_time':
-            rev = float(self.getItem('feeder_rev'))
-            rp6m = int(self.getItem('feeder_rp6m'))
-            time_per_rev = (360.0 / rp6m)
-            return str(int(rev * time_per_rev))
+            if 'timer' in self.conf:
+                return str(int(round(float(self.getGlobalItem(self.conf['timer'])))))
+            else:
+                rev = float(self.getItem('feeder_rev'))
+                rp6m = int(self.getItem('feeder_rp6m'))
+                time_per_rev = (360.0 / rp6m)
+                return str(int(rev * time_per_rev))
         elif item == 'feeder_rev_capacity':
             capacity = float(self.getItem('feeder_capacity'))
             rp6m = float(self.getItem('feeder_rp6m'))
@@ -121,18 +135,22 @@ class pelletcalc(protocols):
         else:
             for i in itemList:
                 if i['name'] == item:
-                    return str(self.valuestore.get('values', item))
+                    if i['type'] == 'R/W':
+                        return str(self.valuestore.get('values', item))
+                    else:
+                        return i['value']
+        return 'Error'
 
     def setItem(self, item, value):
         for i in itemList:
             if i['name'] == item:
                 i['value'] = value
-                self.valuestore.set('values', item, str(value))
-                f = open(self.valuesfile, 'w')
-                self.valuestore.write(f)
-                f.close()
+                if i['type'] in['R/W', 'W']:
+                    self.valuestore.set('values', item, str(value))
+                    with open(self.valuesfile, 'w') as f:
+                        self.valuestore.write(f)
                 return 'OK'
-        return['error']
+        return 'Error'
 
     def getDataBase(self):
         l=[]
@@ -141,7 +159,6 @@ class pelletcalc(protocols):
         return l
 
     def GetFullDB(self, tags):
-
         def match(requiredtags, existingtags):
             for rt in requiredtags:
                 if rt != '' and not rt in existingtags:
