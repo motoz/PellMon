@@ -26,20 +26,21 @@ from os import path
 import os, grp, pwd
 import sys
 from logging import getLogger
+import traceback
 
 logger = getLogger('pellMon')
 
 itemList=[
-          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',    'type':'R/W', 'unit':'g/360s', 'value': 1000, 'min':'0', 'max':'5000' },
-          {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': 0    },
-          {'name':'power_kW',             'longname':'power',                    'type':'R',   'unit':'kW',     'value': 0    }, 
+          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',    'type':'R/W', 'unit':'g/360s', 'value': '1000', 'min':'0', 'max':'5000' },
+          {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': '0'    },
+          {'name':'power_kW',             'longname':'power',                    'type':'R',   'unit':'kW',     'value': '0'    }, 
           {'name':'mode',                 'longname':'mode',                     'type':'R',   'unit':'',       'value': '-'  }, 
          ]
 
 counter_mode_items = [
-        {'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': 5.56 },
-        {'name':'feeder_rpm',           'longname':'feeder rpm',               'type':'R',   'unit':'/60s',   'value': 30   },
-        {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',     'type':'R/W', 'unit':'/360s',  'value': 180,  'min':'0', 'max':'500'  },
+        {'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': '5.56' },
+        {'name':'feeder_rpm',           'longname':'feeder rpm',               'type':'R',   'unit':'/60s',   'value': '30'   },
+        {'name':'feeder_rp6m',          'longname':'feeder rev per 6 min',     'type':'R/W', 'unit':'/360s',  'value': '180',  'min':'0', 'max':'500'  },
           
         {'name':'feeder_rev',           'longname':'feeder rev count',         'type':'R',   'unit':' ',      'value': '',    'min':'0', 'max':'-'    },
 ]
@@ -91,17 +92,18 @@ class pelletcalc(protocols):
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
         for item in itemList:
             if item['type'] == 'R/W':
-                self.valuestore.set('values', item['name'], item['value'])
+                self.valuestore.set('values', item['name'], str(item['value']))
         self.valuestore.read(self.valuesfile)
+
         try:
             uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
             gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
+
+        with open(self.valuesfile, 'w') as f:
+            self.valuestore.write(f)
 
         t = Timer(5, self.calc_thread)
         t.setDaemon(True)
