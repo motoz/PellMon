@@ -365,6 +365,7 @@ class raspberry_gpio(protocols):
     def __init__(self):
         protocols.__init__(self)
         self.power = 0
+        self.lock = Lock()
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
@@ -408,12 +409,13 @@ class raspberry_gpio(protocols):
             function = itemList[self.name2index[item]]['function']
             pin = itemList[self.name2index[item]]['pin']
             if function in['counter', 'tachometer', 'input', 'latched_input', 'output', 'timer']:
-                self.request.put(('read', pin))
-                try:
-                    response = str(self.response.get(0.2))
-                    return response
-                except Exception, e:
-                    return 'timeout'
+                with self.lock:
+                    self.request.put(('read', pin))
+                    try:
+                        response = str(self.response.get(0.2))
+                    except Exception, e:
+                        response = 'timeout'
+                return response
             else:
                 return 'error'
         else:
@@ -423,11 +425,12 @@ class raspberry_gpio(protocols):
         if self.name2index.has_key(item):
             if itemList[self.name2index[item]]['function'] in ['counter', 'output', 'timer']:
                 pin = itemList[self.name2index[item]]['pin']
-                self.request.put(('write', pin, value))
-                try:
-                    r = self.response.get(5)
-                except:
-                    r='timeout'
+                with self.lock:
+                    self.request.put(('write', pin, value))
+                    try:
+                        r = self.response.get(5)
+                    except:
+                        r='timeout'
                 return str(r)
         else:
             return['error']
