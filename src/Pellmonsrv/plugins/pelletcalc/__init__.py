@@ -47,8 +47,8 @@ counter_mode_items = [
 
 itemTags = {'feeder_capacity' :     ['All', 'pelletCalc', 'Basic'],
             'feeder_time' :         ['All', 'pelletCalc'],
-            'power_kW' :            ['All', 'pelletCalc', 'Basic'],
-            'mode' :                ['All', 'pelletCalc', 'Basic'],
+            'power_kW' :            ['All', 'pelletCalc', 'Basic', 'Overview'],
+            'mode' :                ['All', 'pelletCalc', 'Basic', 'Overview'],
            }
 
 counter_mode_tags = {
