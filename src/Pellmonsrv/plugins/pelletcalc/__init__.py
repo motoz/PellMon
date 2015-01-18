@@ -73,7 +73,6 @@ Menutags = ['pelletCalc']
 class pelletcalc(protocols):
     def __init__(self):
         protocols.__init__(self)
-        self.timelist=[]
         self.power = 0
         self.state = 'Off'
         self.oldstate = self.state
@@ -254,27 +253,34 @@ class pelletcalc(protocols):
 
     def calc_thread(self):
         """ Calculate last 5 minutes mean power """
+        timelist = []
+
+        last_timer = int(self.getItem('feeder_time'))
+        last_time = time()
+        last_state = self.state
+        timer_sum = 0
+        timelist.append( (last_timer, last_time, last_state) )
+        sleep(5)
         while True:
             try:
-                p1 = int(self.getItem('feeder_time'))
-                t1 = time()
-                self.timelist.append((p1,t1,self.state))
-                if self.timelist[-1][1] - self.timelist[0][1] > 300:
-                    self.timelist = self.timelist[1:]
-                last = self.timelist[0][0]
-                sum = 0
-                for t in self.timelist:
-                    try:
-                        v = int(t[0])
-                    except:
-                        v = 0
-                    if v > last:
-                        if t[2] in ('Igniting','Running','Cooling'):
-                            sum += (v - last)
-                    last = v
+                timer = int(self.getItem('feeder_time'))
+                now = time()
+                timelist.append( (timer, now, self.state) )
+                if timer > last_timer:
+                    if self.state in ('Igniting','Running','Cooling'):
+                        timer_sum += (timer - last_timer)
+                if now - timelist[0][1] > 300 and len(timelist)>1:
+                    if timelist[1][2] in ('Igniting','Running','Cooling'):
+                        timer_sum -= (timelist[1][0] - timelist[0][0])
+                    del timelist[0]
+
+                last_timer = timer
+                last_time = now
+
                 capacity = float(self.getItem('feeder_capacity')) / 360
-                self.power = sum * capacity * 12 * 4.8 * 0.9 / 1000
+                self.power = timer_sum * capacity * 12 * 4.8 * 0.9 / 1000
                 self.calculate_state()
+                
             except Exception, e:
                 pass
             sleep(5)
