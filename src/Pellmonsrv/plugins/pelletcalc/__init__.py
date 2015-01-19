@@ -35,6 +35,7 @@ itemList=[
           {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': '0'    },
           {'name':'power_kW',             'longname':'power',                    'type':'R',   'unit':'kW',     'value': '0'    }, 
           {'name':'mode',                 'longname':'mode',                     'type':'R',   'unit':'',       'value': '-'  }, 
+          {'name':'alarm',                'longname':'alarm',                    'type':'R',   'unit':'',       'value': '-'  }, 
          ]
 
 counter_mode_items = [
@@ -49,6 +50,7 @@ itemTags = {'feeder_capacity' :     ['All', 'pelletCalc', 'Basic'],
             'feeder_time' :         ['All', 'pelletCalc'],
             'power_kW' :            ['All', 'pelletCalc', 'Basic', 'Overview'],
             'mode' :                ['All', 'pelletCalc', 'Basic', 'Overview'],
+            'alarm' :               ['All', 'pelletCalc', 'Basic', 'Overview'],
            }
 
 counter_mode_tags = {
@@ -65,9 +67,11 @@ itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution
                     'feeder_rev' :          'Feeder screw revolutions count',
                     'feeder_time' :         'Feeder screw run time',
                     'power_kW' :            'Power calculated from fed pellet mass/time',
-                    'mode' :                'Current burner state'}
+                    'mode' :                'Current burner state',
+                    'alarm' :               'Current burner alarm state',
+                    }
 
-Menutags = ['pelletCalc']
+Menutags = ['pelletCalc', 'Overview']
 
 
 class pelletcalc(protocols):
@@ -79,6 +83,7 @@ class pelletcalc(protocols):
         self.time_count = time()
         self.time_state = self.time_count
         self.feeder_time = None
+        self.alarm_state = 'OK'
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
@@ -133,6 +138,8 @@ class pelletcalc(protocols):
             return str(self.power)
         elif item == 'mode':
             return self.state
+        elif item == 'alarm':
+            return self.alarm_state
         else:
             for i in itemList:
                 if i['name'] == item:
@@ -192,6 +199,9 @@ class pelletcalc(protocols):
                 self.state = 'Starting'
                 self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
+                if not self.alarm_state == 'OK':
+                    self.settings_changed('alarm', self.alarm_state, 'OK', itemtype='alarm')
+                    self.alarm_state = 'OK'
 
         elif self.state == 'Starting':
             if feeder_time > self.feeder_time:
@@ -212,6 +222,10 @@ class pelletcalc(protocols):
                 # if we are still in 'Igniting' after 10 min then go to 'Ignition failed'
                 self.time_state = time()
                 self.state = 'Ignition failed'
+                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                self.oldstate = self.state
+                self.alarm_state = 'Ignition failed'
+                self.settings_changed('alarm', 'OK', self.alarm_state, itemtype='alarm')
             if power > 5:
                 # switch to 'Running' when the 5 min average power is above 5kW
                 self.time_state = time()
@@ -255,33 +269,37 @@ class pelletcalc(protocols):
         """ Calculate last 5 minutes mean power """
         timelist = []
 
-        last_timer = int(self.getItem('feeder_time'))
-        last_time = time()
-        last_state = self.state
-        timer_sum = 0
-        timelist.append( (last_timer, last_time, last_state) )
-        sleep(5)
-        while True:
-            try:
-                timer = int(self.getItem('feeder_time'))
-                now = time()
-                timelist.append( (timer, now, self.state) )
-                if timer > last_timer:
-                    if self.state in ('Igniting','Running','Cooling'):
-                        timer_sum += (timer - last_timer)
-                if now - timelist[0][1] > 300 and len(timelist)>1:
-                    if timelist[1][2] in ('Igniting','Running','Cooling'):
-                        timer_sum -= (timelist[1][0] - timelist[0][0])
-                    del timelist[0]
-
-                last_timer = timer
-                last_time = now
-
-                capacity = float(self.getItem('feeder_capacity')) / 360
-                self.power = timer_sum * capacity * 12 * 4.8 * 0.9 / 1000
-                self.calculate_state()
-                
-            except Exception, e:
-                pass
+        try:
+            last_timer = int(self.getItem('feeder_time'))
+            last_time = time()
+            last_state = self.state
+            timer_sum = 0
+            timelist.append( (last_timer, last_time, last_state) )
             sleep(5)
+            while True:
+                try:
+                    timer = int(self.getItem('feeder_time'))
+                    now = time()
+                    timelist.append( (timer, now, self.state) )
+                    if timer > last_timer:
+                        if self.state in ('Igniting','Running','Cooling'):
+                            timer_sum += (timer - last_timer)
+                    if now - timelist[0][1] > 300 and len(timelist)>1:
+                        if timelist[1][2] in ('Igniting','Running','Cooling'):
+                            timer_sum -= (timelist[1][0] - timelist[0][0])
+                        del timelist[0]
 
+                    last_timer = timer
+                    last_time = now
+
+                    try:
+                        capacity = float(self.getItem('feeder_capacity')) / 360
+                        self.power = timer_sum * capacity * 12 * 4.8 * 0.9 / 1000
+                        self.calculate_state()
+                    except KeyError:
+                        logger.info("PelletCalc error, can't read 'feeder_capacity'")
+                except Exception, e:
+                    pass
+                sleep(5)
+        except KeyError:
+            logger.info("PelletCalc error, can't read 'feeder_time'")
