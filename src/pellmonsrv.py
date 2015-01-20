@@ -344,7 +344,7 @@ def sendmail_thread(msg, followup):
         mailserver.login(conf.emailusername, conf.emailpassword)
         mailserver.sendmail(msgRoot['From'], msgRoot['To'].split(","), msgRoot.as_string())
         mailserver.quit()
-        logger.info('status email sent to :'+msgRoot['To'])
+        logger.info('status email sent')
     except Exception, e:
         logger.info('error trying to send email')
         logger.info(str(e))
