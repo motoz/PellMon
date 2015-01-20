@@ -274,7 +274,7 @@ class pelletcalc(protocols):
             last_time = time()
             last_state = self.state
             timer_sum = 0
-            timelist.append( (last_timer, last_time, last_state) )
+            timelist.append( (last_timer, last_time, 'Off') )
             sleep(5)
             while True:
                 try:
@@ -284,7 +284,7 @@ class pelletcalc(protocols):
                     if timer > last_timer:
                         if self.state in ('Igniting','Running','Cooling'):
                             timer_sum += (timer - last_timer)
-                    if now - timelist[0][1] > 300 and len(timelist)>1:
+                    while now - timelist[0][1] > 300 and len(timelist)>1:
                         if timelist[1][2] in ('Igniting','Running','Cooling'):
                             timer_sum -= (timelist[1][0] - timelist[0][0])
                         del timelist[0]
