@@ -172,6 +172,7 @@ def pollThread():
     if not conf.polling:
         return
     try:
+        lastupdate = {}
         for data in conf.pollData:
             # 'special cases' handled here, name starting with underscore are not polled from the protocol 
             if data['name'][0] == '_':
@@ -195,9 +196,13 @@ def pollThread():
                     except:
                         pass
                 itemlist.append(value)
-                conf.lastupdate[data['name']] = value
+                lastupdate[data['name']] = value
         s=':'.join(itemlist)
-        os.system("/usr/bin/rrdtool update "+conf.db+" %u:"%(int(time.time())/10*10)+s)
+        exitcode = os.system("/usr/bin/rrdtool update "+conf.db+" %u:"%(int(time.time())/10*10)+s)
+        if not exitcode:
+            conf.lastupdate = lastupdate
+        else:
+            logger.info('rrdtool update failed')
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
