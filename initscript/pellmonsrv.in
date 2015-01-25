@@ -6,6 +6,8 @@
 # Required-Stop:     $local_fs $network $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
+# Should-Start:      owserver
+# Should-Stop:       owserver
 # Short-Description: starts pellmonsrv
 # Description:       starts pellmonsrv  using start-stop-daemon
 ### END INIT INFO
