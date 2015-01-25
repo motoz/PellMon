@@ -340,17 +340,16 @@ class Frame:
             logger.debug('Parse: response message = E0, checksum fail')  
             return False                        
         index=0
-        self.data=[]    
         if self.getLength(protocol) == len(s):
             logger.debug('Correct length')
-            self.mutex.acquire()
-            self.readtime=time.time()
-            logger.debug("reset readtime")
-            for i in self.dataDef:
-                index2=index+i
-                self.data.append(s[index:index2])
-                index=index2
-            self.mutex.release()
+            with self.mutex:
+                self.data=[]
+                self.readtime=time.time()
+                logger.debug("reset readtime")
+                for i in self.dataDef:
+                    index2=index+i
+                    self.data.append(s[index:index2])
+                    index=index2
             logger.debug('Return True from parser')
             return True
         else:
@@ -358,9 +357,8 @@ class Frame:
             return False
         
     def get(self, index):
-        self.mutex.acquire()
-        data=self.data[index]
-        self.mutex.release()
+        with self.mutex:
+            data=self.data[index]
         return data
     
 
