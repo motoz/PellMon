@@ -142,6 +142,7 @@ class gpio_counter(Thread):
         self.count = 0
         GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
         GPIO.add_event_detect(self.pin, GPIO.BOTH, callback = self.edge_callback)
+        self.state = GPIO.input(self.pin)
         self.setDaemon(True)
         self.start()
 
@@ -164,8 +165,10 @@ class gpio_counter(Thread):
             if monotonic_time() - self.last_edge > 0.1:
                 self.ev.clear()
                 currentstate = GPIO.input(self.pin)
-                if currentstate == 0:
-                    self.count += 1
+                if not currentstate == self.state:
+                    if currentstate == 0:
+                        self.count += 1
+                    self.state = currentstate
             else:
                  sleep(0.05)
 
