@@ -186,6 +186,11 @@ def pollThread():
                 except KeyError:
                     # write 'undefined' to noexistent data points
                     value = 'U'
+                try:
+                    valuetest = str(float(value))
+                except ValueError:
+                    # write 'undefined' if data is not numeric
+                    value = 'U'
                 # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
                 # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
                 # To prevent this we write an undefined value before an update that is less than the previous
@@ -205,7 +210,7 @@ def pollThread():
         if not cmd.returncode:
             conf.lastupdate = lastupdate
         else:
-            logger.info('rrdtool update failed: '+err)
+            logger.info('rrdtool update failed, out:%s err:%s'%(out,err))
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
