@@ -186,6 +186,11 @@ def pollThread():
                 except KeyError:
                     # write 'undefined' to noexistent data points
                     value = 'U'
+                try:
+                    value = str(float(value))
+                except ValueError:
+                    # write 'undefined' if data is not numeric
+                    value = 'U'
                 # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
                 # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
                 # To prevent this we write an undefined value before an update that is less than the previous
