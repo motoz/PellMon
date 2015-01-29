@@ -4,29 +4,34 @@
 
 [enabled_plugins]
 # List all plugins to enable pxx = PluginName
+
 # Enable the ScotteCom plugin to communicate with a NBE scotty/woody/biocomfort pellet burner
+# Disable this when using the PelletCalc plugin
 p01 = ScotteCom
+
+# PelletCalc replaces ScotteCom when using a generic pellet burner.
+# It provides the necessary feeder_time and feeder_capacity data items
+# calculated from auger run time measurements or auger revoulution counting
+#p07 = PelletCalc
 
 # CustomAlarms lets you define limits and actions for data items
 #p02 = CustomAlarms
 
-# RaspberryGPIO provides IO, counters and a tachometer. Works only on a raspberry pi
+# RaspberryGPIO provides IO, counters, timers and a tachometer. Works only on a raspberry pi
 #p03 = RaspberryGPIO
 
-# The calculate plugin lets you calculate your own data from existing data items
+# The calculate plugin is a scripting engine that lets you do calculations and automate things
 #p04 = Calculate
 
-# The OWFS plugin connects to a running owfs server on localhost:4304 to read onewire devices
+# The OWFS plugin connects to a local or remote owserver to read/write onewire devices
 #p05 = OWFS
 
 # The SiloLevel plugin adds parameters for silo fill up level and silo fill up date.
-# When present PellmonWeb displays a graph with calculated silo level from fill up time to present time
+# When enabled PellmonWeb displays a graph with calculated silo level from fill up time 
+# to present time
 p06 = SiloLevel
 
-# PelletCalc calculates feeder_time and power from feeder auger revolution count  
-#p07 = PelletCalc
-
-# Testplugin is a plugin template that does nothing useful
+# Testplugin is a basic plugin template for your own plugins
 #p99 = TestPlugin
 
 ############################################################################################
@@ -139,8 +144,8 @@ plugindata1 = 123
 ############################################################################################
 
 [conf]
-# Full path to the rrd database, if it does not exist it is created
-# Remove if you do not want data polling 
+# Full path to the rrd database
+# If the file does not exist it is created when pellmonsrv starts
 database = @localstatedir@/lib/pellmon/rrd.db
 
 # Full path to the optional persistent rrd database. It is copied
@@ -152,6 +157,7 @@ database = @localstatedir@/lib/pellmon/rrd.db
 # If persistent_db is in use the database is copied to 
 # persistent_db every db_store_interval seconds
 db_store_interval = 7200
+
 # Full path to the logfile
 logfile = @localstatedir@/log/pellmonsrv/pellmon.log
 
@@ -161,19 +167,24 @@ loglevel = info
 # rrd database update interval in seconds
 pollinterval = 30
 
-[authentication]
-# username = password, for webinterface
-testuser = 12345
-
 [rrd_ds_names]
-# These are the datasource names used when creating the rrd database,
+# This section defines the datasource names used when creating the rrd database,
 # "dxx = datasource name". The left value (dxx) is used to match the
-# datasource names to the actual data to write to it, in the 
-# pollvalues section. The datasource names can be anything, but 
-# the defaults are the same as the data item names in the pollvalues section 
+# datasource names to the actual data to write to it. The connection
+# to data items is made in the "pollvalues" section. Every datasource name
+# defined here must have a connection defined in "pollvalues".
+#
+# Three datasources with these exact names: feeder_time, feeder_capacity
+# and _logtick must exist, they are used to calculate pellet consumption graphs.
+#
 # The rrd database is created with the datasources in the order they appear here.
+#
 # Delete or rename the rrd database file after adding/removing ds-names
-# or use some other method to add the new ds-name to the existing rrd database
+# to create a database file with the new definition, or use some other method
+# to add the new ds-name to the existing rrd database.
+# Deleting the rrd database will erase all history.
+#
+# These defaults are a good start when using the ScotteCom plugin:
 d01 = power_kW
 d02 = boiler_temp
 d03 = chute_temp
@@ -188,22 +199,31 @@ d11 = _logtick
 
 [rrd_ds_types]
 # Optional rrd data source type definitions for the datasource names in the 
-# rrd_ds-names section. If no type is defined for a datasource name the 
+# rrd_ds_names section. If no type is defined for a datasource name the
 # default type is used, "DS:%s:GAUGE:%u:U:U", where %s is replaced with the 
 # datasource name and %u is replaced with 4*pollinterval
+#
+# Feeder_time and _logtick must be af type COUNTER, others typically
+# use the default type GAUGE
+#
 d09 = DS:%s:COUNTER:%u:U:U
 d11 = DS:%s:COUNTER:%u:U:U
 
 [pollvalues]
 # Data values to write to the rrd database.
 # "dxx = parameter/data name"
-# The data names are read from the protocol plugins with the getItem method
-# and written to the rrd database ds-name that has a matching "dxx".
-# Data names starting with an underscore are handled by special cases in the code,
-# eg. _logtick is updated whenever a protocol reports that an "event" has occured.
-# In general underscored names are written as undefined, so they can be used to 
-# write "spare" ds-names in an rrd database, to avoid having to recreate the rrd
-# when more sensors are added. 
+#
+# The left value (dxx) is used to match the data item to the RRD data set name
+# defined in the "rrd_ds_names" section
+#
+# The data names are read from the plugins that define them,
+# and are written to the rrd database "ds-name" that has a matching "dxx".
+# If a data item name defined here does not exist in any plugin, the
+# corresponding ds_name in the database is written as "undefined"
+#
+# The three ds_names feeder_capacity, feeder_time and _logtick must be
+# connected to data items with the exact same names.
+
 d01 = power_kW
 d02 = boiler_temp
 d03 = chute_temp
@@ -214,8 +234,6 @@ d07 = power
 d08 = smoke_temp
 d09 = feeder_time
 d10 = feeder_capacity
-# Whenever something is written to the log, _logtick is also increased.
-# It is used to draw a tickmark in the graph
 d11 = _logtick
 
 [email]
@@ -253,6 +271,10 @@ d11 = _logtick
 # Pellmonweb configuration
 ############################################################################################
 
+[authentication]
+# username = password, for webinterface
+testuser = 12345
+
 [graphcolors]
 # To add a ds-name from the rrd-database to the graph, set
 # dxx = #hexcolorvalue, 
@@ -267,11 +289,8 @@ d07 = #207F20
 d08 = #2F2FFF
 
 [scaling]
-# add optional scaling to the plotlines before drawing the graph
-# The right axis will scale to match the scaled data, when there are
-# several different scales in use it will match the first selected
-# line in the order they appear here 
-# the offset is first subracted and the result is divided by the divisor
+# Add optional scaling to the plotlines before drawing the graph.
+# The offset is first subracted and the result is divided by the divisor
 # dxx = offset:divisor
 
 [weblog]
