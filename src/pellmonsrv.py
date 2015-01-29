@@ -210,7 +210,7 @@ def pollThread():
         if not cmd.returncode:
             conf.lastupdate = lastupdate
         else:
-            logger.info('rrdtool update failed: '+err)
+            logger.info('rrdtool update failed, out:%s err:%s'%(out,err))
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
