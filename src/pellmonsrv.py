@@ -187,7 +187,7 @@ def pollThread():
                     # write 'undefined' to noexistent data points
                     value = 'U'
                 try:
-                    value = str(float(value))
+                    valuetest = str(float(value))
                 except ValueError:
                     # write 'undefined' if data is not numeric
                     value = 'U'
