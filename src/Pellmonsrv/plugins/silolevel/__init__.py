@@ -223,23 +223,26 @@ class silolevelplugin(protocols):
 
         try:
             w_data = json.loads(self.getGlobalItem('consumptionData8w'))['bardata']
-
-            last_week = 0
             last_month = 0
-
             for data in w_data:
                 if data['label'] == 'last 8':
-                    if data['data'][6] > 2:
-                        last_week = data['data'][7][1]
-                    if data['data'][3] > 2:
+                    if data['data'][3][1] > 2:
                         last_month = data['data'][4][1] + data['data'][5][1] + data['data'][6][1] + data['data'][7][1]
+
+            last_week = 0
+            w_data = json.loads(self.getGlobalItem('consumptionData7d'))['bardata']
+            for data in w_data:
+                if data['label'] == 'last 7':
+                    if data['data'][0][1] > 2:
+                        last_week = data['data'][1][1] + data['data'][2][1] + data['data'][3][1] + data['data'][4][1] + data['data'][5][1] + data['data'][6][1]*2
+
 
             year_old_data = False
             year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
             for data in year_data:
                 # if there is consumption logged a year ago, use that to make an estimation
                 if data['label'] == 'last 12':
-                    if data['data'][0] > 20:
+                    if data['data'][0][1] > 10:
                         year_old_data = True
 
             # make an estimate based on last weeks consumption when there is less than three weeks left
