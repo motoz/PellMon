@@ -59,27 +59,26 @@ class Sensor(object):
     def __init__(self, parameters, websocket, events):
         self.websocket = websocket
         self.params = parameters
-        self.db = {k:'-' for k in self.params}
         self.events = events
         Sensor.sensorlist.append(self)
-        paramlist = []
-        for param in self.params:
-            try:
-                value = dbus.getItem(param)
-                if value != self.db[param]:
+        
+        def _get_values(obj):
+            paramlist = []
+            for param in obj.params:
+                try:
+                    value = dbus.getItem(param)
                     paramlist.append(dict(name=param, value=value))
+                except Exception, e:
+                    cherrypy.log(str(e))
+                    pass
+            try:
+                if paramlist:
+                    message = simplejson.dumps(paramlist)
+                    obj.websocket.send(message)
             except Exception, e:
-                cherrypy.log(str(e))
                 pass
-        try:
-            if paramlist:
-                message = simplejson.dumps(paramlist)
-                t = Timer(1, self.websocket.send, args= [message])
-                t.start()
-            for p in paramlist:
-                self.db[p['name']] = p['value']
-        except Exception, e:
-            self.websocket = None
+        t = Timer(0.1, _get_values, args=[self])
+        t.start()
 
     def send(self, message):
         try:
@@ -137,18 +136,11 @@ class Dbus_handler:
             None)
         def on_signal(proxy, sender_name, signal_name, parameters):
             msg = simplejson.loads(parameters[0])
-            #msg = []
-            #l = p.split('|')
-            #for ds in l:
-            #    d= ds.split(':')
-            #    msg.append({'name':d[0],'value':d[1]})
             for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
                 sensor = Sensor.sensorlist[i]
-                #if not sensor.send(p):
                 if not sensor.send(msg):
                     del Sensor.sensorlist[i]
-            #if signal_name == "MediaPlayerKeyPressed":
-            #    self._key_pressed(*parameters)
+
         self.notify.connect("g-signal", on_signal)
 
 
