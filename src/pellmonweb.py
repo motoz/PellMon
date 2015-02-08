@@ -76,7 +76,7 @@ class Sensor(object):
                     message = simplejson.dumps(paramlist)
                     obj.websocket.send(message)
             except Exception, e:
-                obj.websocket = None
+                pass
         t = Timer(0.1, _get_values, args=[self])
         t.start()
 
