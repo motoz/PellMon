@@ -25,7 +25,11 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
-from gi.repository import Gio, GLib, GObject
+
+from gi.repository import GLib, GObject
+import dbus as Dbus
+from dbus.mainloop.glib import DBusGMainLoop
+
 import json
 import threading, Queue
 from Pellmonweb import *
@@ -40,7 +44,7 @@ import grp
 import subprocess
 from datetime import datetime
 from cgi import escape
-from threading import Timer
+from threading import Timer, Lock
 import signal
 import simplejson
 import re
@@ -109,39 +113,38 @@ class DbusNotConnected(Exception):
 
 class Dbus_handler:
     def __init__(self, bus='SESSION'):
-        if bus=='SYSTEM':
-            self.bustype=Gio.BusType.SYSTEM
-        else:
-            self.bustype=Gio.BusType.SESSION
+        self.bus = bus
+        self.lock = Lock()
+        self.iface = None
 
     def start(self):
-        self.notify = None
-        self.bus = Gio.bus_get_sync(self.bustype, None)
-        Gio.bus_watch_name(
-            self.bustype,
-            'org.pellmon.int',
-            Gio.DBusProxyFlags.NONE,
-            self.dbus_connect,
-            self.dbus_disconnect,
-        )
+        Dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        Dbus.mainloop.glib.threads_init()
+        if self.bus=='SYSTEM':
+            self.bustype = Dbus.SystemBus()
+        else:
+            self.bustype = Dbus.SessionBus()
 
-    def dbus_connect(self, connection, name, owner):
-        self.notify = Gio.DBusProxy.new_sync(
-            self.bus,
-            Gio.DBusProxyFlags.NONE,
-            None,
-            'org.pellmon.int',
-            '/org/pellmon/int',
-            'org.pellmon.int',
-            None)
-        def on_signal(proxy, sender_name, signal_name, parameters):
-            msg = simplejson.loads(parameters[0])
+
+        def on_signal(parameters):
+            self.dbus_connect()
+            msg = simplejson.loads(parameters)
             for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
                 sensor = Sensor.sensorlist[i]
                 if not sensor.send(msg):
                     del Sensor.sensorlist[i]
+        
+        self.bustype.add_signal_receiver(on_signal, dbus_interface="org.pellmon.int", signal_name="changed_parameters")
+        self.dbus_connect()
 
-        self.notify.connect("g-signal", on_signal)
+    def dbus_connect(self):
+        try:
+            remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                   "/org/pellmon/int" # Object's path
+                                  )
+            self.iface = Dbus.Interface(remote_object, 'org.pellmon.int')
+        except Dbus.exceptions.DBusException:
+            self.iface = None
 
 
     def dbus_disconnect(self, connection, name):
@@ -150,39 +153,70 @@ class Dbus_handler:
 
 
     def getItem(self, itm):
-        if self.notify:
-            return self.notify.GetItem('(s)',itm)
+        if self.iface:
+            with self.lock:
+                try:
+                    return self.iface.GetItem(itm)
+                except Dbus.exceptions.DBusException:
+                    self.iface = None
+                    raise DbusNotConnected("server not running")
         else:
             raise DbusNotConnected("server not running")
 
     def setItem(self, item, value):
-        if self.notify:
-            return self.notify.SetItem('(ss)',item, value)
+        if self.iface:
+            with self.lock:
+                try:
+                    return self.iface.SetItem(item, value)
+                except Dbus.exceptions.DBusException:
+                    self.iface = None
+                    raise DbusNotConnected("server not running")
         else:
             raise DbusNotConnected("server not running")
 
     def getdb(self):
-        if self.notify:
-            return self.notify.GetDB()
+        if self.iface:
+            with self.lock:
+                try:
+                    return self.iface.GetDB()
+                except Dbus.exceptions.DBusException:
+                    self.iface = None
+                    raise DbusNotConnected("server not running")
         else:
             raise DbusNotConnected("server not running")
 
     def getDBwithTags(self, tags):
-        if self.notify:
-            return self.notify.GetDBwithTags('(as)',tags)
+        if self.iface:
+            with self.lock:
+                try:
+                    return self.iface.GetDBwithTags(tags)
+                except Dbus.exceptions.DBusException:
+                    self.iface = None
+                    raise DbusNotConnected("server not running")
+
         else:
             raise DbusNotConnected("server not running")
 
     def getFullDB(self, tags):
-        if self.notify:
-            db = self.notify.GetFullDB('(as)', tags)
+        if self.iface:
+            with self.lock:
+                try:
+                    db = self.iface.GetFullDB(tags)
+                except Dbus.exceptions.DBusException:
+                    self.iface = None
+                    raise DbusNotConnected("server not running")
             return db
         else:
             raise DbusNotConnected("server not running")
 
     def getMenutags(self):
-        if self.notify:
-            return self.notify.getMenutags()
+        if self.iface:
+            with self.lock:
+                try:
+                    return self.iface.getMenutags()
+                except Dbus.exceptions.DBusException:
+                    self.iface = None
+                    raise DbusNotConnected("server not running")
         else:
             raise DbusNotConnected("server not running")
 
