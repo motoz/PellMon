@@ -127,7 +127,6 @@ class Dbus_handler:
 
 
         def on_signal(parameters):
-            self.dbus_connect()
             msg = simplejson.loads(parameters)
             for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
                 sensor = Sensor.sensorlist[i]
@@ -135,90 +134,81 @@ class Dbus_handler:
                     del Sensor.sensorlist[i]
         
         self.bustype.add_signal_receiver(on_signal, dbus_interface="org.pellmon.int", signal_name="changed_parameters")
-        self.dbus_connect()
-
-    def dbus_connect(self):
-        try:
-            remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                   "/org/pellmon/int" # Object's path
-                                  )
-            self.iface = Dbus.Interface(remote_object, 'org.pellmon.int')
-        except Dbus.exceptions.DBusException:
-            self.iface = None
-
-
-    def dbus_disconnect(self, connection, name):
-        if self.notify:
-            self.notify = None
-
+        self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                               "/org/pellmon/int" # Object's path
+                              )
 
     def getItem(self, itm):
-        if self.iface:
-            with self.lock:
-                try:
-                    return self.iface.GetItem(itm, utf8_strings=True)
-                except Dbus.exceptions.DBusException:
-                    self.iface = None
-                    raise DbusNotConnected("server not running")
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetItem(itm, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException, e:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def setItem(self, item, value):
-        if self.iface:
-            with self.lock:
-                try:
-                    return self.iface.SetItem(item, value, utf8_strings=True)
-                except Dbus.exceptions.DBusException:
-                    self.iface = None
-                    raise DbusNotConnected("server not running")
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.SetItem(item, value, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getdb(self):
-        if self.iface:
-            with self.lock:
-                try:
-                    return self.iface.GetDB(utf8_strings=True)
-                except Dbus.exceptions.DBusException:
-                    self.iface = None
-                    raise DbusNotConnected("server not running")
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetDB(utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException, e:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getDBwithTags(self, tags):
-        if self.iface:
-            with self.lock:
-                try:
-                    return self.iface.GetDBwithTags(tags, utf8_strings=True)
-                except Dbus.exceptions.DBusException:
-                    self.iface = None
-                    raise DbusNotConnected("server not running")
-
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetDBwithTags(tags, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getFullDB(self, tags):
-        if self.iface:
-            with self.lock:
-                try:
-                    db = self.iface.GetFullDB(tags, utf8_strings=True)
-                except Dbus.exceptions.DBusException:
-                    self.iface = None
-                    raise DbusNotConnected("server not running")
-            return db
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetFullDB(tags, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getMenutags(self):
-        if self.iface:
-            with self.lock:
-                try:
-                    return self.iface.getMenutags(utf8_strings=True)
-                except Dbus.exceptions.DBusException:
-                    self.iface = None
-                    raise DbusNotConnected("server not running")
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.getMenutags(utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
 class PellMonWeb:
     def __init__(self):
