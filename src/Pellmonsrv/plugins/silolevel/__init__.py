@@ -280,29 +280,30 @@ class silolevelplugin(protocols):
                     flotdata.append(futuredata)
 
             # otherwise estimate based on last month consumption with weighted monthly estimates
-            elif last_month == 0:
-                last_month = last_week * 4
-                logger.debug('last month estimate from last week * 4: %s'%last_month)
-
-            if last_month > 0:
-                logger.debug('last month estimate %s'%last_month)
-                month_weights = (10,9,7,6,4,2,1,1,2,4,5,6)
-                now = datetime.today()
-                future = now
-                time_12h = timedelta(hours=12)
-                level = self.silo_level
-                t = start_prediction_at
-                while level > 0:
-                    futuredata['data'].append([t*1000, level])
-                    weighted_month = last_month / month_weights[now.month-1] * month_weights[future.month-1]
-                    level = level - weighted_month / (28*2)
-                    t += 12*3600
-                    future += time_12h
-                self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
-                flotdata.append(futuredata)
             else:
-                 print 'no estimate'
-                 self.silo_days_left='365'
+	        if last_month == 0:
+                    last_month = last_week * 4
+                    logger.debug('last month estimate from last week * 4: %s'%last_month)
+
+                if last_month > 0:
+                    logger.debug('last month estimate %s'%last_month)
+                    month_weights = (10,9,7,6,4,2,1,1,2,4,5,6)
+                    now = datetime.today()
+                    future = now
+                    time_12h = timedelta(hours=12)
+                    level = self.silo_level
+                    t = start_prediction_at
+                    while level > 0:
+                        futuredata['data'].append([t*1000, level])
+                        weighted_month = last_month / month_weights[now.month-1] * month_weights[future.month-1]
+                        level = level - weighted_month / (28*2)
+                        t += 12*3600
+                        future += time_12h
+                    self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
+                    flotdata.append(futuredata)
+                else:
+                     print 'no estimate'
+                     self.silo_days_left='365'
 
         except Exception, e:
             self.silo_days_left='0'
