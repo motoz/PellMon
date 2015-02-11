@@ -235,7 +235,7 @@ class silolevelplugin(protocols):
                 if data['label'] == 'last 7':
                     if data['data'][0][1] > 2:
                         last_week = data['data'][1][1] + data['data'][2][1] + data['data'][3][1] + data['data'][4][1] + data['data'][5][1] + data['data'][6][1]*2
-
+            logger.debug('last month: %s, last week: %s'%(last_month, last_week))
 
             year_old_data = False
             year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
@@ -247,7 +247,7 @@ class silolevelplugin(protocols):
 
             # make an estimate based on last weeks consumption when there is less than three weeks left
             if self.silo_level < last_week * 3:
-                #print 'last week estimate', last_week
+                logger.debug('last week estimate %s'%last_week)
                 level = self.silo_level
                 t = start_prediction_at
                 while level > 0:
@@ -259,7 +259,7 @@ class silolevelplugin(protocols):
 
             # if there is data from last year use that for the estimate
             elif year_old_data:
-                #print 'last year estimate', last_month
+                logger.debug('last year estimate %s'%last_month)
 
                 start = start_prediction_at
                 period = 3600*24*30
@@ -280,8 +280,12 @@ class silolevelplugin(protocols):
                     flotdata.append(futuredata)
 
             # otherwise estimate based on last month consumption with weighted monthly estimates
-            elif last_month > 0:
-                #print 'last month estimate', last_month
+            elif last_month == 0:
+                last_month = last_week * 4
+                logger.debug('last month estimate from last week * 4: %s'%last_month)
+
+            if last_month > 0:
+                logger.debug('last month estimate %s'%last_month)
                 month_weights = (10,9,7,6,4,2,1,1,2,4,5,6)
                 now = datetime.today()
                 future = now
@@ -296,10 +300,14 @@ class silolevelplugin(protocols):
                     future += time_12h
                 self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
                 flotdata.append(futuredata)
+            else:
+                 print 'no estimate'
+                 self.silo_days_left='365'
 
         except Exception, e:
-            #print str(e)
-            pass
+            self.silo_days_left='0'
+            logger.info('silolevel prediction error: %s'%str(e))
+
         self.siloData = {
             'graphdata':flotdata,
             'silo_level': self.silo_level,
