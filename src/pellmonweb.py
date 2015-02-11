@@ -156,7 +156,7 @@ class Dbus_handler:
         if self.iface:
             with self.lock:
                 try:
-                    return self.iface.GetItem(itm)
+                    return self.iface.GetItem(itm, utf8_strings=True)
                 except Dbus.exceptions.DBusException:
                     self.iface = None
                     raise DbusNotConnected("server not running")
@@ -167,7 +167,7 @@ class Dbus_handler:
         if self.iface:
             with self.lock:
                 try:
-                    return self.iface.SetItem(item, value)
+                    return self.iface.SetItem(item, value, utf8_strings=True)
                 except Dbus.exceptions.DBusException:
                     self.iface = None
                     raise DbusNotConnected("server not running")
@@ -178,7 +178,7 @@ class Dbus_handler:
         if self.iface:
             with self.lock:
                 try:
-                    return self.iface.GetDB()
+                    return self.iface.GetDB(utf8_strings=True)
                 except Dbus.exceptions.DBusException:
                     self.iface = None
                     raise DbusNotConnected("server not running")
@@ -189,7 +189,7 @@ class Dbus_handler:
         if self.iface:
             with self.lock:
                 try:
-                    return self.iface.GetDBwithTags(tags)
+                    return self.iface.GetDBwithTags(tags, utf8_strings=True)
                 except Dbus.exceptions.DBusException:
                     self.iface = None
                     raise DbusNotConnected("server not running")
@@ -201,7 +201,7 @@ class Dbus_handler:
         if self.iface:
             with self.lock:
                 try:
-                    db = self.iface.GetFullDB(tags)
+                    db = self.iface.GetFullDB(tags, utf8_strings=True)
                 except Dbus.exceptions.DBusException:
                     self.iface = None
                     raise DbusNotConnected("server not running")
@@ -213,7 +213,7 @@ class Dbus_handler:
         if self.iface:
             with self.lock:
                 try:
-                    return self.iface.getMenutags()
+                    return self.iface.getMenutags(utf8_strings=True)
                 except Dbus.exceptions.DBusException:
                     self.iface = None
                     raise DbusNotConnected("server not running")
