@@ -43,7 +43,7 @@ class protocols(IPlugin):
         'name':'item_name', 'type':'R|R/W|W'
         and optionally 
         'min', 'max', 'unit', 'longname', 'description' keys with string type values"""
-        return [{}]
+        return []
 
     def sendmail(self, msg):
         """Callback to send mail message"""

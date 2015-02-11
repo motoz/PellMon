@@ -25,7 +25,11 @@ import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from cherrypy.lib import caching
-from gi.repository import Gio, GLib, GObject
+
+from gi.repository import GLib, GObject
+import dbus as Dbus
+from dbus.mainloop.glib import DBusGMainLoop
+
 import json
 import threading, Queue
 from Pellmonweb import *
@@ -40,7 +44,7 @@ import grp
 import subprocess
 from datetime import datetime
 from cgi import escape
-from threading import Timer
+from threading import Timer, Lock
 import signal
 import simplejson
 import re
@@ -109,88 +113,108 @@ class DbusNotConnected(Exception):
 
 class Dbus_handler:
     def __init__(self, bus='SESSION'):
-        if bus=='SYSTEM':
-            self.bustype=Gio.BusType.SYSTEM
-        else:
-            self.bustype=Gio.BusType.SESSION
+        self.bus = bus
+        self.lock = Lock()
+        self.iface = None
 
     def start(self):
-        self.notify = None
-        self.bus = Gio.bus_get_sync(self.bustype, None)
-        Gio.bus_watch_name(
-            self.bustype,
-            'org.pellmon.int',
-            Gio.DBusProxyFlags.NONE,
-            self.dbus_connect,
-            self.dbus_disconnect,
-        )
+        Dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        Dbus.mainloop.glib.threads_init()
+        if self.bus=='SYSTEM':
+            self.bustype = Dbus.SystemBus()
+        else:
+            self.bustype = Dbus.SessionBus()
 
-    def dbus_connect(self, connection, name, owner):
-        self.notify = Gio.DBusProxy.new_sync(
-            self.bus,
-            Gio.DBusProxyFlags.NONE,
-            None,
-            'org.pellmon.int',
-            '/org/pellmon/int',
-            'org.pellmon.int',
-            None)
-        def on_signal(proxy, sender_name, signal_name, parameters):
-            msg = simplejson.loads(parameters[0])
+
+        def on_signal(parameters):
+            msg = simplejson.loads(parameters)
             for i in xrange(len(Sensor.sensorlist) - 1, -1, -1):
                 sensor = Sensor.sensorlist[i]
                 if not sensor.send(msg):
                     del Sensor.sensorlist[i]
-
-        self.notify.connect("g-signal", on_signal)
-
-
-    def dbus_disconnect(self, connection, name):
-        if self.notify:
-            self.notify = None
-
+        
+        self.bustype.add_signal_receiver(on_signal, dbus_interface="org.pellmon.int", signal_name="changed_parameters")
+        self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                               "/org/pellmon/int" # Object's path
+                              )
 
     def getItem(self, itm):
-        if self.notify:
-            return self.notify.GetItem('(s)',itm)
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetItem(itm, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException, e:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def setItem(self, item, value):
-        if self.notify:
-            return self.notify.SetItem('(ss)',item, value)
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.SetItem(item, value, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getdb(self):
-        if self.notify:
-            return self.notify.GetDB()
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetDB(utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException, e:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getDBwithTags(self, tags):
-        if self.notify:
-            return self.notify.GetDBwithTags('(as)',tags)
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetDBwithTags(tags, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getFullDB(self, tags):
-        if self.notify:
-            db = self.notify.GetFullDB('(as)', tags)
-            return db
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.GetFullDB(tags, utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
     def getMenutags(self):
-        if self.notify:
-            return self.notify.getMenutags()
-        else:
-            raise DbusNotConnected("server not running")
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.getMenutags(utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
 
 class PellMonWeb:
     def __init__(self):
         self.logview = LogViewer(logfile)
         self.auth = AuthController(credentials)
-        self.consumptionview = Consumption(polling, db)
+        self.consumptionview = Consumption(polling, db, dbus)
 
     @cherrypy.expose
     def autorefresh(self, **args):
@@ -465,130 +489,19 @@ class PellMonWeb:
         return s
 
     @cherrypy.expose
-    def silolevel(self, **args):
-        if not polling:
-             return None
-        try:
-            reset_level=dbus.getItem('silo_reset_level')
-            reset_time=dbus.getItem('silo_reset_time')
-            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
-            reset_time = mktime(reset_time.timetuple())
-        except:
-            return None
-            
-        try:
-            maxWidth = args['maxWidth']
-        except:
-            maxWidth = '440'; # Default bootstrap 3 grid size
-        if int(maxWidth)>500:
-            rightaxis = '--right-axis 1:0'
-        else:
-            rightaxis = ''
-
-        now=int(time.time())
-        start=int(reset_time)
-        RRD_command=  "rrdtool graph - --border 0 --lower-limit 0 --disable-rrdtool-tag --full-size-mode --width %s %s --right-axis-format %%1.1lf --height 400 --end %u --start %u "%(maxWidth, rightaxis, now, start)   
-        RRD_command+=" DEF:a=%s:feeder_time:AVERAGE DEF:b=%s:feeder_capacity:AVERAGE"%(db,db)
-        RRD_command+=" CDEF:t=a,POP,TIME CDEF:tt=PREV\(t\) CDEF:i=t,tt,-"
-        #RRD_command+=" CDEF:a1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start,start,reset_level)
-        #RRD_command+=" CDEF:a2=t,%u,GT,tt,%u,LE,3000,0,IF,0,IF"%(start+864000*7,start+864000*7)
-        #RRD_command+=" CDEF:s1=t,%u,GT,tt,%u,LE,%s,0,IF,0,IF"%(start, start, reset_level)
-        RRD_command+=" CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level
-        RRD_command+=" CDEF:s=a,b,*,360000,/,i,*"
-        RRD_command+=" CDEF:fs=s,UN,0,s,IF"
-        RRD_command+=" CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF AREA:c#d6e4e9"
-        cmd = subprocess.Popen(RRD_command, shell=True, stdout=subprocess.PIPE)
-        cherrypy.response.headers['Pragma'] = 'no-cache'
-        cherrypy.response.headers['Content-Type'] = "image/png"
-        return cmd.communicate()[0]
-
-    @cherrypy.expose
     def flotsilolevel(self, **args):
         if not polling:
             return None
         cherrypy.response.headers['Pragma'] = 'no-cache'
         return dbus.getItem('siloLevelData')
 
-        try:
-            reset_level=dbus.getItem('silo_reset_level')
-            reset_time=dbus.getItem('silo_reset_time')
-            reset_time = datetime.strptime(reset_time,'%d/%m/%y %H:%M')
-            reset_time = mktime(reset_time.timetuple())
-        except:
-            return None
-
-        now=str(int(time.time()))
-        start=str(int(reset_time))
-        RRD_command=  ['rrdtool', 'xport', '--json', '--end',str(now) , '--start', start]
-        RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)
-        RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)
-        RRD_command.append("CDEF:t=a,POP,TIME")
-        RRD_command.append("CDEF:tt=PREV(t)")
-        RRD_command.append("CDEF:i=t,tt,-")
-        RRD_command.append("CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%reset_level)
-        RRD_command.append("CDEF:s=a,b,*,360000,/,i,*")
-        RRD_command.append("CDEF:fs=s,UN,0,s,IF")
-        RRD_command.append("CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF")
-        RRD_command.append("XPORT:c:level")
-
-        cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
-
-        out = cmd.communicate()[0]
-        out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
-        out = re.sub(r"'", r'"', out)
-        out= json.loads(out)
-        data = out['data']
-
-        is_dst = time.daylight and time.localtime().tm_isdst > 0
-        utc_offset = - (time.altzone if is_dst else time.timezone)
-
-        start = int(out['meta']['start'])*1000
-        step = int(out['meta']['step'])*1000
-        legends = out['meta']['legend']
-        t = start + (utc_offset * 1000)
-        flotdata=[]
-        for i in range(len(legends)):
-            flotdata.append({'label':legends[i], 'data':[]})
-        for s in data:
-            for i in range(len(s)):
-                flotdata[i]['data'].append([t, s[i]])
-            t += step
-        s = json.dumps(flotdata)
-
-        cherrypy.response.headers['Pragma'] = 'no-cache'
-        return s
-
-    @cherrypy.expose
-    def consumption(self, **args):
-        if not polling:
-             return None
-        if consumption_graph:
-            try:
-                maxWidth = args['maxWidth']
-            except:
-                maxWidth = '440'; # Default bootstrap 3 grid size
-            if int(maxWidth)>500:
-                rightaxis = '--right-axis 1:0'
-            else:
-                rightaxis = ''
-            now = int(time.time())
-            align = now/3600*3600
-            RrdGraphString = make_barchart_string(db, now, align, 3600, 24, '-', maxWidth, '24h consumption', 'kg/h', param=rightaxis)
-            cmd = subprocess.Popen(RrdGraphString, shell=True, stdout=subprocess.PIPE)
-            cherrypy.response.headers['Pragma'] = 'no-cache'
-            cherrypy.response.headers['Content-Type'] = "image/png"
-            return cmd.communicate()[0]
-
     @cherrypy.expose
     def flotconsumption(self, **args):
         if not polling:
              return None
         if consumption_graph:
-            now = int(time.time())
-            aligned1h = now/3600*3600
-            jsondata = self.consumptionview.barchartdata(start=aligned1h, period=3600, bars=24)
             cherrypy.response.headers['Pragma'] = 'no-cache'
-            return jsondata
+            return dbus.getItem('consumptionData24h')
 
     @cherrypy.expose
     @require() #requires valid login

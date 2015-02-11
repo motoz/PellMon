@@ -2,24 +2,19 @@ $.ajaxSetup({ cache: false });
 
 var baroptions = {
      series: {
-         color: '#6989b7',//#9a9afa', 
+         color: '#6989b7',
          bars: {
              show: true,
-             //align: 'center',
              lineWidth: 0,
          },
      },
-    // yaxes: {
-    //     min: 0
-    // },
+    legend: { 
+        show: false,
+    },
      xaxis: {
          mode: 'time',
          lineWidth: 0,
-         //timeformat: "%y",
-         //tickSize: [1, "year"],
-         //autoscaleMargin: .10 // allow space left and right
          tickColor: '#f9f9f9',
-
      },
     grid:   {
         hoverable: true,
@@ -45,7 +40,7 @@ var drawConsumption = function(url, graph, width, label, totalunit, averageunit)
 $(function() {
     drawConsumption('flotconsumption24h', '#consumption24h', 3300, 'last 24h: ', ' kg', ' kg/h ');
     drawConsumption('flotconsumption7d', '#consumption7d', 3500*24, 'last week: ', ' kg', ' kg/day ');
-    drawConsumption('flotconsumption1m', '#consumption1m', 3500*24*7, 'last two months: ', ' kg', ' kg/week ');
+    drawConsumption('flotconsumption8w', '#consumption8w', 3500*24*7, 'last two months: ', ' kg', ' kg/week ');
     drawConsumption('flotconsumption1y', '#consumption1y', 3400*24*30, 'last year: ', ' kg', ' kg/month ');
 });
 

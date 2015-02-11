@@ -1,4 +1,4 @@
-SUBDIRS = scottecom raspberrygpio testplugin customalarms calculate owfs silolevel pelletcalc
+SUBDIRS = scottecom raspberrygpio testplugin customalarms calculate owfs silolevel pelletcalc consumption
 
 nobase_dist_plugins_DATA = \
 	scottecom.pellmon-plugin \
@@ -8,6 +8,7 @@ nobase_dist_plugins_DATA = \
 	calculate.pellmon-plugin \
 	owfs.pellmon-plugin \
 	silolevel.pellmon-plugin \
-	pelletcalc.pellmon-plugin
+	pelletcalc.pellmon-plugin \
+	consumption.pellmon-plugin
 
 pluginsdir = $(libdir)/Pellmonsrv/plugins

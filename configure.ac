@@ -35,6 +35,7 @@ src/Pellmonsrv/plugins/calculate/Makefile \
 src/Pellmonsrv/plugins/owfs/Makefile \
 src/Pellmonsrv/plugins/silolevel/Makefile \
 src/Pellmonsrv/plugins/pelletcalc/Makefile \
+src/Pellmonsrv/plugins/consumption/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 
