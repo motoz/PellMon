@@ -233,8 +233,7 @@ class silolevelplugin(protocols):
             w_data = json.loads(self.getGlobalItem('consumptionData7d'))['bardata']
             for data in w_data:
                 if data['label'] == 'last 7':
-                    if data['data'][0][1] > 2:
-                        last_week = data['data'][1][1] + data['data'][2][1] + data['data'][3][1] + data['data'][4][1] + data['data'][5][1] + data['data'][6][1]*2
+                    last_week = data['data'][1][1] + data['data'][2][1] + data['data'][3][1] + data['data'][4][1] + data['data'][5][1] + data['data'][6][1]*2
             logger.debug('last month: %s, last week: %s'%(last_month, last_week))
 
             year_old_data = False
