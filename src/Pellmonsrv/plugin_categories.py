@@ -59,3 +59,6 @@ class protocols(IPlugin):
     def getGlobalItem(self, item):
         """Get items from other plugins"""
         return self.glob['conf'].database.items[item].getItem()
+    
+    def getTemplate(self):
+        return []

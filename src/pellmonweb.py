@@ -210,6 +210,18 @@ class Dbus_handler:
                 self.remote_object = None
                 raise DbusNotConnected("server not running")
 
+    def getPlugins(self):
+        with self.lock:
+            try:
+                if not self.remote_object:
+                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                return self.remote_object.getPlugins(utf8_strings=True, dbus_interface ='org.pellmon.int')
+            except Dbus.exceptions.DBusException:
+                self.remote_object = None
+                raise DbusNotConnected("server not running")
+        
 class PellMonWeb:
     def __init__(self):
         self.logview = LogViewer(logfile)
@@ -651,7 +663,7 @@ class PellMonWeb:
             if colorsDict.has_key(key):
                 if cherrypy.session.get(val)=='yes':
                     empty=False
-        tmpl = lookup.get_template("index.html")
+        #tmpl = lookup.get_template("index.html")
         try:
             lines = cherrypy.session['lines']
         except:
@@ -667,6 +679,15 @@ class PellMonWeb:
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
                 break;
+
+        plugins = dbus.getPlugins()
+
+        plugintemplate = '<%inherit file="index.html"/>'
+        for plugin in plugins:
+            plugintemplate += '<%block name="widget1">' + plugin['template'] + '</%block>'
+
+        tmpl = Template(plugintemplate, lookup=lookup)
+
         return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name)
         
     @cherrypy.expose

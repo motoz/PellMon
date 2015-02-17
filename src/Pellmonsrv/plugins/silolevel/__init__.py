@@ -318,3 +318,12 @@ class silolevelplugin(protocols):
 
         return json.dumps(self.siloData)
 
+    def getTemplate(self):
+        return {'template':"""
+            this is a test <br>
+        """,
+        'row':1,
+        'width':'6'
+        }
+
+

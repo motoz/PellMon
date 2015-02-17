@@ -157,7 +157,17 @@ class MyDBUSService(dbus.service.Object):
         menutags=[]
         for plugin in conf.database.protocols:
             menutags = menutags + plugin.plugin_object.getMenutags()
-        return menutags
+        return [plugin.plugin_object.getMenutags() for plugin in conf.database.protocols]
+
+    @dbus.service.method('org.pellmon.int', out_signature='aa{sv}')
+    def getPlugins(self):
+        """Get list of all tags that make up the menu"""
+        templates=[]
+        for plugin in conf.database.protocols:
+            template = plugin.plugin_object.getTemplate()
+            if template:
+                templates.append(template)
+        return templates
 
     #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
