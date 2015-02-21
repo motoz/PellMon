@@ -28,9 +28,7 @@ from logging import getLogger
 
 logger = getLogger('pellMon')
 
-# This is needed to find the local module ownet_fix
-sys.path.append(path.dirname(path.abspath(__file__)))
-import ownet_fix as ownet
+import pyownet.protocol
 
 itemList=[]
 itemTags={}
@@ -47,6 +45,7 @@ class owfsplugin(protocols):
         self.sensors={}
         self.latches={}
         self.counters=[]
+        self.proxies = {}
 
         for key, value in self.conf.iteritems():
             port = 4304
@@ -73,10 +72,9 @@ class owfsplugin(protocols):
                     port = int(val[1])
                 owpath = val[0]
 
-                itempath = path.dirname(owpath)
-                itemattribute = path.basename(owpath)
-                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
-                itemList[self.ow2index[ow_name]]['owname'] = itemattribute
+                self.sensors[self.ow2index[ow_name]] = (owpath, server)
+                if not server in self.proxies:
+                    self.proxies[server] = pyownet.protocol.proxy(host=server, port=port)
 
             if ow_data == 'type' and value == 'COUNTER':
                 itemList[self.ow2index[ow_name]]['function'] = 'COUNTER'
@@ -96,10 +94,9 @@ class owfsplugin(protocols):
                 if len(val) == 2:
                     port = int(val[1])
                 owpath = val[0]
-                itempath = path.dirname(owpath)
-                itemattribute = path.basename(owpath)
-                self.latches[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
-                itemList[self.ow2index[ow_name]]['owlatch'] = itemattribute
+                self.latches[self.ow2index[ow_name]] = (owpath, server)
+                if not server in self.proxies:
+                    self.proxies[server] = pyownet.protocol.proxy(host=server, port=port)
 
             if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
@@ -110,13 +107,10 @@ class owfsplugin(protocols):
             if item['function'] == 'COUNTER':
                 return str(item['value'])
             else:
-                sensor = self.sensors[self.name2index[itemName]]
-                name = itemList[self.name2index[itemName]]['owname']
-                name = name.replace('.','_')
-                attr =  getattr(sensor, name)
-                while attr == None:
-                    attr =  getattr(sensor, name)
-                return str(attr)
+                path, server = self.sensors[self.name2index[itemName]]
+                proxy = self.proxies[server]
+                data = proxy.read(path)
+                return str(data)
         except Exception, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
@@ -126,10 +120,9 @@ class owfsplugin(protocols):
         try:
             index = self.name2index[itemName]
             if itemList[index]['type'] == 'R/W':
-                sensor = self.sensors[self.name2index[itemName]]
-                name = itemList[self.name2index[itemName]]['owname']
-                name = name.replace('.','_')
-                setattr(sensor, name, value)
+                path, server = self.sensors[self.name2index[itemName]]
+                proxy = self.proxies[server]
+                data = proxy.write(path)
                 return 'OK'
             else:
                 return 'error'
@@ -143,13 +136,11 @@ class owfsplugin(protocols):
             item = itemList[counter]
             l = 0
             if self.latches.has_key(counter):
-                sensor = self.latches[counter]
-                lname = item['owlatch'].replace('.','_')
-                attr =  getattr(sensor, lname)
-                while attr == None:
-                    attr =  getattr(sensor, lname)
-                setattr(sensor, lname, 0)
-                l = attr
+                path, server = self.latches[counter]
+                proxy = self.proxies[server]
+                data = proxy.read(path)
+                proxy.write(path, 0)
+                l = int(data)
 
             if l == 1:
                 sensor = self.sensors[counter]
