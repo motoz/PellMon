@@ -78,9 +78,7 @@ optional arguments:
 ###pellmoncli.py:
 
 Interactive command line client with tab completion. Reading and writing of setting values, and reading of measurement data.
-<pre>
-usage: pellmoncli.py [-h] {get,set,list,i}
-</pre>
+    usage: pellmoncli.py [-h] {get,set,list,i}
 
 ###pellmon.conf
 Configuration values. 
@@ -130,20 +128,14 @@ Configuration values.
     make uninstall
 
 ##Dependencies:
-<pre>
-rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
-</pre>
+    rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
 
 ##Optional dependencies:
-<pre>
-python-ws4py
+    python-ws4py
 ##Dependencies for plugins
 ###OWFS:
-pyownet
-</pre>
+    pyownet
 
 ##Build dependencies:
-<pre>
-autoconf
-</pre>
+    autoconf
 
