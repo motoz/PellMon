@@ -28,8 +28,6 @@ from logging import getLogger
 
 logger = getLogger('pellMon')
 
-import pyownet.protocol
-
 itemList=[]
 itemTags={}
 Menutags = ['OWFS']
@@ -39,6 +37,11 @@ class owfsplugin(protocols):
         protocols.__init__(self)
 
     def activate(self, conf, glob):
+        try:
+            import pyownet.protocol
+        except ImportError:
+            logger.info('OWFS: python module pyownet is missing')
+            raise
         protocols.activate(self, conf, glob)
         self.ow2index={}
         self.name2index={}
