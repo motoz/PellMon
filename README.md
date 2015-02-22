@@ -137,6 +137,9 @@ rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject py
 ##Optional dependencies:
 <pre>
 python-ws4py
+##Dependencies for plugins
+###OWFS:
+pyownet
 </pre>
 
 ##Build dependencies:
