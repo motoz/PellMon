@@ -57,8 +57,8 @@ class Consumption_plugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, templates):
+        protocols.activate(self, conf, glob, templates)
         self.db = self.glob['conf'].db
         self.totals=WeakValueDictionary()
         self.totals_fifo=[None]*200

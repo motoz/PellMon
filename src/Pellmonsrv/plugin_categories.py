@@ -20,12 +20,19 @@ from Pellmonsrv.yapsy.IPlugin import IPlugin
 
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
-    def activate(self, conf, glob):
+    def activate(self, conf, glob, templates):
         # Save globals for plugin access to everything
         self.glob = glob
         self.conf = conf
+        self.templates = templates
         IPlugin.activate(self)
+        print 'activated'
 
+    def _insert_template(self, row, column, template):
+        print 'inserting template'
+        self.templates[row][column] = template
+        print 'inserted template'
+        
     def getItem(self, item):
         """Return the value for one item"""
         return 'valuestring'

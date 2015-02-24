@@ -67,6 +67,8 @@ class Database(threading.Thread):
         self.values={}
         self.protocols=[]
         self.setDaemon(True)
+        self.templates = [[None for j in range(3)] for i in range(10)]
+
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
@@ -75,12 +77,13 @@ class Database(threading.Thread):
         for plugin in manager.getPluginsOfCategory('Protocols'):
             if plugin.name in conf.enabled_plugins:
                 try:
-                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self.templates)
                     self.protocols.append(plugin)
                     logger.info("activated plugin %s"%plugin.name)
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
+                    print str(e), plugin.name
                     logger.info('Plugin %s init failed'%plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
         self.start()
@@ -157,11 +160,13 @@ class MyDBUSService(dbus.service.Object):
         menutags=[]
         for plugin in conf.database.protocols:
             menutags = menutags + plugin.plugin_object.getMenutags()
-        return [plugin.plugin_object.getMenutags() for plugin in conf.database.protocols]
+        return menutags
 
-    @dbus.service.method('org.pellmon.int', out_signature='aa{sv}')
+    #@dbus.service.method('org.pellmon.int', out_signature='aa{sv}')
+    @dbus.service.method('org.pellmon.int', out_signature='s')
     def getPlugins(self):
-        """Get list of all tags that make up the menu"""
+        print conf.database.templates
+        return conf.database.templates[0][0]
         templates=[]
         for plugin in conf.database.protocols:
             template = plugin.plugin_object.getTemplate()

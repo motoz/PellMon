@@ -683,9 +683,9 @@ class PellMonWeb:
         plugins = dbus.getPlugins()
 
         plugintemplate = '<%inherit file="index.html"/>'
-        for plugin in plugins:
-            plugintemplate += '<%block name="widget1">' + plugin['template'] + '</%block>'
-
+#        for plugin in plugins:
+#            plugintemplate += '<%block name="widget1">' + plugin['template'] + '</%block>'
+        plugintemplate += '<%block name="widget1">' + plugins + '</%block>'
         tmpl = Template(plugintemplate, lookup=lookup)
 
         return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name)

@@ -63,8 +63,9 @@ class silolevelplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, templates):
+        print 'asdfsadfsd'
+        protocols.activate(self, conf, glob, templates)
         self.updateTime = 0
         self.siloData = None
         self.silo_days_left = None
@@ -87,6 +88,55 @@ class silolevelplugin(protocols):
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
+        self._insert_template(0,0,"""
+<div class="col-md-6">
+    <h4>Silo level</h4>
+    <div class="image-responsive" id="silolevel" style="height:400px">
+    </div>
+</div>
+
+<script type="text/javascript">
+var refreshSilolevel = function() {
+    $.get(
+        'flotsilolevel',
+        function(jsondata) {
+            var data = JSON.parse(jsondata);
+            var graph = $('#silolevel');
+            plot = $.plot(graph, data.graphdata, siloleveloptions);
+            $('<p>' + 'current level: ' + data.silo_level + ' kg' + '</p>').insertAfter(graph);
+            $('<p>' + data.silo_days_left + ' days to empty' + '</p>').insertAfter(graph).css('float', 'right');
+        })
+}
+
+var siloleveloptions = {
+        series: {
+                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
+                    color:"rgba(105, 137, 183, 0)",
+                    points: { show: false },
+                    shadowSize: 0,
+                },
+        xaxes:  [{
+                    mode: "time",       
+                    position: "bottom",
+                }],
+        legend: { 
+                    show: false,
+                },
+        grid:   {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
+                },
+    };
+
+document.addEventListener("DOMContentLoaded", function(event) { 
+    refreshSilolevel();
+});
+
+</script>
+
+""")
 
     def getItem(self, itemName):
         if itemName == 'silo_level':
@@ -320,7 +370,11 @@ class silolevelplugin(protocols):
 
     def getTemplate(self):
         return {'template':"""
-            this is a test <br>
+        <div class="col-md-6">
+            <h4>Consumption</h4>
+            <div class="image-responsive" id="silolevel" style="height:400px">
+            </div>
+        </div>
         """,
         'row':1,
         'width':'6'

@@ -234,8 +234,8 @@ class calculateplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, templates):
+        protocols.activate(self, conf, glob, templates)
         self.calc2index={}
         self.name2index={}
         self.tasks = {}

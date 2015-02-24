@@ -11,7 +11,6 @@ var refreshTimer = null,
 $(function() {
     refreshGraph();
     refreshConsumption();
-    refreshSilolevel();
     plot = $.plot($('#graph'), data, options);
     svgElement = document.getElementById("systemimage");
 
@@ -84,27 +83,6 @@ var baroptions = {
         },
 };
 
-var siloleveloptions = {
-        series: {
-                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
-                    color:"rgba(105, 137, 183, 0)",
-                    points: { show: false },
-                    shadowSize: 0,
-                },
-        xaxes:  [{
-                    mode: "time",       
-                    position: "bottom",
-                }],
-        legend: { 
-                    show: false,
-                },
-        grid:   {
-                hoverable: true,
-                backgroundColor:'#f9f9f9',
-                borderWidth: 1,
-                borderColor: '#e7e7e7'
-                },
-    };
 
 var refreshGraph = function(getdata) {
     var getdata = typeof getdata !== 'undefined' ? getdata : true;
@@ -192,17 +170,6 @@ var refreshConsumption = function() {
         })
 }
 
-var refreshSilolevel = function() {
-    $.get(
-        'flotsilolevel',
-        function(jsondata) {
-            var data = JSON.parse(jsondata);
-            var graph = $('#silolevel');
-            plot = $.plot(graph, data.graphdata, siloleveloptions);
-            $('<p>' + 'current level: ' + data.silo_level + ' kg' + '</p>').insertAfter(graph);
-            $('<p>' + data.silo_days_left + ' days to empty' + '</p>').insertAfter(graph).css('float', 'right');
-        })
-}
 
 var startImageRefresh = function() {
     refreshTimer = setInterval(refreshGraph, 10000);

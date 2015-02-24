@@ -85,8 +85,8 @@ class pelletcalc(protocols):
         self.feeder_time = None
         self.alarm_state = 'OK'
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, templates):
+        protocols.activate(self, conf, glob, templates)
         if not 'timer' in conf:
             global itemList
             itemList += counter_mode_items
