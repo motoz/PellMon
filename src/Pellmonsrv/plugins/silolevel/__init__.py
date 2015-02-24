@@ -146,18 +146,27 @@ class silolevelplugin(protocols):
         return Menutags
 
     def graphData(self):
+
+        def getLastUpdateTime():
+            db = self.glob['conf'].db
+            RRD_command =  ['rrdtool', 'last', db]
+            cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
+            out = cmd.communicate()[0]  
+            return int(out)
+            
         def siloLevelData(from_time, to_time, from_level):
             db = self.glob['conf'].db
-            RRD_command =  ['rrdtool', 'xport', '--json', '--end', str(int(to_time)) , '--start', str(int(from_time))]
-            RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)
-            RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)
-            RRD_command.append("CDEF:t=a,POP,TIME")
-            RRD_command.append("CDEF:tt=PREV(t)")
-            RRD_command.append("CDEF:i=t,tt,-")
-            RRD_command.append("CDEF:s1=t,POP,COUNT,1,EQ,%s,0,IF"%str(from_level))
-            RRD_command.append("CDEF:s=a,b,*,360000,/,i,*")
-            RRD_command.append("CDEF:fs=s,UN,0,s,IF")
-            RRD_command.append("CDEF:c=s1,0,EQ,PREV,UN,0,PREV,IF,fs,-,s1,IF")
+            RRD_command =  ['rrdtool', 'xport', '--json', '--step','10000', '--end', str(int(to_time)) , '--start', str(int(from_time))]
+            RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)                       # a = feeder_time
+            RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)                   # b = feeder_capacity
+            RRD_command.append("CDEF:t=a,POP,TIME")                                     # t = time
+            RRD_command.append("CDEF:tt=PREV(t)")                                       # tt = time shifted one step
+            RRD_command.append("CDEF:i=t,tt,-")                                         # i = time between steps
+            RRD_command.append("CDEF:s=a,b,*,360000,/,i,*")                             # s = kg burned between steps
+            RRD_command.append("CDEF:fs=s,UN,0,s,IF")                                   # fs = s with unknowns replaced with zeros
+            RRD_command.append("CDEF:c=COUNT,1,GT,PREV,fs,-,%s,IF"%str(from_level))     # c = silo_reset_level at first position
+                                                                                        # then subtract fs from previous value       
+
             RRD_command.append("XPORT:c:level")
             cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
             out = cmd.communicate()[0]
@@ -180,6 +189,17 @@ class silolevelplugin(protocols):
             level = float(futuredata[-1][1])
             return futuredata, level
 
+        def decimateData(data, maxlen):
+            dl = []
+            dec = len(data) / maxlen
+            if dec > 1:
+                for i in xrange(len(data)/dec):
+                    dl.append(data[i*dec])
+                dl.append(data[-1])
+                return dl
+            else:
+                return data
+
         try:
             if time.time() - self.updateTime < 300:
                 return json.dumps(self.siloData)
@@ -189,8 +209,11 @@ class silolevelplugin(protocols):
             reset_time = mktime(reset_time.timetuple())
         except Exception, e:
             return None
-
-        now=int(time.time())
+        p = int(self.glob['conf'].poll_interval)
+        try:
+            now = getLastUpdateTime() - 40000
+        except ValueError:
+            now=int(time.time()) - 40000
         start=int(reset_time)
         out = siloLevelData(start, now, reset_level)
 
@@ -201,6 +224,8 @@ class silolevelplugin(protocols):
         start = int(out['meta']['start'])*1000
         step = int(out['meta']['step'])*1000
         legends = out['meta']['legend']
+
+
         t = start + (utc_offset * 1000)
         flotdata=[]
         for i in range(len(legends)):
@@ -209,7 +234,9 @@ class silolevelplugin(protocols):
             for i in range(len(s)):
                 flotdata[i]['data'].append([t, s[i]])
             t += step
+        t -= step
         start_prediction_at = t/1000
+        flotdata[0]['data'] = decimateData(flotdata[0]['data'], 50)
 
         # current level
         level = float(flotdata[0]['data'][-1][1])
@@ -254,6 +281,7 @@ class silolevelplugin(protocols):
                     level = level - last_week / (7*24)
                     t += 3600
                 self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
+                futuredata['data'] = decimateData(futuredata['data'], 50)
                 flotdata.append(futuredata)
 
             # if there is data from last year use that for the estimate
@@ -276,6 +304,7 @@ class silolevelplugin(protocols):
                 except Exception, e:
                     self.silo_days_left = '0'
                 if level<= 0:
+                    futuredata['data'] = decimateData(futuredata['data'], 50)
                     flotdata.append(futuredata)
 
             # otherwise estimate based on last month consumption with weighted monthly estimates
@@ -299,9 +328,9 @@ class silolevelplugin(protocols):
                         t += 12*3600
                         future += time_12h
                     self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
+                    futuredata['data'] = decimateData(futuredata['data'], 50)
                     flotdata.append(futuredata)
                 else:
-                     print 'no estimate'
                      self.silo_days_left='365'
 
         except Exception, e:
