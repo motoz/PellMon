@@ -449,7 +449,7 @@ function setupPolling() {
             var element = allElements[i];
             if((element.id).indexOf("paramname:") != -1) {
                 if (params != "") params = params + ','
-                params = params + (element.id).split(':')[1];
+                var params = params + (element.id).split(':')[1];
             }    
         }
         if (params == "") 
@@ -458,8 +458,9 @@ function setupPolling() {
         }
         else
         {
-            var pollParams = function(params) {
-                $.get('getparamlist?parameters='+ params,
+            pollparameters = params
+            var pollParams = function() {
+                $.get('getparamlist?parameters='+ pollparameters,
                     function(data) {
                         jsonObject = $.parseJSON(data);
                         for (i in jsonObject) {
@@ -470,7 +471,7 @@ function setupPolling() {
                 )
                 setTimeout(pollParams, 15000);
             };
-            pollParams(params);
+            pollParams();
         }
     }
     else
