@@ -518,7 +518,7 @@ class PellMonWeb:
             return simplejson.dumps(dict(param=param, value=result))
 
     @cherrypy.expose
-    def getparamlist(self, parameters=None):
+    def getparamlist(self, parameters=None, **args):
         db=dbus.getdb()
         paramlist = [param for param in parameters.split(',') if param in db]
         responselist = [ {'name':param, 'value':dbus.getItem(param)} for param in paramlist]
