@@ -156,7 +156,7 @@ class silolevelplugin(protocols):
             
         def siloLevelData(from_time, to_time, from_level):
             db = self.glob['conf'].db
-            RRD_command =  ['rrdtool', 'xport', '--json', '--step','10000', '--end', str(int(to_time)) , '--start', str(int(from_time))]
+            RRD_command =  ['rrdtool', 'xport', '--json', '--end', str(int(to_time)) , '--start', str(int(from_time))]
             RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)                       # a = feeder_time
             RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)                   # b = feeder_capacity
             RRD_command.append("CDEF:t=a,POP,TIME")                                     # t = time
@@ -211,9 +211,9 @@ class silolevelplugin(protocols):
             return None
         p = int(self.glob['conf'].poll_interval)
         try:
-            now = getLastUpdateTime() - 40000
+            now = getLastUpdateTime()
         except ValueError:
-            now=int(time.time()) - 40000
+            now=int(time.time())
         start=int(reset_time)
         out = siloLevelData(start, now, reset_level)
 
