@@ -209,10 +209,10 @@ d11 = _logtick
 # default type is used, "DS:%s:GAUGE:%u:U:U", where %s is replaced with the 
 # datasource name and %u is replaced with 4*pollinterval
 #
-# Feeder_time and _logtick must be af type COUNTER, others typically
+# Feeder_time and _logtick must be af type DERIVE/COUNTER, others typically
 # use the default type GAUGE
 #
-d09 = DS:%s:COUNTER:%u:U:U
+d09 = DS:%s:DERIVE:%u:0:U
 d11 = DS:%s:COUNTER:%u:U:U
 
 [pollvalues]
