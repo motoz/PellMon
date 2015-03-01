@@ -10,7 +10,6 @@ var refreshTimer = null,
  */
 $(function() {
     refreshGraph();
-    refreshConsumption();
     plot = $.plot($('#graph'), data, options);
     svgElement = document.getElementById("systemimage");
 
@@ -55,34 +54,6 @@ var options = {
                 interactive: true
             }
     };
-
-var baroptions = {
-        series: {
-            color: '#6989b7', 
-            bars: {
-                show: true,
-                barWidth: 3300000, 
-                lineWidth: 0,
-            },
-        },
-        legend: { 
-            show: false,
-        },
-        yaxes: {
-            min: 0
-        },
-        xaxis: {
-            mode: 'time',
-            tickColor: '#f9f9f9',
-        },
-        grid: {
-            hoverable: true,
-            backgroundColor:'#f9f9f9',
-            borderWidth: 1,
-            borderColor: '#e7e7e7'
-        },
-};
-
 
 var refreshGraph = function(getdata) {
     var getdata = typeof getdata !== 'undefined' ? getdata : true;
@@ -157,19 +128,6 @@ var refreshGraph = function(getdata) {
         setGraphTitle();
     }
 }
-
-var refreshConsumption = function() {
-    $.get(
-        'flotconsumption'+'?period=3600&bars=24',
-        function(jsondata) {
-            var data = JSON.parse(jsondata);
-            var graph = $('#consumption');
-            plot = $.plot(graph, data.bardata, baroptions);
-            $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter(graph);
-            $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter(graph).css('float', 'right');
-        })
-}
-
 
 var startImageRefresh = function() {
     refreshTimer = setInterval(refreshGraph, 10000);

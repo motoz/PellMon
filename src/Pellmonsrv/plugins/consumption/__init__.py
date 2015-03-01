@@ -57,12 +57,64 @@ class Consumption_plugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, templates):
-        protocols.activate(self, conf, glob, templates)
+    def activate(self, conf, glob):
+        protocols.activate(self, conf, glob)
         self.db = self.glob['conf'].db
         self.totals=WeakValueDictionary()
         self.totals_fifo=[None]*200
         self.cache_lock = threading.Lock()
+        self._insert_template('consumption', """
+<h4>Consumption</h4>
+
+<div class="image-responsive" id="consumption" style="height:400px">
+</div>
+
+<script type="text/javascript">
+    var baroptions = {
+            series: {
+                color: '#6989b7', 
+                bars: {
+                    show: true,
+                    barWidth: 3300000, 
+                    lineWidth: 0,
+                },
+            },
+            legend: { 
+                show: false,
+            },
+            yaxes: {
+                min: 0
+            },
+            xaxis: {
+                mode: 'time',
+                tickColor: '#f9f9f9',
+            },
+            grid: {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
+            },
+    };
+
+    var refreshConsumption = function() {
+        $.get(
+            'flotconsumption'+'?period=3600&bars=24',
+            function(jsondata) {
+                var data = JSON.parse(jsondata);
+                var graph = $('#consumption');
+                plot = $.plot(graph, data.bardata, baroptions);
+                $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter(graph);
+                $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter(graph).css('float', 'right');
+            })
+    }
+
+    document.addEventListener("DOMContentLoaded", function(event) { 
+        refreshConsumption();
+    });
+
+</script>
+""")
 
     def getItem(self, itemName):
         now=int(time.time())

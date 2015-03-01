@@ -24,6 +24,7 @@ from cherrypy.process import plugins, servers
 import ConfigParser
 from mako.template import Template
 from mako.lookup import TemplateLookup
+from mako import exceptions
 from cherrypy.lib import caching
 
 from gi.repository import GLib, GObject
@@ -210,14 +211,14 @@ class Dbus_handler:
                 self.remote_object = None
                 raise DbusNotConnected("server not running")
 
-    def getPlugins(self):
+    def getPlugins(self, name):
         with self.lock:
             try:
                 if not self.remote_object:
                     self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
                                        "/org/pellmon/int" # Object's path
                                       )
-                return self.remote_object.getPlugins(utf8_strings=True, dbus_interface ='org.pellmon.int')
+                return self.remote_object.getPlugins(name, utf8_strings=True, dbus_interface ='org.pellmon.int')
             except Dbus.exceptions.DBusException:
                 self.remote_object = None
                 raise DbusNotConnected("server not running")
@@ -680,15 +681,17 @@ class PellMonWeb:
                 timeName = timeNames[i]
                 break;
 
-        plugins = dbus.getPlugins()
 
         plugintemplate = '<%inherit file="index.html"/>'
-#        for plugin in plugins:
-#            plugintemplate += '<%block name="widget1">' + plugin['template'] + '</%block>'
-        plugintemplate += '<%block name="widget1">' + plugins + '</%block>'
+        widgets = []
+        for row in frontpage_widgets:
+            wr = []
+            for widget in row:
+                wr.append(widget)
+            widgets.append(wr)
         tmpl = Template(plugintemplate, lookup=lookup)
 
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets)
         
     @cherrypy.expose
     def systemimage(self):
@@ -713,12 +716,22 @@ def parameterReader(q, parameterlist):
         q.put((item['name'],value))
     q.put(('**end**','**end**'))
 
+class myLookup(TemplateLookup):
+    def __init__(self, directories, dbus=None):
+        self.dbus = dbus
+        super(myLookup, self).__init__(directories)
+    def get_template(self, uri):
+        try:
+            return super(myLookup, self).get_template(uri)
+        except exceptions.TemplateLookupException, e:
+            print uri
+            plugin = self.dbus.getPlugins(uri)
+            self.put_string(uri, plugin)
+            return super(myLookup, self).get_template(uri)
+
 HERE = os.path.dirname(webpath)
 MEDIA_DIR = os.path.join(HERE, 'media')
 FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
-
-#Look for temlates in this directory
-lookup = TemplateLookup(directories=[os.path.join(HERE, 'html')])
 
 parser = ConfigParser.ConfigParser()
 config_file = 'pellmon.conf'
@@ -734,6 +747,9 @@ if __name__ == '__main__':
     args = argparser.parse_args()
 
     dbus = Dbus_handler(args.DBUS)
+
+    #Look for temlates in this directory
+    lookup = myLookup(directories=[os.path.join(HERE, 'html')], dbus=dbus)
 
     config_file = args.CONFIG
 
@@ -847,6 +863,14 @@ if __name__ == '__main__':
         system_image = os.path.join(os.path.join(MEDIA_DIR, 'img'), parser.get ('conf', 'system_image'))
     except:
         system_image = os.path.join(MEDIA_DIR, 'img/system.svg')
+
+
+    frontpage_widgets = []
+    try:
+        for row, widgets in parser.items('frontpage_widgets'):
+            frontpage_widgets.append(widgets.split(','))
+    except:
+        pass
 
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
     timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']

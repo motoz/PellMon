@@ -20,19 +20,16 @@ from Pellmonsrv.yapsy.IPlugin import IPlugin
 
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
-    def activate(self, conf, glob, templates):
+    def activate(self, conf, glob):
         # Save globals for plugin access to everything
         self.glob = glob
         self.conf = conf
-        self.templates = templates
+        self.templates = {}
         IPlugin.activate(self)
-        print 'activated'
 
-    def _insert_template(self, row, column, template):
-        print 'inserting template'
-        self.templates[row][column] = template
-        print 'inserted template'
-        
+    def _insert_template(self, name, template):
+        self.templates[name] = template
+
     def getItem(self, item):
         """Return the value for one item"""
         return 'valuestring'
@@ -67,5 +64,8 @@ class protocols(IPlugin):
         """Get items from other plugins"""
         return self.glob['conf'].database.items[item].getItem()
     
-    def getTemplate(self):
-        return []
+    def getTemplate(self, template):
+        try:
+            return self.templates[template]
+        except KeyError:
+            return None

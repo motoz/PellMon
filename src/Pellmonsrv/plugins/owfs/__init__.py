@@ -40,8 +40,8 @@ class owfsplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, templates):
-        protocols.activate(self, conf, glob, templates)
+    def activate(self, conf, glob):
+        protocols.activate(self, conf, glob)
         self.ow2index={}
         self.name2index={}
         self.sensors={}

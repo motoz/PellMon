@@ -63,9 +63,8 @@ class silolevelplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, templates):
-        print 'asdfsadfsd'
-        protocols.activate(self, conf, glob, templates)
+    def activate(self, conf, glob):
+        protocols.activate(self, conf, glob)
         self.updateTime = 0
         self.siloData = None
         self.silo_days_left = None
@@ -88,11 +87,9 @@ class silolevelplugin(protocols):
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
-        self._insert_template(0,0,"""
-<div class="col-md-6">
-    <h4>Silo level</h4>
-    <div class="image-responsive" id="silolevel" style="height:400px">
-    </div>
+        self._insert_template('silolevel', """
+<h4>Silo level</h4>
+<div class="image-responsive" id="silolevel" style="height:400px">
 </div>
 
 <script type="text/javascript">
@@ -331,7 +328,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 
             # otherwise estimate based on last month consumption with weighted monthly estimates
             else:
-	        if last_month == 0:
+                if last_month == 0:
                     last_month = last_week * 4
                     logger.debug('last month estimate from last week * 4: %s'%last_month)
 
@@ -352,7 +349,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
                     self.silo_days_left = str(int((t - start_prediction_at) / (3600*24)))
                     flotdata.append(futuredata)
                 else:
-                     print 'no estimate'
                      self.silo_days_left='365'
 
         except Exception, e:
@@ -367,17 +363,5 @@ document.addEventListener("DOMContentLoaded", function(event) {
         self.updateTime=time.time()
 
         return json.dumps(self.siloData)
-
-    def getTemplate(self):
-        return {'template':"""
-        <div class="col-md-6">
-            <h4>Consumption</h4>
-            <div class="image-responsive" id="silolevel" style="height:400px">
-            </div>
-        </div>
-        """,
-        'row':1,
-        'width':'6'
-        }
 
 

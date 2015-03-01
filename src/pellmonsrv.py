@@ -67,7 +67,6 @@ class Database(threading.Thread):
         self.values={}
         self.protocols=[]
         self.setDaemon(True)
-        self.templates = [[None for j in range(3)] for i in range(10)]
 
         # Initialize and activate all plugins of 'Protocols' category
         global manager
@@ -77,7 +76,7 @@ class Database(threading.Thread):
         for plugin in manager.getPluginsOfCategory('Protocols'):
             if plugin.name in conf.enabled_plugins:
                 try:
-                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self.templates)
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
                     self.protocols.append(plugin)
                     logger.info("activated plugin %s"%plugin.name)
                     for item in plugin.plugin_object.getDataBase():
@@ -162,17 +161,12 @@ class MyDBUSService(dbus.service.Object):
             menutags = menutags + plugin.plugin_object.getMenutags()
         return menutags
 
-    #@dbus.service.method('org.pellmon.int', out_signature='aa{sv}')
-    @dbus.service.method('org.pellmon.int', out_signature='s')
-    def getPlugins(self):
-        print conf.database.templates
-        return conf.database.templates[0][0]
-        templates=[]
+    @dbus.service.method('org.pellmon.int', in_signature='s', out_signature='s')
+    def getPlugins(self, name):
         for plugin in conf.database.protocols:
-            template = plugin.plugin_object.getTemplate()
+            template = plugin.plugin_object.getTemplate(name)
             if template:
-                templates.append(template)
-        return templates
+                return template
 
     #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
