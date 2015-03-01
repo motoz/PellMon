@@ -115,25 +115,37 @@ class Consumption_plugin(protocols):
 
 </script>
 """)
+        self.updatetime24h = 0
+        self.updatetime7d = 0
+        self.updatetime8w = 0
+        self.updatetime1y = 0
 
     def getItem(self, itemName):
         now=int(time.time())
         if itemName == 'consumptionData24h':
-            align=now/3600*3600
-            jsondata = self.barchartdata(start=align, period=3600, bars=24)
-            return jsondata
+            if time.time() - self.updatetime24h > 300:
+                align=now/3600*3600
+                self.json24hdata = self.barchartdata(start=align, period=3600, bars=24)
+                self.updatetime24h = time.time()
+            return self.json24hdata
         elif itemName == 'consumptionData7d':
-            align=int(now)/86400*86400-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
-            jsondata = self.barchartdata(start=align, period=3600*24, bars=7)
-            return jsondata
+            if time.time() - self.updatetime7d > 500:
+                align=int(now)/86400*86400-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
+                self.json7ddata = self.barchartdata(start=align, period=3600*24, bars=7)
+                self.updatetime7d = time.time()
+            return self.json7ddata
         elif itemName == 'consumptionData8w':
-            align=int(now+4*86400)/(86400*7)*(86400*7)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
-            jsondata = self.barchartdata(start=align, period=3600*24*7, bars=8)
-            return jsondata
+            if time.time() - self.updatetime8w > 700:
+                align=int(now+4*86400)/(86400*7)*(86400*7)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600 -4*86400
+                self.json8wdata = self.barchartdata(start=align, period=3600*24*7, bars=8)
+                self.updatetime8w = time.time()
+            return self.json8wdata
         elif itemName == 'consumptionData1y':
-            align1y=now/int(31556952/12)*int(31556952/12)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
-            jsondata = self.barchartdata(start=align1y, period=3600*24*30, bars=12)
-            return jsondata
+            if time.time() - self.updatetime1y > 2010:
+                align1y=now/int(31556952/12)*int(31556952/12)-(time.localtime(now).tm_hour-int(now)%86400/3600)*3600
+                self.json1ydata = self.barchartdata(start=align1y, period=3600*24*30, bars=12)
+                self.updatetime1y = time.time()
+            return self.json1ydata
         return 'Error'
 
     def getDataBase(self):
