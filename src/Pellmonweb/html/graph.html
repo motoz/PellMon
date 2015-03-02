@@ -1,0 +1,27 @@
+            <h4 class="graphtitle">Graph</h4>
+            ${'<div id="graphdiv" data-offset=0 data-title="%s" data-timespan=%u>'%(timeName, timeChoice)}
+                <div id="graph" style="height:400px"></div>
+
+                <div id="center">
+                    <div class="col-centered">
+                        <p style="text-align: left">
+                            %for line in graphlines[:-1]:
+                                ${'<a href="#" style ="border-top-color:%s" data-linename="%s" class="lineselection %s" data-selected="%s">%s</a> | ' % (line['color'], line['name'], 'selected' if line['name'] in selectedlines else '', 'yes' if line['name'] in selectedlines else 'no', line['name'])}
+                            %endfor
+                            %for line in [graphlines[-1]]:
+                                ${'<a href="#" style ="border-top-color:%s" data-linename="%s" class="lineselection %s" data-selected="%s">%s</a>' % (line['color'], line['name'], 'selected' if line['name'] in selectedlines else '', 'yes' if line['name'] in selectedlines else 'no', line['name'])}
+                            %endfor
+                        </p>
+                        <p style="text-align: left">
+                            %for index in range(len(timeSeconds)):
+                                ${'<a href="#" data-time-choice="%s" data-title-text="%s" class="timeChoice %s">%s</a> | ' % (timeSeconds[index], timeNames[index], 'selected' if timeChoice == timeSeconds[index] else '', timeNames[index])}
+                            %endfor
+                            <a href="#" class="left">go back </a>|
+                            <a href="#" class="right">go forward </a>|
+                            ${'<a href="#" class="autorefresh %s">Autorefresh graph</a>' % ('selected' if autorefresh else '')}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+
