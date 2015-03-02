@@ -227,7 +227,7 @@ class PellMonWeb:
     def __init__(self):
         self.logview = LogViewer(logfile)
         self.auth = AuthController(credentials)
-        self.consumptionview = Consumption(polling, db, dbus)
+        self.consumptionview = Consumption(polling, db, dbus, lookup)
 
     @cherrypy.expose
     def autorefresh(self, **args):

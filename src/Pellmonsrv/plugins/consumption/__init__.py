@@ -221,3 +221,11 @@ class Consumption_plugin(protocols):
         else:
             return None
 
+    def getTemplate(self, template):
+        template = os.path.join(os.path.dirname(__file__), 'templates', template)
+        if os.path.isfile(template):
+            with open(template, 'r') as f:
+                data = f.read()
+                return data
+        else:
+            return None

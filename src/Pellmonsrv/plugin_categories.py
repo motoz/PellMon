@@ -65,6 +65,7 @@ class protocols(IPlugin):
         return self.glob['conf'].database.items[item].getItem()
     
     def getTemplate(self, template):
+        print template, 'sadf'
         try:
             return self.templates[template]
         except KeyError:

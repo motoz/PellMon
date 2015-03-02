@@ -22,15 +22,16 @@ from mako.lookup import TemplateLookup
 lookup = TemplateLookup(directories=[path.join(path.dirname(__file__), 'html')])
 
 class Consumption(object):
-    def __init__(self, polling, db, dbus):
+    def __init__(self, polling, db, dbus, lookup):
         self.dbus = dbus
         self.polling=polling
+        self.lookup = lookup
 
     @cherrypy.expose
     def consumption(self):
         if not self.polling:
             return ""
-        tmpl = lookup.get_template("consumption.html")
+        tmpl = self.lookup.get_template("consumption.html")
         return tmpl.render(username=cherrypy.session.get('_cp_username'), webroot=cherrypy.request.script_name)
 
     @cherrypy.expose
