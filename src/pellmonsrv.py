@@ -167,6 +167,7 @@ class MyDBUSService(dbus.service.Object):
             template = plugin.plugin_object.getTemplate(name)
             if template:
                 return template
+        return 'Template not found'
 
     #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
