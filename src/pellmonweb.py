@@ -868,7 +868,7 @@ if __name__ == '__main__':
     frontpage_widgets = []
     try:
         for row, widgets in parser.items('frontpage_widgets'):
-            frontpage_widgets.append(widgets.split(','))
+            frontpage_widgets.append([s.strip() for s in widgets.split(',')])
     except:
         pass
 
