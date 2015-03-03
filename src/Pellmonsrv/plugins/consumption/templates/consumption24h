@@ -1,4 +1,4 @@
-<h1>Last 24h</h1>
+<h4>Last 24h</h1>
 <div id="consumption24h" style="height:400px">
 </div>
 
