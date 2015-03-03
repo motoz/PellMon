@@ -67,6 +67,7 @@ class Database(threading.Thread):
         self.values={}
         self.protocols=[]
         self.setDaemon(True)
+
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
@@ -81,6 +82,7 @@ class Database(threading.Thread):
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                 except Exception as e:
+                    print str(e), plugin.name
                     logger.info('Plugin %s init failed'%plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
         self.start()
@@ -158,6 +160,14 @@ class MyDBUSService(dbus.service.Object):
         for plugin in conf.database.protocols:
             menutags = menutags + plugin.plugin_object.getMenutags()
         return menutags
+
+    @dbus.service.method('org.pellmon.int', in_signature='s', out_signature='s')
+    def getPlugins(self, name):
+        for plugin in conf.database.protocols:
+            template = plugin.plugin_object.getTemplate(name)
+            if template:
+                return template
+        return 'Template not found'
 
     #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')

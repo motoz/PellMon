@@ -315,3 +315,9 @@ webroot = /
 # Choices: system.svg|system_nbe.svg|system_nbe_2w.svg|system_nbe_3w.svg|system_matene.svg|/path/to/your_own_image.svg
 system_image = system.svg
 
+# Select which widgets are displayed on the frontpage
+[frontpage_widgets]
+row_1 = systemimage,events
+row_2 = graph
+row_3 = consumption24h,silolevel
+
