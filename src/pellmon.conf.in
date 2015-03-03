@@ -317,5 +317,7 @@ system_image = system.svg
 
 # Select which widgets are displayed on the frontpage
 [frontpage_widgets]
-row_1 = consumption,silolevel
+row_1 = systemimage,events
+row_2 = graph
+row_3 = consumption24h,silolevel
 
