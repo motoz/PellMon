@@ -31,9 +31,6 @@ p01 = ScotteCom
 # to present time
 p06 = SiloLevel
 
-# PelletCalc calculates feeder_time and power from feeder auger revolution count  
-#p07 = PelletCalc
-
 # Consumption calculates bar chart data to be used by the web interface
 p08 = Consumption
 
@@ -314,4 +311,10 @@ webroot = /
 # Select system image. Set an absolute path to use your own.
 # Choices: system.svg|system_nbe.svg|system_nbe_2w.svg|system_nbe_3w.svg|system_matene.svg|/path/to/your_own_image.svg
 system_image = system.svg
+
+# Select which widgets are displayed on the frontpage
+[frontpage_widgets]
+row_1 = systemimage,events
+row_2 = graph
+row_3 = consumption24h,silolevel
 

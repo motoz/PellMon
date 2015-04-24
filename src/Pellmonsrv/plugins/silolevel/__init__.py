@@ -87,6 +87,53 @@ class silolevelplugin(protocols):
             os.chown(self.valuesfile, uid, gid)
         except:
             pass
+        self._insert_template('silolevel', """
+<h4>Silo level</h4>
+<div class="image-responsive" id="silolevel" style="height:400px">
+</div>
+
+<script type="text/javascript">
+var refreshSilolevel = function() {
+    $.get(
+        'flotsilolevel',
+        function(jsondata) {
+            var data = JSON.parse(jsondata);
+            var graph = $('#silolevel');
+            plot = $.plot(graph, data.graphdata, siloleveloptions);
+            $('<p>' + 'current level: ' + data.silo_level + ' kg' + '</p>').insertAfter(graph);
+            $('<p>' + data.silo_days_left + ' days to empty' + '</p>').insertAfter(graph).css('float', 'right');
+        })
+}
+
+var siloleveloptions = {
+        series: {
+                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
+                    color:"rgba(105, 137, 183, 0)",
+                    points: { show: false },
+                    shadowSize: 0,
+                },
+        xaxes:  [{
+                    mode: "time",       
+                    position: "bottom",
+                }],
+        legend: { 
+                    show: false,
+                },
+        grid:   {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
+                },
+    };
+
+document.addEventListener("DOMContentLoaded", function(event) { 
+    refreshSilolevel();
+});
+
+</script>
+
+""")
 
     def getItem(self, itemName):
         if itemName == 'silo_level':
@@ -309,7 +356,7 @@ class silolevelplugin(protocols):
 
             # otherwise estimate based on last month consumption with weighted monthly estimates
             else:
-	        if last_month == 0:
+                if last_month == 0:
                     last_month = last_week * 4
                     logger.debug('last month estimate from last week * 4: %s'%last_month)
 
@@ -345,4 +392,5 @@ class silolevelplugin(protocols):
         self.updateTime=time.time()
 
         return json.dumps(self.siloData)
+
 

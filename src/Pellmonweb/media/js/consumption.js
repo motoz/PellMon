@@ -29,7 +29,7 @@ var drawConsumption = function(url, graph, width, label, totalunit, averageunit)
         url,
         function(jsondata) {
             var data = JSON.parse(jsondata);
-            options = baroptions;
+            var options = baroptions;
             options.series.bars.barWidth = width * 1000;
             plot = $.plot($(graph), data.bardata, options);
             $('<p>' + label + data.total.toFixed(1).toString() + totalunit + '</p>').insertAfter($(graph));

@@ -1,0 +1,3 @@
+        <h4>Events</h4>
+        <div id="lines" data-url="${webroot}/logview/getlines?linenum=7">
+        </div>

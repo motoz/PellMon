@@ -24,7 +24,11 @@ class protocols(IPlugin):
         # Save globals for plugin access to everything
         self.glob = glob
         self.conf = conf
+        self.templates = {}
         IPlugin.activate(self)
+
+    def _insert_template(self, name, template):
+        self.templates[name] = template
 
     def getItem(self, item):
         """Return the value for one item"""
@@ -59,3 +63,10 @@ class protocols(IPlugin):
     def getGlobalItem(self, item):
         """Get items from other plugins"""
         return self.glob['conf'].database.items[item].getItem()
+    
+    def getTemplate(self, template):
+        print template, 'sadf'
+        try:
+            return self.templates[template]
+        except KeyError:
+            return None

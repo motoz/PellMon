@@ -10,8 +10,6 @@ var refreshTimer = null,
  */
 $(function() {
     refreshGraph();
-    refreshConsumption();
-    refreshSilolevel();
     plot = $.plot($('#graph'), data, options);
     svgElement = document.getElementById("systemimage");
 
@@ -55,55 +53,6 @@ var options = {
             pan: {
                 interactive: true
             }
-    };
-
-var baroptions = {
-        series: {
-            color: '#6989b7', 
-            bars: {
-                show: true,
-                barWidth: 3300000, 
-                lineWidth: 0,
-            },
-        },
-        legend: { 
-            show: false,
-        },
-        yaxes: {
-            min: 0
-        },
-        xaxis: {
-            mode: 'time',
-            tickColor: '#f9f9f9',
-        },
-        grid: {
-            hoverable: true,
-            backgroundColor:'#f9f9f9',
-            borderWidth: 1,
-            borderColor: '#e7e7e7'
-        },
-};
-
-var siloleveloptions = {
-        series: {
-                    lines: { show: true, lineWidth: 1, fill: true, fillColor: "rgba(105, 137, 183, 0.6)"},
-                    color:"rgba(105, 137, 183, 0)",
-                    points: { show: false },
-                    shadowSize: 0,
-                },
-        xaxes:  [{
-                    mode: "time",       
-                    position: "bottom",
-                }],
-        legend: { 
-                    show: false,
-                },
-        grid:   {
-                hoverable: true,
-                backgroundColor:'#f9f9f9',
-                borderWidth: 1,
-                borderColor: '#e7e7e7'
-                },
     };
 
 var refreshGraph = function(getdata) {
@@ -178,30 +127,6 @@ var refreshGraph = function(getdata) {
         plotGraph();
         setGraphTitle();
     }
-}
-
-var refreshConsumption = function() {
-    $.get(
-        'flotconsumption'+'?period=3600&bars=24',
-        function(jsondata) {
-            var data = JSON.parse(jsondata);
-            var graph = $('#consumption');
-            plot = $.plot(graph, data.bardata, baroptions);
-            $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter(graph);
-            $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter(graph).css('float', 'right');
-        })
-}
-
-var refreshSilolevel = function() {
-    $.get(
-        'flotsilolevel',
-        function(jsondata) {
-            var data = JSON.parse(jsondata);
-            var graph = $('#silolevel');
-            plot = $.plot(graph, data.graphdata, siloleveloptions);
-            $('<p>' + 'current level: ' + data.silo_level + ' kg' + '</p>').insertAfter(graph);
-            $('<p>' + data.silo_days_left + ' days to empty' + '</p>').insertAfter(graph).css('float', 'right');
-        })
 }
 
 var startImageRefresh = function() {

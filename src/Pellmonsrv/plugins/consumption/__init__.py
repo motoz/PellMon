@@ -63,6 +63,58 @@ class Consumption_plugin(protocols):
         self.totals=WeakValueDictionary()
         self.totals_fifo=[None]*200
         self.cache_lock = threading.Lock()
+        self._insert_template('consumption', """
+<h4>Consumption</h4>
+
+<div class="image-responsive" id="consumption" style="height:400px">
+</div>
+
+<script type="text/javascript">
+    var baroptions = {
+            series: {
+                color: '#6989b7', 
+                bars: {
+                    show: true,
+                    barWidth: 3300000, 
+                    lineWidth: 0,
+                },
+            },
+            legend: { 
+                show: false,
+            },
+            yaxes: {
+                min: 0
+            },
+            xaxis: {
+                mode: 'time',
+                tickColor: '#f9f9f9',
+            },
+            grid: {
+                hoverable: true,
+                backgroundColor:'#f9f9f9',
+                borderWidth: 1,
+                borderColor: '#e7e7e7'
+            },
+    };
+
+    var refreshConsumption = function() {
+        $.get(
+            'flotconsumption'+'?period=3600&bars=24',
+            function(jsondata) {
+                var data = JSON.parse(jsondata);
+                var graph = $('#consumption');
+                plot = $.plot(graph, data.bardata, baroptions);
+                $('<p>' + 'last 24h: ' + data.total.toFixed(1).toString() + ' kg' + '</p>').insertAfter(graph);
+                $('<p> average: ' + data.average.toFixed(1).toString() + ' kg/h ' + '</p>').insertAfter(graph).css('float', 'right');
+            })
+    }
+
+    document.addEventListener("DOMContentLoaded", function(event) { 
+        refreshConsumption();
+    });
+
+</script>
+""")
         self.updatetime24h = 0
         self.updatetime7d = 0
         self.updatetime8w = 0
@@ -169,3 +221,11 @@ class Consumption_plugin(protocols):
         else:
             return None
 
+    def getTemplate(self, template):
+        template = os.path.join(os.path.dirname(__file__), 'templates', template)
+        if os.path.isfile(template):
+            with open(template, 'r') as f:
+                data = f.read()
+                return data
+        else:
+            return None
