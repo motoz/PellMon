@@ -1,5 +1,6 @@
 PellMon
 =======
+![logo](https://raw.github.com/motoz/PellMon/master/src/Pellmonweb/media/img/favicon-160x160.png)
 
 PellMon is logging, monitoring and configuration solution for pellet burners. It consists of a backend server daemon, which
 uses RRDtool as a logging database, and a frontend daemon providing a responsive mobile friendly web based user interface. 
