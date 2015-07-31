@@ -117,14 +117,28 @@ class Dbus_handler:
         self.bus = bus
         self.lock = Lock()
         self.iface = None
+        self.remote_object = None
 
     def start(self):
+        def owner_changed(new_owner):
+            if new_owner == '':
+                self.remote_object = None
+                self.bustype.remove_signal_receiver(on_signal, dbus_interface="org.pellmon.int", signal_name="changed_parameters")
+                print 'server not running'
+            else:
+                self.bustype.add_signal_receiver(on_signal, dbus_interface="org.pellmon.int", signal_name="changed_parameters")
+                self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
+                                       "/org/pellmon/int" # Object's path
+                                      )
+                print 'server is running'
+
         Dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         Dbus.mainloop.glib.threads_init()
         if self.bus=='SYSTEM':
             self.bustype = Dbus.SystemBus()
         else:
             self.bustype = Dbus.SessionBus()
+        self.bustype.watch_name_owner('org.pellmon.int', owner_changed)
 
 
         def on_signal(parameters):
@@ -133,94 +147,54 @@ class Dbus_handler:
                 sensor = Sensor.sensorlist[i]
                 if not sensor.send(msg):
                     del Sensor.sensorlist[i]
-        
-        self.bustype.add_signal_receiver(on_signal, dbus_interface="org.pellmon.int", signal_name="changed_parameters")
-        self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                               "/org/pellmon/int" # Object's path
-                              )
 
     def getItem(self, itm):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.GetItem(itm, utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException, e:
-                self.remote_object = None
+            except:
                 raise DbusNotConnected("server not running")
-
+    
     def setItem(self, item, value):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.SetItem(item, value, utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException:
-                self.remote_object = None
+            except:
                 raise DbusNotConnected("server not running")
 
     def getdb(self):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.GetDB(utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException, e:
-                self.remote_object = None
+            except:
                 raise DbusNotConnected("server not running")
 
     def getDBwithTags(self, tags):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.GetDBwithTags(tags, utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException:
-                self.remote_object = None
+            except:
                 raise DbusNotConnected("server not running")
 
     def getFullDB(self, tags):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.GetFullDB(tags, utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException:
-                self.remote_object = None
+            except :
                 raise DbusNotConnected("server not running")
 
     def getMenutags(self):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.getMenutags(utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException:
-                self.remote_object = None
+            except :
                 raise DbusNotConnected("server not running")
 
     def getPlugins(self, name):
         with self.lock:
             try:
-                if not self.remote_object:
-                    self.remote_object = self.bustype.get_object("org.pellmon.int", # Connection name
-                                       "/org/pellmon/int" # Object's path
-                                      )
                 return self.remote_object.getPlugins(name, utf8_strings=True, dbus_interface ='org.pellmon.int')
-            except Dbus.exceptions.DBusException:
-                self.remote_object = None
+            except:
                 raise DbusNotConnected("server not running")
         
 class PellMonWeb:
