@@ -215,12 +215,12 @@ def pollThread():
         s=':'.join(itemlist)
 
         RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time())/10*10)+s]
-        cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE)
+        cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = cmd.communicate()
         if not cmd.returncode:
             conf.lastupdate = lastupdate
         else:
-            logger.info('rrdtool update failed, out:%s err:%s'%(out,err))
+            logger.info('rrdtool update failed, %s, %s'%(out,err))
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')

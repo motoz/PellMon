@@ -445,14 +445,18 @@ class PellMonWeb:
         RRD_command.append("CDEF:tick=prevtick,logtick,GT")
         RRD_command.append("XPORT:tick:logtick")
 
-        cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE)
+        cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
-        out = cmd.communicate()[0]
-        out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
-        out = re.sub(r"'", r'"', out)
-        out= json.loads(out)
-        data = out['data']
-
+        out, err = cmd.communicate()
+        if not cmd.returncode:
+            out = re.sub(r'(?:^|(?<={))\s*(\w+)(?=:)', r' "\1"', out, flags=re.M)
+            out = re.sub(r"'", r'"', out)
+            out= json.loads(out)
+            data = out['data']
+        else:
+            cherrypy.log('rrdtool export failed, %s, %s'%(out,err))
+            return 
+        
         is_dst = time.daylight and time.localtime().tm_isdst > 0
         utc_offset = - (time.altzone if is_dst else time.timezone)
 
