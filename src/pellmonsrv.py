@@ -228,7 +228,7 @@ def pollThread():
         if not cmd.returncode:
             conf.lastupdate = lastupdate
         else:
-            logger.info('rrdtool update failed, %s, %s'%(out,err))
+            logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
     except IOError as e:
         logger.debug('IOError: '+e.strerror)
         logger.debug('   Trying Z01...')
@@ -456,6 +456,25 @@ class config:
         parser.optionxform=str
         parser.read(filename)
 
+        self.polling=True
+
+        # create logger
+        global logger
+        logger = logging.getLogger('pellMon')
+        loglevel = parser.get('conf', 'loglevel')
+        loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
+        try:
+            logger.setLevel(loglevels[loglevel])
+        except:
+            logger.setLevel(logging.DEBUG)
+        # create file handler for logger
+        fh = logging.handlers.WatchedFileHandler(parser.get('conf', 'logfile'))
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        # add the handlers to the logger
+        logger.addHandler(fh)
+
         # Get the enabled plugins list
         plugins = parser.items("enabled_plugins")
         self.enabled_plugins = []
@@ -484,18 +503,31 @@ class config:
         self.pollData = []
         ds_types = {}
         pollItems = {}
-        for key, value in polldata:
-            pollItems[key] = value
-        for key, value in rrd_ds_names:
-            ds_types[key] = "DS:%s:GAUGE:%u:U:U"
-        for key, value in rrd_ds_types:
-            ds_types[key] = value
-        for key, value in rrd_ds_names:
-            self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
+        try:
+            for key, value in polldata:
+                pollItems[key] = value
+            for key, value in rrd_ds_names:
+                ds_types[key] = "DS:%s:GAUGE:%u:U:U"
+
+            for key, value in rrd_ds_types:
+                if key in ds_types:
+                    ds_types[key] = value
+                else:
+                    logger.info('error in [rrd_ds_types]: %s missing from [rrd_ds_names]'%key)
+                    raise
+            try:
+                for key, value in rrd_ds_names:
+                    self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
+            except KeyError:
+                logger.info('error in [pollvalues]: %s missing'%key)
+                raise
+                
+        except:
+            logger.info('invalid database definition, data polling not possible')
+            self.polling = False
 
         # The RRD database
         try:
-            self.polling=True
             self.db = parser.get('conf', 'database')
         except ConfigParser.NoOptionError:
             self.polling=False
@@ -510,23 +542,6 @@ class config:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
         except ConfigParser.NoOptionError:
             self.db_store_interval = 3600
-
-        # create logger
-        global logger
-        logger = logging.getLogger('pellMon')
-        loglevel = parser.get('conf', 'loglevel')
-        loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
-        try:
-            logger.setLevel(loglevels[loglevel])
-        except:
-            logger.setLevel(logging.DEBUG)
-        # create file handler for logger
-        fh = logging.handlers.WatchedFileHandler(parser.get('conf', 'logfile'))
-        # create formatter and add it to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        fh.setFormatter(formatter)
-        # add the handlers to the logger
-        logger.addHandler(fh)
 
         try: 
             self.poll_interval = int(parser.get('conf', 'pollinterval'))
