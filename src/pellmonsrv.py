@@ -222,7 +222,7 @@ def pollThread():
             lastupdate[data['name']] = value
         s=':'.join(itemlist)
 
-        RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time())/10*10)+s]
+        RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time()))+s]
         cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = cmd.communicate()
         if not cmd.returncode:
