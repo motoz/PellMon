@@ -183,35 +183,43 @@ def pollThread():
         return
     try:
         lastupdate = {}
+        
         for data in conf.pollData:
-            # 'special cases' handled here, name starting with underscore are not polled from the protocol 
-            if data['name'][0] == '_':
-                if data['name'] == '_logtick':
-                    itemlist.append(str(conf.tickcounter))
+            value = 'U'
+            try:
+                # 'special cases' handled here, name starting with underscore are not polled from the protocol 
+                if data['name'][0] == '_':
+                    if data['name'] == '_logtick':
+                        value = str(conf.tickcounter)
+                    else:
+                        value = 'U'
                 else:
-                    itemlist.append('U')
-            else:
-                try:
-                    value = conf.database.items[data['name']].getItem()
-                except KeyError:
-                    # write 'undefined' to noexistent data points
-                    value = 'U'
-                try:
-                    valuetest = str(float(value))
-                except ValueError:
-                    # write 'undefined' if data is not numeric
-                    value = 'U'
-                # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
-                # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
-                # To prevent this we write an undefined value before an update that is less than the previous
-                if 'COUNTER' in data['ds_type']:
                     try:
-                        if int(value) < int(conf.lastupdate[data['name']]):
-                            value = 'U'
-                    except:
-                        pass
-                itemlist.append(value)
-                lastupdate[data['name']] = value
+                        value = conf.database.items[data['name']].getItem()
+                    except KeyError:
+                        # write 'undefined' to noexistent data points
+                        value = 'U'
+                    try:
+                        value = str(float(value))
+                    except ValueError:
+                        # write 'undefined' if data is not numeric
+                        logger.info('invalid value for %s: %s'%(data['name'], value))
+                        value = 'U'
+                    # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
+                    # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
+                    # To prevent this we write an undefined value before an update that is less than the previous
+                    if 'COUNTER' in data['ds_type']:
+                        try:
+                            if int(value) < int(conf.lastupdate[data['name']]):
+                                value = 'U'
+                        except:
+                            pass
+            except Exception as e:
+                value = 'U'
+                logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
+                
+            itemlist.append(value)
+            lastupdate[data['name']] = value
         s=':'.join(itemlist)
 
         RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time())/10*10)+s]
@@ -227,8 +235,8 @@ def pollThread():
         try:
             # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
             conf.database.items['oxygen_regulation'].getItem()
-        except IOError as e:
-            logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
+        except Exception as e:
+            logger.info('error in polling %s'%str(e) )
 
 def handle_settings_changed(item, oldvalue, newvalue, itemtype):
     """ Called by the protocols when they detect that a setting has changed """
