@@ -196,14 +196,14 @@ def pollThread():
                 else:
                     try:
                         value = conf.database.items[data['name']].getItem()
+                        try:
+                            value = str(float(value))
+                        except ValueError:
+                            # write 'undefined' if data is not numeric
+                            logger.info('invalid value for %s: %s'%(data['name'], value))
+                            value = 'U'
                     except KeyError:
                         # write 'undefined' to noexistent data points
-                        value = 'U'
-                    try:
-                        value = str(float(value))
-                    except ValueError:
-                        # write 'undefined' if data is not numeric
-                        logger.info('invalid value for %s: %s'%(data['name'], value))
                         value = 'U'
                     # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
                     # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
@@ -491,7 +491,7 @@ class config:
                 pass
 
         # Data to write to the rrd
-        polldata = parser.items("pollvalues")
+        pollvalues = parser.items("pollvalues")
 
         # rrd database datasource names
         rrd_ds_names = parser.items("rrd_ds_names")
@@ -504,7 +504,7 @@ class config:
         ds_types = {}
         pollItems = {}
         try:
-            for key, value in polldata:
+            for key, value in pollvalues:
                 pollItems[key] = value
             for key, value in rrd_ds_names:
                 ds_types[key] = "DS:%s:GAUGE:%u:U:U"
@@ -514,14 +514,14 @@ class config:
                     ds_types[key] = value
                 else:
                     logger.info('error in [rrd_ds_types]: %s missing from [rrd_ds_names]'%key)
-                    raise
-            try:
-                for key, value in rrd_ds_names:
+                    raise KeyError
+
+            for key, value in rrd_ds_names:
+                try:
                     self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
-            except KeyError:
-                logger.info('error in [pollvalues]: %s missing'%key)
-                raise
-                
+                except KeyError:
+                    self.pollData.append({'key':key, 'name':'_undefined', 'ds_name':value, 'ds_type':'DS:%s:GAUGE:%u:U:U'})
+                    logger.debug('error in [pollvalues]: %s missing, written as undefined'%key)
         except:
             logger.info('invalid database definition, data polling not possible')
             self.polling = False
