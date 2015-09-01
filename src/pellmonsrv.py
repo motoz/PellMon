@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import signal, os, Queue, threading, glib
+import signal, os, errno, Queue, threading, glib
 import dbus, dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
@@ -648,6 +648,13 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     # Set umask
     old_umask = os.umask(033)
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 #########################################################################################
 
@@ -680,28 +687,26 @@ if __name__ == "__main__":
     if not os.path.isfile(config_file):
         config_file = '/usr/local/etc/pellmon.conf'
     if not os.path.isfile(config_file):
+        sys.stderr.write('Configuration file not found, exiting\n')
         sys.exit(1)
 
-    if args.USER:
-        parser = ConfigParser.ConfigParser()
-        parser.read(config_file)
+    parser = ConfigParser.ConfigParser()
+    parser.read(config_file)
 
-        logfile = parser.get('conf', 'logfile')
-        logdir = os.path.dirname(logfile)
-        if not os.path.isdir(logdir):
-            os.mkdir(logdir)
+    logfile = parser.get('conf', 'logfile')
+    logdir = os.path.dirname(logfile)
+    mkdir_p(logdir)
+
+    dbfile = parser.get('conf', 'database')
+    dbdir = os.path.dirname(dbfile)
+    mkdir_p(dbdir)
+
+    if args.USER:
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
         os.chown(logdir, uid, gid)
         if os.path.isfile(logfile):
             os.chown(logfile, uid, gid)
-
-        dbfile = parser.get('conf', 'database')
-        dbdir = os.path.dirname(dbfile)
-        if not os.path.isdir(dbdir):
-            os.mkdir(dbdir)
-        uid = pwd.getpwnam(args.USER).pw_uid
-        gid = grp.getgrnam(args.GROUP).gr_gid
         os.chown(dbdir, uid, gid)
         if os.path.isfile(dbfile):
             os.chown(dbfile, uid, gid)
