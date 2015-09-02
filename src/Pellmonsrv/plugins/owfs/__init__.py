@@ -104,23 +104,40 @@ class owfsplugin(protocols):
             if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
 
-    def getItem(self, itemName):
-        try:
-            item = itemList[self.name2index[itemName]]
-            if item['function'] == 'COUNTER':
-                return str(item['value'])
-            else:
-                sensor = self.sensors[self.name2index[itemName]]
-                name = itemList[self.name2index[itemName]]['owname']
-                name = name.replace('.','_')
-                attr =  getattr(sensor, name)
-                while attr == None:
+            t = Timer(0.1, self.background_polling_thread)
+            t.setDaemon(True)
+            t.start()
+
+
+    def getItem(self, itemName, poll=False):
+        item = itemList[self.name2index[itemName]]
+        if poll:
+            try:
+                if item['function'] == 'COUNTER':
+                    return str(item['value'])
+                else:
+                    sensor = self.sensors[self.name2index[itemName]]
+                    name = itemList[self.name2index[itemName]]['owname']
+                    name = name.replace('.','_')
                     attr =  getattr(sensor, name)
-                return str(attr)
-        except Exception, e:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
-            return str(e)
+                    while attr == None:
+                        attr =  getattr(sensor, name)
+                    item['value'] = str(attr)
+                    return str(attr)
+            except Exception, e:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
+                return str(e)
+        else:
+            if 'value' in item:
+                return item['value']
+            else:
+                for wait in range(1,15):
+                    print 'waiting'
+                    sleep(1)
+                    if 'value' in item:
+                        return item['value']
+                return 'error'
 
     def setItem(self, itemName, value):
         try:
@@ -139,40 +156,48 @@ class owfsplugin(protocols):
             return str(e)
 
     def counter_thread(self, counter):
-        try:
-            item = itemList[counter]
-            l = 0
-            if self.latches.has_key(counter):
-                sensor = self.latches[counter]
-                lname = item['owlatch'].replace('.','_')
-                attr =  getattr(sensor, lname)
-                while attr == None:
+        while True:
+            try:
+                item = itemList[counter]
+                l = 0
+                if self.latches.has_key(counter):
+                    sensor = self.latches[counter]
+                    lname = item['owlatch'].replace('.','_')
                     attr =  getattr(sensor, lname)
-                setattr(sensor, lname, 0)
-                l = attr
+                    while attr == None:
+                        attr =  getattr(sensor, lname)
+                    setattr(sensor, lname, 0)
+                    l = attr
 
-            if l == 1:
-                sensor = self.sensors[counter]
-                iname = item['owname'].replace('.','_')
-                attr =  getattr(sensor, iname)
-                while attr == None:
+                if l == 1:
+                    sensor = self.sensors[counter]
+                    iname = item['owname'].replace('.','_')
                     attr =  getattr(sensor, iname)
-                i = attr
+                    while attr == None:
+                        attr =  getattr(sensor, iname)
+                    i = attr
 
-                if i == item['last_i']:
-                    item['value'] += 1
-                    item['toggle'] = 0
-                else:
-                    item['toggle'] += 1
-                    if item['toggle'] == 2:
-                        item['last_i'] = i
-                        item['value'] +=1
+                    if i == item['last_i']:
+                        item['value'] += 1
                         item['toggle'] = 0
-        except Exception, e:
-            print str(e)
-        t = Timer(5, self.counter_thread, args=(counter,))
-        t.setDaemon(True)
-        t.start()
+                    else:
+                        item['toggle'] += 1
+                        if item['toggle'] == 2:
+                            item['last_i'] = i
+                            item['value'] +=1
+                            item['toggle'] = 0
+            except Exception, e:
+                pass
+            time.sleep(5)
+        
+    def background_polling_thread(self):
+        while True:
+            try:
+                for item in itemList:
+                    self.getItem(item['name'], poll=True)
+            except:
+                pass
+            sleep(5)
 
     def getDataBase(self):
         l=[]
