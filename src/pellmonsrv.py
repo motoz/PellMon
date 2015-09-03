@@ -174,69 +174,81 @@ class MyDBUSService(dbus.service.Object):
     def changed_parameters(self, message):
         pass
 
-def pollThread():
-    """Poll data defined in conf.pollData and update the RRD database with the responses"""
-    logger.debug('handlerTread started by signal handler')
-    itemlist=[]
-    global conf
-    if not conf.polling:
-        return
-    try:
-        lastupdate = {}
-        
-        for data in conf.pollData:
-            value = 'U'
-            try:
-                # 'special cases' handled here, name starting with underscore are not polled from the protocol 
-                if data['name'][0] == '_':
-                    if data['name'] == '_logtick':
-                        value = str(conf.tickcounter)
-                    else:
-                        value = 'U'
-                else:
-                    try:
-                        value = conf.database.items[data['name']].getItem()
-                        try:
-                            value = str(float(value))
-                        except ValueError:
-                            # write 'undefined' if data is not numeric
-                            logger.info('invalid value for %s: %s'%(data['name'], value))
-                            value = 'U'
-                    except KeyError:
-                        # write 'undefined' to noexistent data points
-                        value = 'U'
-                    # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
-                    # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
-                    # To prevent this we write an undefined value before an update that is less than the previous
-                    if 'COUNTER' in data['ds_type']:
-                        try:
-                            if int(value) < int(conf.lastupdate[data['name']]):
-                                value = 'U'
-                        except:
-                            pass
-            except Exception as e:
-                value = 'U'
-                logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
-                
-            itemlist.append(value)
-            lastupdate[data['name']] = value
-        s=':'.join(itemlist)
+class Poller(threading.Thread):
+    def __init__(self, ev):
+        threading.Thread.__init__(self)
+        self.ev = ev
+        self.setDaemon(True)
+        self.start()
 
-        RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time()))+s]
-        cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = cmd.communicate()
-        if not cmd.returncode:
-            conf.lastupdate = lastupdate
-        else:
-            logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
-    except IOError as e:
-        logger.debug('IOError: '+e.strerror)
-        logger.debug('   Trying Z01...')
-        try:
-            # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            conf.database.items['oxygen_regulation'].getItem()
-        except Exception as e:
-            logger.info('error in polling %s'%str(e) )
+    def run(self):
+        """Poll data defined in conf.pollData and update the RRD database with the responses"""
+        logger.debug('handlerTread started by signal handler')
+        global conf
+        if not conf.polling:
+            return
+        while True:
+            self.ev.wait()
+            itemlist=[]
+            try:
+                lastupdate = {}
+                
+                for data in conf.pollData:
+                    value = 'U'
+                    try:
+                        # 'special cases' handled here, name starting with underscore are not polled from the protocol 
+                        if data['name'][0] == '_':
+                            if data['name'] == '_logtick':
+                                value = str(conf.tickcounter)
+                            else:
+                                value = 'U'
+                        else:
+                            try:
+                                value = conf.database.items[data['name']].getItem()
+                                try:
+                                    value = str(float(value))
+                                except ValueError:
+                                    # write 'undefined' if data is not numeric
+                                    logger.info('invalid value for %s: %s'%(data['name'], value))
+                                    value = 'U'
+                            except KeyError:
+                                # write 'undefined' to noexistent data points
+                                value = 'U'
+                            # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
+                            # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
+                            # To prevent this we write an undefined value before an update that is less than the previous
+                            if 'COUNTER' in data['ds_type']:
+                                try:
+                                    if int(value) < int(conf.lastupdate[data['name']]):
+                                        value = 'U'
+                                except:
+                                    pass
+                    except Exception as e:
+                        value = 'U'
+                        logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
+                        
+                    itemlist.append(value)
+                    lastupdate[data['name']] = value
+                s=':'.join(itemlist)
+
+                RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time()))+s]
+                cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = cmd.communicate()
+                if not cmd.returncode:
+                    conf.lastupdate = lastupdate
+                else:
+                    logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
+            except IOError as e:
+                logger.debug('IOError: '+e.strerror)
+                logger.debug('   Trying Z01...')
+                try:
+                    # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
+                    conf.database.items['oxygen_regulation'].getItem()
+                except Exception as e:
+                    logger.info('error in polling %s'%str(e) )
+            time.sleep(1)
+            self.ev.clear()
+
 
 def handle_settings_changed(item, oldvalue, newvalue, itemtype):
     """ Called by the protocols when they detect that a setting has changed """
@@ -258,12 +270,6 @@ def handle_settings_changed(item, oldvalue, newvalue, itemtype):
         conf.tickcounter=int(time.time())
         if conf.email and 'alarm' in conf.emailconditions:
             sendmail(logline)
-
-def periodic_signal_handler(signum, frame):
-    """Periodic signal handler. Start pollThread to do the work"""
-    ht = threading.Thread(name='pollThread', target=pollThread)
-    ht.setDaemon(True)
-    ht.start()
 
 def copy_db(direction='store'):
     """Copy db to nvdb or nvdb to db depending on direction"""
@@ -385,6 +391,9 @@ def sendmail_thread(msg, followup):
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
     def run(self):
+        def periodic_signal_handler(signum, frame):
+            """Periodic signal handler. Start pollThread to do the work"""
+            self.pollevent.set()
         global logger
         logger = logging.getLogger('pellMon')
         logger.info('starting pelletMonitor')
@@ -436,6 +445,8 @@ class MyDaemon(Daemon):
 
         # Create SIGTERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
+        self.pollevent = threading.Event()
+        self.poller = Poller(self.pollevent)
 
         # Create poll_interval periodic signal handler
         signal.signal(signal.SIGALRM, periodic_signal_handler)
