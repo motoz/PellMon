@@ -22,7 +22,7 @@ from ConfigParser import ConfigParser
 from os import path
 import traceback
 import sys
-from threading import Thread, Timer
+from threading import Thread, Timer, Lock
 from time import time, sleep
 from logging import getLogger
 
@@ -47,6 +47,7 @@ class owfsplugin(protocols):
         self.sensors={}
         self.latches={}
         self.counters=[]
+        self.lock = Lock()
 
         for key, value in self.conf.iteritems():
             port = 4304
@@ -77,6 +78,10 @@ class owfsplugin(protocols):
                 itemattribute = path.basename(owpath)
                 self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
                 itemList[self.ow2index[ow_name]]['owname'] = itemattribute
+                if 'uncached' in itempath:
+                    itemList[self.ow2index[ow_name]]['uncached'] = True
+                else:
+                    itemList[self.ow2index[ow_name]]['uncached'] = False
 
             if ow_data == 'type' and value == 'COUNTER':
                 itemList[self.ow2index[ow_name]]['function'] = 'COUNTER'
@@ -104,36 +109,37 @@ class owfsplugin(protocols):
             if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
 
-            t = Timer(0.1, self.background_polling_thread)
-            t.setDaemon(True)
-            t.start()
+        t = Timer(0.1, self.background_polling_thread)
+        t.setDaemon(True)
+        t.start()
 
 
-    def getItem(self, itemName, poll=False):
+    def getItem(self, itemName, background_poll=False):
         item = itemList[self.name2index[itemName]]
-        if poll:
-            try:
-                if item['function'] == 'COUNTER':
-                    return str(item['value'])
-                else:
-                    sensor = self.sensors[self.name2index[itemName]]
-                    name = itemList[self.name2index[itemName]]['owname']
-                    name = name.replace('.','_')
-                    attr =  getattr(sensor, name)
-                    while attr == None:
+        if (background_poll and item['uncached'] is False) or (
+            item['uncached'] and background_poll is False):
+            with self.lock:
+                try:
+                    if item['function'] == 'COUNTER':
+                        return str(item['value'])
+                    else:
+                        sensor = self.sensors[self.name2index[itemName]]
+                        name = itemList[self.name2index[itemName]]['owname']
+                        name = name.replace('.','_')
                         attr =  getattr(sensor, name)
-                    item['value'] = str(attr)
-                    return str(attr)
-            except Exception, e:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
-                return str(e)
-        else:
+                        while attr == None:
+                            attr =  getattr(sensor, name)
+                        item['value'] = str(attr)
+                        return str(attr)
+                except Exception, e:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
+                    return str(e)
+        elif not background_poll:
             if 'value' in item:
                 return item['value']
             else:
                 for wait in range(1,15):
-                    print 'waiting'
                     sleep(1)
                     if 'value' in item:
                         return item['value']
@@ -163,18 +169,20 @@ class owfsplugin(protocols):
                 if self.latches.has_key(counter):
                     sensor = self.latches[counter]
                     lname = item['owlatch'].replace('.','_')
-                    attr =  getattr(sensor, lname)
-                    while attr == None:
+                    with self.lock:
                         attr =  getattr(sensor, lname)
-                    setattr(sensor, lname, 0)
+                        while attr == None:
+                            attr =  getattr(sensor, lname)
+                        setattr(sensor, lname, 0)
                     l = attr
 
                 if l == 1:
                     sensor = self.sensors[counter]
                     iname = item['owname'].replace('.','_')
-                    attr =  getattr(sensor, iname)
-                    while attr == None:
+                    with self.lock:
                         attr =  getattr(sensor, iname)
+                        while attr == None:
+                            attr =  getattr(sensor, iname)
                     i = attr
 
                     if i == item['last_i']:
@@ -191,10 +199,10 @@ class owfsplugin(protocols):
             time.sleep(5)
         
     def background_polling_thread(self):
-        while True:
+       while True:
             try:
                 for item in itemList:
-                    self.getItem(item['name'], poll=True)
+                    self.getItem(item['name'], background_poll=True)
             except:
                 pass
             sleep(5)
