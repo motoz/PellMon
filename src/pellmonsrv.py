@@ -206,7 +206,10 @@ class Poller(threading.Thread):
                             try:
                                 value = conf.database.items[data['name']].getItem()
                                 try:
-                                    value = str(float(value))
+                                    if 'COUNTER'  in data['ds_type'] or 'DERIVE' in data['ds_type']:
+                                        value = str(int(value))
+                                    else:
+                                        value = str(float(value))
                                 except ValueError:
                                     # write 'undefined' if data is not numeric
                                     logger.info('invalid value for %s: %s'%(data['name'], value))
