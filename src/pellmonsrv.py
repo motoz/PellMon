@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import signal, os, Queue, threading, glib
+import signal, os, errno, Queue, threading, glib
 import dbus, dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 import gobject
@@ -174,61 +174,84 @@ class MyDBUSService(dbus.service.Object):
     def changed_parameters(self, message):
         pass
 
-def pollThread():
-    """Poll data defined in conf.pollData and update the RRD database with the responses"""
-    logger.debug('handlerTread started by signal handler')
-    itemlist=[]
-    global conf
-    if not conf.polling:
-        return
-    try:
-        lastupdate = {}
-        for data in conf.pollData:
-            # 'special cases' handled here, name starting with underscore are not polled from the protocol 
-            if data['name'][0] == '_':
-                if data['name'] == '_logtick':
-                    itemlist.append(str(conf.tickcounter))
-                else:
-                    itemlist.append('U')
-            else:
-                try:
-                    value = conf.database.items[data['name']].getItem()
-                except KeyError:
-                    # write 'undefined' to noexistent data points
-                    value = 'U'
-                try:
-                    valuetest = str(float(value))
-                except ValueError:
-                    # write 'undefined' if data is not numeric
-                    value = 'U'
-                # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
-                # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
-                # To prevent this we write an undefined value before an update that is less than the previous
-                if 'COUNTER' in data['ds_type']:
-                    try:
-                        if int(value) < int(conf.lastupdate[data['name']]):
-                            value = 'U'
-                    except:
-                        pass
-                itemlist.append(value)
-                lastupdate[data['name']] = value
-        s=':'.join(itemlist)
+class Poller(threading.Thread):
+    def __init__(self, ev):
+        threading.Thread.__init__(self)
+        self.ev = ev
+        self.setDaemon(True)
+        self.start()
 
-        RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time())/10*10)+s]
-        cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE)
-        out, err = cmd.communicate()
-        if not cmd.returncode:
-            conf.lastupdate = lastupdate
-        else:
-            logger.info('rrdtool update failed, out:%s err:%s'%(out,err))
-    except IOError as e:
-        logger.debug('IOError: '+e.strerror)
-        logger.debug('   Trying Z01...')
-        try:
-            # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-            conf.database.items['oxygen_regulation'].getItem()
-        except IOError as e:
-            logger.info('Getitem failed two times and reading Z01 also failed '+e.strerror)
+    def run(self):
+        """Poll data defined in conf.pollData and update the RRD database with the responses"""
+        logger.debug('handlerTread started by signal handler')
+        global conf
+        if not conf.polling:
+            return
+        while True:
+            self.ev.wait()
+            itemlist=[]
+            try:
+                lastupdate = {}
+                
+                for data in conf.pollData:
+                    value = 'U'
+                    try:
+                        # 'special cases' handled here, name starting with underscore are not polled from the protocol 
+                        if data['name'][0] == '_':
+                            if data['name'] == '_logtick':
+                                value = str(conf.tickcounter)
+                            else:
+                                value = 'U'
+                        else:
+                            try:
+                                value = conf.database.items[data['name']].getItem()
+                                try:
+                                    if 'COUNTER'  in data['ds_type'] or 'DERIVE' in data['ds_type']:
+                                        value = str(int(value))
+                                    else:
+                                        value = str(float(value))
+                                except ValueError:
+                                    # write 'undefined' if data is not numeric
+                                    logger.info('invalid value for %s: %s'%(data['name'], value))
+                                    value = 'U'
+                            except KeyError:
+                                # write 'undefined' to noexistent data points
+                                value = 'U'
+                            # when a counter is updated with a smaller value than the previous one, rrd thinks the counter has wrapped
+                            # either at 32 or 64 bits, which leads to a huge spike in the counter if it really didn't
+                            # To prevent this we write an undefined value before an update that is less than the previous
+                            if 'COUNTER' in data['ds_type']:
+                                try:
+                                    if int(value) < int(conf.lastupdate[data['name']]):
+                                        value = 'U'
+                                except:
+                                    pass
+                    except Exception as e:
+                        value = 'U'
+                        logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
+                        
+                    itemlist.append(value)
+                    lastupdate[data['name']] = value
+                s=':'.join(itemlist)
+
+                RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time()))+s]
+                cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = cmd.communicate()
+                if not cmd.returncode:
+                    conf.lastupdate = lastupdate
+                else:
+                    logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
+            except IOError as e:
+                logger.debug('IOError: '+e.strerror)
+                logger.debug('   Trying Z01...')
+                try:
+                    # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
+                    conf.database.items['oxygen_regulation'].getItem()
+                except Exception as e:
+                    logger.info('error in polling %s'%str(e) )
+            time.sleep(1)
+            self.ev.clear()
+
 
 def handle_settings_changed(item, oldvalue, newvalue, itemtype):
     """ Called by the protocols when they detect that a setting has changed """
@@ -250,12 +273,6 @@ def handle_settings_changed(item, oldvalue, newvalue, itemtype):
         conf.tickcounter=int(time.time())
         if conf.email and 'alarm' in conf.emailconditions:
             sendmail(logline)
-
-def periodic_signal_handler(signum, frame):
-    """Periodic signal handler. Start pollThread to do the work"""
-    ht = threading.Thread(name='pollThread', target=pollThread)
-    ht.setDaemon(True)
-    ht.start()
 
 def copy_db(direction='store'):
     """Copy db to nvdb or nvdb to db depending on direction"""
@@ -377,6 +394,9 @@ def sendmail_thread(msg, followup):
 class MyDaemon(Daemon):
     """ Run after double fork with start, or directly with debug argument"""
     def run(self):
+        def periodic_signal_handler(signum, frame):
+            """Periodic signal handler. Start pollThread to do the work"""
+            self.pollevent.set()
         global logger
         logger = logging.getLogger('pellMon')
         logger.info('starting pelletMonitor')
@@ -428,6 +448,8 @@ class MyDaemon(Daemon):
 
         # Create SIGTERM signal handler
         signal.signal(signal.SIGTERM, sigterm_handler)
+        self.pollevent = threading.Event()
+        self.poller = Poller(self.pollevent)
 
         # Create poll_interval periodic signal handler
         signal.signal(signal.SIGALRM, periodic_signal_handler)
@@ -448,60 +470,7 @@ class config:
         parser.optionxform=str
         parser.read(filename)
 
-        # Get the enabled plugins list
-        plugins = parser.items("enabled_plugins")
-        self.enabled_plugins = []
-        self.plugin_conf={}
-        for key, plugin_name in plugins:
-            self.enabled_plugins.append(plugin_name)
-            self.plugin_conf[plugin_name] = {}
-            try:
-                plugin_conf = parser.items('plugin_%s'%plugin_name)
-                for key, value in plugin_conf:
-                    self.plugin_conf[plugin_name][key] = value
-            except:
-                # No plugin config found
-                pass
-
-        # Data to write to the rrd
-        polldata = parser.items("pollvalues")
-
-        # rrd database datasource names
-        rrd_ds_names = parser.items("rrd_ds_names")
-
-        # Optional rrd data type definitions
-        rrd_ds_types = parser.items("rrd_ds_types")
-
-        # Make a list of data to poll, in the order they appear in the rrd database
-        self.pollData = []
-        ds_types = {}
-        pollItems = {}
-        for key, value in polldata:
-            pollItems[key] = value
-        for key, value in rrd_ds_names:
-            ds_types[key] = "DS:%s:GAUGE:%u:U:U"
-        for key, value in rrd_ds_types:
-            ds_types[key] = value
-        for key, value in rrd_ds_names:
-            self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
-
-        # The RRD database
-        try:
-            self.polling=True
-            self.db = parser.get('conf', 'database')
-        except ConfigParser.NoOptionError:
-            self.polling=False
-
-        # The persistent RRD database
-        try:
-            self.nvdb = parser.get('conf', 'persistent_db') 
-        except ConfigParser.NoOptionError:
-            if self.polling:
-                self.nvdb = self.db        
-        try:
-            self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
-        except ConfigParser.NoOptionError:
-            self.db_store_interval = 3600
+        self.polling=True
 
         # create logger
         global logger
@@ -519,6 +488,74 @@ class config:
         fh.setFormatter(formatter)
         # add the handlers to the logger
         logger.addHandler(fh)
+
+        # Get the enabled plugins list
+        plugins = parser.items("enabled_plugins")
+        self.enabled_plugins = []
+        self.plugin_conf={}
+        for key, plugin_name in plugins:
+            self.enabled_plugins.append(plugin_name)
+            self.plugin_conf[plugin_name] = {}
+            try:
+                plugin_conf = parser.items('plugin_%s'%plugin_name)
+                for key, value in plugin_conf:
+                    self.plugin_conf[plugin_name][key] = value
+            except:
+                # No plugin config found
+                pass
+
+        # Data to write to the rrd
+        pollvalues = parser.items("pollvalues")
+
+        # rrd database datasource names
+        rrd_ds_names = parser.items("rrd_ds_names")
+
+        # Optional rrd data type definitions
+        rrd_ds_types = parser.items("rrd_ds_types")
+
+        # Make a list of data to poll, in the order they appear in the rrd database
+        self.pollData = []
+        ds_types = {}
+        pollItems = {}
+        try:
+            for key, value in pollvalues:
+                pollItems[key] = value
+            for key, value in rrd_ds_names:
+                ds_types[key] = "DS:%s:GAUGE:%u:U:U"
+
+            for key, value in rrd_ds_types:
+                if key in ds_types:
+                    ds_types[key] = value
+                else:
+                    logger.info('error in [rrd_ds_types]: %s missing from [rrd_ds_names]'%key)
+                    raise KeyError
+
+            for key, value in rrd_ds_names:
+                try:
+                    self.pollData.append({'key':key, 'name':pollItems[key], 'ds_name':value, 'ds_type':ds_types[key]})
+                except KeyError:
+                    self.pollData.append({'key':key, 'name':'_undefined', 'ds_name':value, 'ds_type':'DS:%s:GAUGE:%u:U:U'})
+                    logger.debug('error in [pollvalues]: %s missing, written as undefined'%key)
+        except:
+            logger.info('invalid database definition, data polling not possible')
+            self.polling = False
+
+        # The RRD database
+        try:
+            self.db = parser.get('conf', 'database')
+        except ConfigParser.NoOptionError:
+            self.polling=False
+
+        # The persistent RRD database
+        try:
+            self.nvdb = parser.get('conf', 'persistent_db') 
+        except ConfigParser.NoOptionError:
+            if self.polling:
+                self.nvdb = self.db        
+        try:
+            self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
+        except ConfigParser.NoOptionError:
+            self.db_store_interval = 3600
 
         try: 
             self.poll_interval = int(parser.get('conf', 'pollinterval'))
@@ -625,6 +662,13 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     # Set umask
     old_umask = os.umask(033)
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 #########################################################################################
 
@@ -657,28 +701,26 @@ if __name__ == "__main__":
     if not os.path.isfile(config_file):
         config_file = '/usr/local/etc/pellmon.conf'
     if not os.path.isfile(config_file):
+        sys.stderr.write('Configuration file not found, exiting\n')
         sys.exit(1)
 
-    if args.USER:
-        parser = ConfigParser.ConfigParser()
-        parser.read(config_file)
+    parser = ConfigParser.ConfigParser()
+    parser.read(config_file)
 
-        logfile = parser.get('conf', 'logfile')
-        logdir = os.path.dirname(logfile)
-        if not os.path.isdir(logdir):
-            os.mkdir(logdir)
+    logfile = parser.get('conf', 'logfile')
+    logdir = os.path.dirname(logfile)
+    mkdir_p(logdir)
+
+    dbfile = parser.get('conf', 'database')
+    dbdir = os.path.dirname(dbfile)
+    mkdir_p(dbdir)
+
+    if args.USER:
         uid = pwd.getpwnam(args.USER).pw_uid
         gid = grp.getgrnam(args.GROUP).gr_gid
         os.chown(logdir, uid, gid)
         if os.path.isfile(logfile):
             os.chown(logfile, uid, gid)
-
-        dbfile = parser.get('conf', 'database')
-        dbdir = os.path.dirname(dbfile)
-        if not os.path.isdir(dbdir):
-            os.mkdir(dbdir)
-        uid = pwd.getpwnam(args.USER).pw_uid
-        gid = grp.getgrnam(args.GROUP).gr_gid
         os.chown(dbdir, uid, gid)
         if os.path.isfile(dbfile):
             os.chown(dbfile, uid, gid)
