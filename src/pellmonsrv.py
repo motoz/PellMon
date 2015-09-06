@@ -188,9 +188,9 @@ class Poller(threading.Thread):
         if not conf.polling:
             return
         while True:
-            self.ev.wait()
-            itemlist=[]
             try:
+                itemlist=[]
+                self.ev.wait()
                 lastupdate = {}
                 
                 for data in conf.pollData:
@@ -226,8 +226,14 @@ class Poller(threading.Thread):
                                         value = 'U'
                                 except:
                                     pass
+                    except IOError as e:
+                        logger.info('IOError: %s,  Trying Z01...'%e.strerror)
+                        try:
+                            # Strange fix for stange problem with some scotte burners
+                            conf.database.items['oxygen_regulation'].getItem()
+                        except Exception as e:
+                            logger.info('error in retry %s'%str(e) )
                     except Exception as e:
-                        value = 'U'
                         logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
                         
                     itemlist.append(value)
@@ -241,14 +247,8 @@ class Poller(threading.Thread):
                     conf.lastupdate = lastupdate
                 else:
                     logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
-            except IOError as e:
-                logger.debug('IOError: '+e.strerror)
-                logger.debug('   Trying Z01...')
-                try:
-                    # I have no idea why, but every now and then the pelletburner stops answering, and this somehow causes it to start responding normally again
-                    conf.database.items['oxygen_regulation'].getItem()
-                except Exception as e:
-                    logger.info('error in polling %s'%str(e) )
+            except Exception as e:
+                logger.info('error in polling %s'%str(e) )
             time.sleep(1)
             self.ev.clear()
 
