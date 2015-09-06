@@ -174,8 +174,8 @@ pollinterval = 30
 # This section defines the datasource names used when creating the rrd database,
 # "dxx = datasource name". The left value (dxx) is used to match the
 # datasource names to the actual data to write to it. The connection
-# to data items is made in the "pollvalues" section. Every datasource name
-# defined here must have a connection defined in "pollvalues".
+# to data items is made in the "pollvalues" section. Datasource names that
+# are not connected to any data item is written as 'undefined'
 #
 # Three datasources with these exact names: feeder_time, feeder_capacity
 # and _logtick must exist, they are used to calculate pellet consumption graphs.
@@ -185,6 +185,7 @@ pollinterval = 30
 # Delete or rename the rrd database file after adding/removing ds-names
 # to create a database file with the new definition, or use some other method
 # to add the new ds-name to the existing rrd database.
+#
 # Deleting the rrd database will erase all history.
 #
 # These defaults are a good start when using the ScotteCom plugin:
