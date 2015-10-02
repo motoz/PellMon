@@ -102,12 +102,12 @@ Configuration values.
     sudo make install
     # Activate pellmon dbus system bus permissions
     sudo service dbus reload
-    # Start the daemons manually
-    sudo service pellmonsrv start
-    sudo service pellmonweb start
     # Add them to init so they are started at boot
     sudo update-rc.d pellmonsrv defaults
     sudo update-rc.d pellmonweb defaults
+    # Start the daemons manually, or reboot
+    sudo service pellmonsrv start
+    sudo service pellmonweb start
 ###Uninstall
     sudo make uninstall
     # Remove from init if you added them
