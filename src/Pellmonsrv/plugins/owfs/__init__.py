@@ -196,7 +196,7 @@ class owfsplugin(protocols):
                             item['toggle'] = 0
             except Exception, e:
                 pass
-            time.sleep(5)
+            sleep(5)
         
     def background_polling_thread(self):
        while True:
