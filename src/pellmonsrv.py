@@ -470,6 +470,16 @@ class config:
         parser.optionxform=str
         parser.read(filename)
 
+        try:
+            config_dir = parser.get('conf', 'config_dir')
+            for root, dirs, files in os.walk(config_dir):
+                for name in files:
+                    if os.path.splitext(name)[1] == '.conf':
+                        f = os.path.join(root, name)
+                        parser.read(f)
+        except AttributeError, OSError:
+            pass
+
         self.polling=True
 
         # create logger
@@ -482,7 +492,8 @@ class config:
         except:
             logger.setLevel(logging.DEBUG)
         # create file handler for logger
-        fh = logging.handlers.WatchedFileHandler(parser.get('conf', 'logfile'))
+        self.logfile = parser.get('conf', 'logfile')
+        fh = logging.handlers.WatchedFileHandler(self.logfile)
         # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
@@ -707,27 +718,6 @@ if __name__ == "__main__":
     parser = ConfigParser.ConfigParser()
     parser.read(config_file)
 
-    logfile = parser.get('conf', 'logfile')
-    logdir = os.path.dirname(logfile)
-    mkdir_p(logdir)
-
-    dbfile = parser.get('conf', 'database')
-    dbdir = os.path.dirname(dbfile)
-    mkdir_p(dbdir)
-
-    if args.USER:
-        uid = pwd.getpwnam(args.USER).pw_uid
-        gid = grp.getgrnam(args.GROUP).gr_gid
-        os.chown(logdir, uid, gid)
-        if os.path.isfile(logfile):
-            os.chown(logfile, uid, gid)
-        os.chown(dbdir, uid, gid)
-        if os.path.isfile(dbfile):
-            os.chown(dbfile, uid, gid)
-
-    # must be be set before calling daemon.start
-    daemon.pidfile = args.PIDFILE
-
     # Init global configuration from the conf file
     global conf
     conf = config(config_file)
@@ -739,6 +729,25 @@ if __name__ == "__main__":
     if args.GROUP:
         conf.GROUP = args.GROUP
 
+    logdir = os.path.dirname(conf.logfile)
+    mkdir_p(logdir)
+
+    dbfile = conf.db
+    dbdir = os.path.dirname(dbfile)
+    mkdir_p(dbdir)
+
+    if args.USER:
+        uid = pwd.getpwnam(args.USER).pw_uid
+        gid = grp.getgrnam(args.GROUP).gr_gid
+        os.chown(logdir, uid, gid)
+        if os.path.isfile(conf.logfile):
+            os.chown(conf.logfile, uid, gid)
+        os.chown(dbdir, uid, gid)
+        if os.path.isfile(dbfile):
+            os.chown(dbfile, uid, gid)
+
+    # must be be set before calling daemon.start
+    daemon.pidfile = args.PIDFILE
 
     commands[args.command]()
 

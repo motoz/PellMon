@@ -1,0 +1,87 @@
+[conf]
+# Full path to the rrd database
+# If the file does not exist it is created when pellmonsrv starts
+database = @localstatedir@/lib/pellmon/rrd.db
+
+# Full path to the optional persistent rrd database. It is copied
+# over the database file at startup, and on shutdown the database
+# is copied to the persistent_db file. Useful if the database
+# is in a ramdisk
+#persistent_db = @localstatedir@/lib/pellmon/nvrrd.db
+
+# If persistent_db is in use the database is copied to 
+# persistent_db every db_store_interval seconds
+db_store_interval = 7200
+
+# rrd database update interval in seconds
+pollinterval = 30
+
+[rrd_ds_names]
+# This section defines the datasource names used when creating the rrd database,
+# "dxx = datasource name". The left value (dxx) is used to match the
+# datasource names to the actual data to write to it. The connection
+# to data items is made in the "pollvalues" section. Datasource names that
+# are not connected to any data item is written as 'undefined'
+#
+# Three datasources with these exact names: feeder_time, feeder_capacity
+# and _logtick must exist, they are used to calculate pellet consumption graphs.
+#
+# The rrd database is created with the datasources in the order they appear here.
+#
+# Delete or rename the rrd database file after adding/removing ds-names
+# to create a database file with the new definition, or use some other method
+# to add the new ds-name to the existing rrd database.
+#
+# Deleting the rrd database will erase all history.
+#
+# These defaults are a good start when using the ScotteCom plugin:
+d01 = power_kW
+d02 = boiler_temp
+d03 = chute_temp
+d04 = light
+d05 = oxygen_desired
+d06 = oxygen
+d07 = power
+d08 = smoke_temp
+d09 = feeder_time
+d10 = feeder_capacity
+d11 = _logtick
+
+[rrd_ds_types]
+# Optional rrd data source type definitions for the datasource names in the 
+# rrd_ds_names section. If no type is defined for a datasource name the
+# default type is used, "DS:%s:GAUGE:%u:U:U", where %s is replaced with the 
+# datasource name and %u is replaced with 4*pollinterval
+#
+# Feeder_time and _logtick must be af type DERIVE/COUNTER, others typically
+# use the default type GAUGE
+#
+d09 = DS:%s:DERIVE:%u:0:U
+d11 = DS:%s:COUNTER:%u:U:U
+
+[pollvalues]
+# Data values to write to the rrd database.
+# "dxx = parameter/data name"
+#
+# The left value (dxx) is used to match the data item to the RRD data set name
+# defined in the "rrd_ds_names" section
+#
+# The data names are read from the plugins that define them,
+# and are written to the rrd database "ds-name" that has a matching "dxx".
+# If a data item name defined here does not exist in any plugin, the
+# corresponding ds_name in the database is written as "undefined"
+#
+# The three ds_names feeder_capacity, feeder_time and _logtick must be
+# connected to data items with the exact same names.
+
+d01 = power_kW
+d02 = boiler_temp
+d03 = chute_temp
+d04 = light
+d05 = oxygen_desired
+d06 = oxygen
+d07 = power
+d08 = smoke_temp
+d09 = feeder_time
+d10 = feeder_capacity
+d11 = _logtick

@@ -1,0 +1,48 @@
+############################################################################################
+# Pellmonweb configuration
+############################################################################################
+
+[authentication]
+# username = password, for webinterface
+testuser = 12345
+
+[graphcolors]
+# To add a ds-name from the rrd-database to the graph, set
+# dxx = #hexcolorvalue, 
+# where dxx matches the [pollvalues] and [rrd_ds_names] sections
+d01 = #FF0000
+d02 = #00FF00
+d03 = #0000FF
+d04 = #FFFF00
+d05 = #FF05FF
+d06 = #0101FF
+d07 = #207F20
+d08 = #2F2FFF
+
+[scaling]
+# Add optional scaling to the plotlines before drawing the graph.
+# The offset is first subracted and the result is divided by the divisor
+# dxx = offset:divisor
+
+[weblog]
+# optional pellmonweb logging
+#accesslog = @localstatedir@/log/pellmonweb/access.log
+#errorlog = @localstatedir@/log/pellmonweb/error.log
+
+[conf]
+# Port number for the webserver
+port = 8081
+
+# set path for the pellmon web application
+webroot = /
+
+# Select system image. Set an absolute path to use your own.
+# Choices: system.svg|system_nbe.svg|system_nbe_2w.svg|system_nbe_3w.svg|system_matene.svg|/path/to/your_own_image.svg
+system_image = system.svg
+
+# Select which widgets are displayed on the frontpage
+[frontpage_widgets]
+row_1 = systemimage,events
+row_2 = graph
+row_3 = consumption24h,silolevel
+

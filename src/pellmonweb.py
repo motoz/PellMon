@@ -714,6 +714,14 @@ FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 parser = ConfigParser.ConfigParser()
 config_file = 'pellmon.conf'
 
+def walk_config_dir(config_dir, parser):
+    for root, dirs, files in os.walk(config_dir):
+        for name in files:
+            if os.path.splitext(name)[1] == '.conf':
+                f = os.path.join(root, name)
+                parser.read(f)
+
+
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(prog='pellmonweb')
     argparser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
@@ -745,6 +753,11 @@ if __name__ == '__main__':
             cherrypy.log("config file not found")
             sys.exit(1)
         parser.read(config_file)
+        try:
+            config_dir = parser.get('conf', 'config_dir')
+            walk_config_dir(config_dir, parser)
+        except AttributeError, OSError:
+            pass
 
         try:
             accesslog = parser.get('weblog', 'accesslog')
@@ -783,6 +796,11 @@ if __name__ == '__main__':
         cherrypy.log("config file not found")
         sys.exit(1)
     parser.read(config_file)
+    try:
+        config_dir = parser.get('conf', 'config_dir')
+        walk_config_dir(config_dir, parser)
+    except AttributeError, OSError:
+        pass
 
     # The RRD database, updated by pellMon
     try:
