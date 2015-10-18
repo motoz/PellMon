@@ -180,6 +180,7 @@ class Poller(threading.Thread):
         self.ev = ev
         self.setDaemon(True)
         self.start()
+        self.timesync_wait = 0
 
     def run(self):
         """Poll data defined in conf.pollData and update the RRD database with the responses"""
@@ -240,13 +241,20 @@ class Poller(threading.Thread):
                     lastupdate[data['name']] = value
                 s=':'.join(itemlist)
 
-                RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time()))+s]
-                cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                out, err = cmd.communicate()
-                if not cmd.returncode:
-                    conf.lastupdate = lastupdate
+                if int(time.time()) > conf.lastupdate_time+1 or self.timesync_wait > 10:
+                    if self.timesync_wait == 11:
+                        logger.info('gave up waiting for timesync, continuing')
+                        self.timesync_wait = 99
+                    RRD_command = ['/usr/bin/rrdtool', 'update', conf.db, "%u:"%(int(time.time()))+s]
+                    cmd = subprocess.Popen(RRD_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    out, err = cmd.communicate()
+                    if not cmd.returncode:
+                        conf.lastupdate = lastupdate
+                    else:
+                        logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
                 else:
-                    logger.info('rrdtool update %s failed with, %s, %s'%(RRD_command[3], out.rstrip('\n'),err.rstrip('\n')))
+                    self.timesync_wait += 1
+                    
             except Exception as e:
                 logger.info('error in polling %s'%str(e) )
             time.sleep(1)
@@ -443,6 +451,10 @@ class MyDaemon(Daemon):
             l=s.split('\n')
             items = l[0].split()
             values = l[2].split()
+            try:
+                conf.lastupdate_time = int(values[0].strip(':'))
+            except ValueError:
+                conf.lastupdate_time = int(time.time())
             values = values[1::]
             conf.lastupdate = dict(zip(items, values))
 
