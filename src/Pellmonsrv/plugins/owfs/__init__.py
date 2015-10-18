@@ -76,7 +76,10 @@ class owfsplugin(protocols):
 
                 itempath = path.dirname(owpath)
                 itemattribute = path.basename(owpath)
-                self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                try:
+                    self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                except:
+                    self.sensors[self.ow2index[ow_name]] = (itempath, server, port)
                 itemList[self.ow2index[ow_name]]['owname'] = itemattribute
                 if 'uncached' in itempath:
                     itemList[self.ow2index[ow_name]]['uncached'] = True
@@ -103,7 +106,10 @@ class owfsplugin(protocols):
                 owpath = val[0]
                 itempath = path.dirname(owpath)
                 itemattribute = path.basename(owpath)
-                self.latches[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                try:
+                    self.latches[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
+                except:
+                    self.latches[self.ow2index[ow_name]] = (itempath, server, port)
                 itemList[self.ow2index[ow_name]]['owlatch'] = itemattribute
 
             if ow_data == 'type' and value in ['R','R/W']:
@@ -126,6 +132,12 @@ class owfsplugin(protocols):
                         sensor = self.sensors[self.name2index[itemName]]
                         name = itemList[self.name2index[itemName]]['owname']
                         name = name.replace('.','_')
+                        if isinstance(sensor, tuple):
+                            try:
+                                sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
+                                self.sensors[self.name2index[itemName]] = sensor
+                            except:
+                                return 'Error'
                         attr =  getattr(sensor, name)
                         while attr == None:
                             attr =  getattr(sensor, name)
@@ -148,10 +160,16 @@ class owfsplugin(protocols):
     def setItem(self, itemName, value):
         try:
             index = self.name2index[itemName]
-            if itemList[index]['type'] == 'R/W':
+            if itemList[index]['type'] == 'R/W':                
                 sensor = self.sensors[self.name2index[itemName]]
                 name = itemList[self.name2index[itemName]]['owname']
                 name = name.replace('.','_')
+                if isinstance(sensor, tuple):
+                    try:
+                        sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
+                        self.sensors[self.name2index[itemName]] = sensor
+                    except:
+                        return 'error'
                 setattr(sensor, name, value)
                 return 'OK'
             else:
@@ -169,22 +187,26 @@ class owfsplugin(protocols):
                 if self.latches.has_key(counter):
                     sensor = self.latches[counter]
                     lname = item['owlatch'].replace('.','_')
+                    if isinstance(sensor, tuple):
+                        sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
+                        self.latches[counter] = sensor
                     with self.lock:
                         attr =  getattr(sensor, lname)
                         while attr == None:
                             attr =  getattr(sensor, lname)
                         setattr(sensor, lname, 0)
                     l = attr
-
                 if l == 1:
                     sensor = self.sensors[counter]
                     iname = item['owname'].replace('.','_')
+                    if isinstance(sensor, tuple):
+                        sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
+                        self.sensors[counter] = sensor
                     with self.lock:
                         attr =  getattr(sensor, iname)
                         while attr == None:
                             attr =  getattr(sensor, iname)
                     i = attr
-
                     if i == item['last_i']:
                         item['value'] += 1
                         item['toggle'] = 0
