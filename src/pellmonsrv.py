@@ -136,7 +136,7 @@ class MyDBUSService(dbus.service.Object):
         """Get the value for a parameter/command item"""
         return conf.database.items[param].setItem(value)
 
-    @dbus.service.method('org.pellmon.int')
+    @dbus.service.method('org.pellmon.int', out_signature='as')
     def GetDB(self):
         """Get list of all data/parameter/command items"""
         db=[]
@@ -153,7 +153,7 @@ class MyDBUSService(dbus.service.Object):
             db = db + plugin.plugin_object.GetFullDB(tags)
         return db
 
-    @dbus.service.method('org.pellmon.int')
+    @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):
         """Get list of all tags that make up the menu"""
         menutags=[]
@@ -477,58 +477,101 @@ class MyDaemon(Daemon):
 class config:
     """Contains global configuration, parsed from the .conf file"""
     def __init__(self, filename):
+
+        self.enabled_plugins = []
+        self.plugin_conf={}
+        self.polling=False
+        self.email=False
+        self.port = None
+
+        global logger
+        logger = logging.getLogger('pellMon')
+
         # Load the configuration file
         parser = ConfigParser.ConfigParser()
         parser.optionxform=str
-        parser.read(filename)
+        try:
+            parser.read(filename)
+        except:
+            sys.stderr.write('config file %s unreadable\n'%filename)
+
+        try:
+            config_dir = parser.get('conf', 'config_dir')
+            for root, dirs, files in os.walk(config_dir):
+                for name in files:
+                    if os.path.splitext(name)[1] == '.conf':
+                        f = os.path.join(root, name)
+                        try:
+                            parser.read(f)
+                        except:
+                            sys.stderr.write('config file %s unreadable\n'%f)
+        except ConfigParser.NoOptionError:
+            pass
+        except ConfigParser.MissingSectionHeaderError:
+            sys.stderr.write('section header [Conf] not found in %s\n'%f)
+        except:
+            sys.stderr.write('error reading config file\n')
 
         self.polling=True
 
         # create logger
-        global logger
-        logger = logging.getLogger('pellMon')
-        loglevel = parser.get('conf', 'loglevel')
         loglevels = {'info':logging.INFO, 'debug':logging.DEBUG}
         try:
+            loglevel = parser.get('conf', 'loglevel')
             logger.setLevel(loglevels[loglevel])
         except:
             logger.setLevel(logging.DEBUG)
         # create file handler for logger
-        fh = logging.handlers.WatchedFileHandler(parser.get('conf', 'logfile'))
+        try:
+            self.logfile = parser.get('conf', 'logfile')
+            fh = logging.handlers.WatchedFileHandler(self.logfile)
+        except:
+            fh = logging.StreamHandler()
         # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         # add the handlers to the logger
         logger.addHandler(fh)
 
-        # Get the enabled plugins list
-        plugins = parser.items("enabled_plugins")
-        self.enabled_plugins = []
-        self.plugin_conf={}
-        for key, plugin_name in plugins:
-            self.enabled_plugins.append(plugin_name)
-            self.plugin_conf[plugin_name] = {}
-            try:
-                plugin_conf = parser.items('plugin_%s'%plugin_name)
-                for key, value in plugin_conf:
-                    self.plugin_conf[plugin_name][key] = value
-            except:
-                # No plugin config found
-                pass
+        try:
+            # Get the enabled plugins list
+            plugins = parser.items("enabled_plugins")
+            for key, plugin_name in plugins:
+                self.enabled_plugins.append(plugin_name)
+                self.plugin_conf[plugin_name] = {}
+                try:
+                    plugin_conf = parser.items('plugin_%s'%plugin_name)
+                    for key, value in plugin_conf:
+                        self.plugin_conf[plugin_name][key] = value
+                except:
+                    # No plugin config found
+                    pass
+        except ConfigParser.NoSectionError:
+            pass
 
-        # Data to write to the rrd
-        pollvalues = parser.items("pollvalues")
+        try:
+            # Data to write to the rrd
+            pollvalues = parser.items("pollvalues")
+        except ConfigParser.NoSectionError:
+            pass
 
-        # rrd database datasource names
-        rrd_ds_names = parser.items("rrd_ds_names")
+        try:
+            # rrd database datasource names
+            rrd_ds_names = parser.items("rrd_ds_names")
+        except ConfigParser.NoSectionError:
+            pass
 
-        # Optional rrd data type definitions
-        rrd_ds_types = parser.items("rrd_ds_types")
+        try:
+            # Optional rrd data type definitions
+            rrd_ds_types = parser.items("rrd_ds_types")
+        except ConfigParser.NoSectionError:
+            pass
 
         # Make a list of data to poll, in the order they appear in the rrd database
         self.pollData = []
         ds_types = {}
         pollItems = {}
+        self.item_to_ds_name = {}
         try:
             for key, value in pollvalues:
                 pollItems[key] = value
@@ -548,6 +591,9 @@ class config:
                 except KeyError:
                     self.pollData.append({'key':key, 'name':'_undefined', 'ds_name':value, 'ds_type':'DS:%s:GAUGE:%u:U:U'})
                     logger.debug('error in [pollvalues]: %s missing, written as undefined'%key)
+
+            for d in self.pollData:
+                self.item_to_ds_name[d['name']] = d['ds_name']
         except:
             logger.info('invalid database definition, data polling not possible')
             self.polling = False
@@ -555,25 +601,27 @@ class config:
         # The RRD database
         try:
             self.db = parser.get('conf', 'database')
-        except ConfigParser.NoOptionError:
+        except:
             self.polling=False
 
         # The persistent RRD database
         try:
             self.nvdb = parser.get('conf', 'persistent_db') 
-        except ConfigParser.NoOptionError:
+        except:
             if self.polling:
                 self.nvdb = self.db        
         try:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
-        except ConfigParser.NoOptionError:
+        except:
             self.db_store_interval = 3600
 
         try: 
             self.poll_interval = int(parser.get('conf', 'pollinterval'))
-        except ConfigParser.NoOptionError:
+        except:
             logger.info('Invalid poll_interval setting, using 10s')
             self.poll_interval = 10
+
+        logger.debug('Polling is %s'%('on' if self.polling else 'off'))
 
         if self.polling:
             # Build a command string to create the rrd database
@@ -600,11 +648,11 @@ class config:
             self.emailserver = parser.get('email', 'server')
             self.emailconditions = parser.get('email', 'conditions')
             self.email=True
-        except ConfigParser.NoOptionError:
+        except:
             self.email=False
         try:
             self.emailauth = parser.get('email', 'auth')
-        except ConfigParser.NoOptionError:
+        except:
             self.emailauth = 'TLS'
 
         try:
@@ -712,33 +760,9 @@ if __name__ == "__main__":
         config_file = '/etc/pellmon.conf'
     if not os.path.isfile(config_file):
         config_file = '/usr/local/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        sys.stderr.write('Configuration file not found, exiting\n')
-        sys.exit(1)
-
-    parser = ConfigParser.ConfigParser()
-    parser.read(config_file)
-
-    logfile = parser.get('conf', 'logfile')
-    logdir = os.path.dirname(logfile)
-    mkdir_p(logdir)
-
-    dbfile = parser.get('conf', 'database')
-    dbdir = os.path.dirname(dbfile)
-    mkdir_p(dbdir)
-
-    if args.USER:
-        uid = pwd.getpwnam(args.USER).pw_uid
-        gid = grp.getgrnam(args.GROUP).gr_gid
-        os.chown(logdir, uid, gid)
-        if os.path.isfile(logfile):
-            os.chown(logfile, uid, gid)
-        os.chown(dbdir, uid, gid)
-        if os.path.isfile(dbfile):
-            os.chown(dbfile, uid, gid)
-
-    # must be be set before calling daemon.start
-    daemon.pidfile = args.PIDFILE
+#    if not os.path.isfile(config_file):
+#        sys.stderr.write('Configuration file not found, exiting\n')
+#        sys.exit(1)
 
     # Init global configuration from the conf file
     global conf
@@ -751,6 +775,29 @@ if __name__ == "__main__":
     if args.GROUP:
         conf.GROUP = args.GROUP
 
+    try:
+        logdir = os.path.dirname(conf.logfile)
+        mkdir_p(logdir)
+    except:
+        pass
+
+    if conf.polling:
+        dbfile = conf.db
+        dbdir = os.path.dirname(dbfile)
+        mkdir_p(dbdir)
+
+        if args.USER:
+            uid = pwd.getpwnam(args.USER).pw_uid
+            gid = grp.getgrnam(args.GROUP).gr_gid
+            os.chown(logdir, uid, gid)
+            if os.path.isfile(conf.logfile):
+                os.chown(conf.logfile, uid, gid)
+            os.chown(dbdir, uid, gid)
+            if os.path.isfile(dbfile):
+                os.chown(dbfile, uid, gid)
+
+    # must be be set before calling daemon.start
+    daemon.pidfile = args.PIDFILE
 
     commands[args.command]()
 

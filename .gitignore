@@ -13,11 +13,11 @@ src/Makefile.in
 src/srv/Makefile.in
 src/web/Makefile.in
 *.log
-*.conf
+pellmon.conf
 *.db
 Makefile
 config.status
 pellmonsrv
 pellmonweb
 *.tar.gz
-
+**/plugins/**/values.conf
