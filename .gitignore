@@ -20,4 +20,4 @@ config.status
 pellmonsrv
 pellmonweb
 *.tar.gz
-
+**/plugins/**/values.conf

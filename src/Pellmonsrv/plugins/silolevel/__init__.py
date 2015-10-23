@@ -72,6 +72,8 @@ class silolevelplugin(protocols):
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
+        self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
+        self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
         for item in itemList:
             if item['type'] == 'R/W':
                 self.valuestore.set('values', item['name'], item['value'])
@@ -204,8 +206,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
         def siloLevelData(from_time, to_time, from_level):
             db = self.glob['conf'].db
             RRD_command =  ['rrdtool', 'xport', '--json', '--end', str(int(to_time)) , '--start', str(int(from_time))]
-            RRD_command.append("DEF:a=%s:feeder_time:AVERAGE"%db)                       # a = feeder_time
-            RRD_command.append("DEF:b=%s:feeder_capacity:AVERAGE"%db)                   # b = feeder_capacity
+            RRD_command.append("DEF:a=%s:%s:AVERAGE"%(db, self.feeder_time))            # a = feeder_time
+            RRD_command.append("DEF:b=%s:%s:AVERAGE"%(db, self.feeder_capacity))        # b = feeder_capacity
             RRD_command.append("CDEF:t=a,POP,TIME")                                     # t = time
             RRD_command.append("CDEF:tt=PREV(t)")                                       # tt = time shifted one step
             RRD_command.append("CDEF:i=t,tt,-")                                         # i = time between steps

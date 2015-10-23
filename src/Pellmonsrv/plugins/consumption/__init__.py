@@ -60,6 +60,8 @@ class Consumption_plugin(protocols):
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
         self.db = self.glob['conf'].db
+        self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
+        self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
         self.totals=WeakValueDictionary()
         self.totals_fifo=[None]*200
         self.cache_lock = threading.Lock()
@@ -198,7 +200,7 @@ class Consumption_plugin(protocols):
                 starts = self.totals[start]
                 total = starts.data[end].data
             except Exception, e:
-                command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:feeder_time:AVERAGE'%self.db,'DEF:b=%s:feeder_capacity:AVERAGE'%self.db, 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
+                command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:%s:AVERAGE'%(self.db,self.feeder_time),'DEF:b=%s:%s:AVERAGE'%(self.db,self.feeder_capacity), 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
                 cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
                 try:
                     total = cmd.communicate()[0].splitlines()[1]
