@@ -30,9 +30,8 @@ d13 = #2F2FFF
 d14 = #2F2FFF
 d15 = #2F2FFF
 
-
+[conf]
 # Select system image. Set an absolute path to use your own.
-
 # Choices: system.svg|system_nbe.svg|system_nbe_2w.svg|system_nbe_3w.svg|system_matene.svg|/path/to/your_own_image.svg
 
 ############################
@@ -42,7 +41,6 @@ system_image = system.svg
 
 
 [frontpage_widgets]
-
 # Select which widgets are displayed on the frontpage
 
 #########################################
