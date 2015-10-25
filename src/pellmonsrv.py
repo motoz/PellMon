@@ -489,6 +489,7 @@ class config:
         self.polling=False
         self.email=False
         self.port = None
+        self.unreadable_conffiles = []
 
         global logger
         logger = logging.getLogger('pellMon')
@@ -510,6 +511,7 @@ class config:
                         try:
                             parser.read(f)
                         except:
+                            self.unreadable_conffiles.append(f)
                             sys.stderr.write('config file %s unreadable\n'%f)
         except ConfigParser.NoOptionError:
             pass
@@ -538,7 +540,8 @@ class config:
         fh.setFormatter(formatter)
         # add the handlers to the logger
         logger.addHandler(fh)
-
+        if self.unreadable_conffiles:
+            logger.info('Unreadable config files: %s'%', '.join(self.unreadable_conffiles))
         try:
             # Get the enabled plugins list
             plugins = parser.items("enabled_plugins")
