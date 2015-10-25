@@ -5,7 +5,7 @@ CLEANFILES = \
 confdir = $(sysconfdir)/pellmon/conf.d
 
 nobase_dist_conf_DATA = \
-	pellmonweb.conf \
+	webinterface.conf \
 	database.conf \
 	email.conf \
 	enabled_plugins.conf \
@@ -19,7 +19,7 @@ nobase_dist_conf_DATA = \
 
 EXTRA_DIST = \
 	database.conf.in \
-	pellmonweb.conf.in
+	webinterface.conf.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
