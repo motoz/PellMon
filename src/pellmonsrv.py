@@ -73,18 +73,24 @@ class Database(threading.Thread):
         manager = PluginManager(categories_filter={ "Protocols": protocols})
         manager.setPluginPlaces([conf.plugin_dir])
         manager.collectPlugins()
+        activated_plugins = []
+        failed_plugins= []
         for plugin in manager.getPluginsOfCategory('Protocols'):
             if plugin.name in conf.enabled_plugins:
                 try:
                     plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
                     self.protocols.append(plugin)
-                    logger.info("activated plugin %s"%plugin.name)
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
+                    activated_plugins.append(plugin.name)
                 except Exception as e:
                     print str(e), plugin.name
-                    logger.info('Plugin %s init failed'%plugin.name)
+                    failed_plugins.append(plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
+        if activated_plugins:
+            logger.info('Activated plugins: %s'%', '.join(activated_plugins))
+        if failed_plugins:
+            logger.info('Failed to activate plugins: %s'%', '.join(failed_plugins))
         self.start()
 
     def run(self):
