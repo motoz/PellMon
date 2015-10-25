@@ -354,7 +354,8 @@ class PellMonWeb:
         RRD_command =  "rrdtool graph - --disable-rrdtool-tag --border 0 "+ legends + bgcolor
         RRD_command += " --lower-limit 0 %s --full-size-mode --width %u"%(rightaxis, graphWidth) + " --right-axis-format %1.0lf "
         RRD_command += " --height %u --end %s-"%(graphHeight,graphtime) + graphTimeEnd + "s --start %s-"%graphtime + graphTimeStart + "s "
-        RRD_command += "DEF:tickmark=%s:_logtick:AVERAGE TICK:tickmark#E7E7E7:1.0 "%db
+        if logtick:
+            RRD_command += "DEF:tickmark=%s:%s:AVERAGE TICK:tickmark#E7E7E7:1.0 "%(db,logtick)
         for line in graph_lines:
             if lines == '__all__' or line['name'] in lines:
                 RRD_command+="DEF:%s="%line['name']+db+":%s:AVERAGE "%line['ds_name']
@@ -440,10 +441,11 @@ class PellMonWeb:
                 RRD_command.append("XPORT:%s_s:%s"%(line['name'], line['name']))
             else:
                 RRD_command.append("XPORT:%s:%s"% (line['name'], line['name']))
-        RRD_command.append("DEF:logtick="+db+":_logtick:AVERAGE")
-        RRD_command.append("CDEF:prevtick=PREV(logtick)")
-        RRD_command.append("CDEF:tick=prevtick,logtick,GT")
-        RRD_command.append("XPORT:tick:logtick")
+        if logtick:
+            RRD_command.append("DEF:logtick="+db+":%s:AVERAGE"%logtick)
+            RRD_command.append("CDEF:prevtick=PREV(logtick)")
+            RRD_command.append("CDEF:tick=prevtick,logtick,GT")
+            RRD_command.append("XPORT:tick:logtick")
 
         cmd = subprocess.Popen(RRD_command, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         cherrypy.response.headers['Pragma'] = 'no-cache'
@@ -653,7 +655,6 @@ class PellMonWeb:
         except:
             timespan = 3600
             cherrypy.session['timespan'] = timespan
-        timeName = 'sdfas'
         for i in range(len(timeNames)):
             if timeSeconds[i] == timespan:
                 timeName = timeNames[i]
@@ -702,7 +703,6 @@ class myLookup(TemplateLookup):
         try:
             return super(myLookup, self).get_template(uri)
         except exceptions.TemplateLookupException, e:
-            print uri
             plugin = self.dbus.getPlugins(uri)
             self.put_string(uri, plugin)
             return super(myLookup, self).get_template(uri)
@@ -713,6 +713,17 @@ FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 
 parser = ConfigParser.ConfigParser()
 config_file = 'pellmon.conf'
+
+def walk_config_dir(config_dir, parser):
+    for root, dirs, files in os.walk(config_dir):
+        for name in files:
+            if os.path.splitext(name)[1] == '.conf':
+                f = os.path.join(root, name)
+                try:
+                    parser.read(f)
+                except:
+                    cherrypy.log("can not parse config file %s"%f)
+
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(prog='pellmonweb')
@@ -741,10 +752,19 @@ if __name__ == '__main__':
             config_file = '/etc/pellmon.conf'
         if not os.path.isfile(config_file):
             config_file = '/usr/local/etc/pellmon.conf'
-        if not os.path.isfile(config_file):
-            cherrypy.log("config file not found")
+#        if not os.path.isfile(config_file):
+#            cherrypy.log("config file not found")
+#            sys.exit(1)
+        try:
+            parser.read(config_file)
+        except:
+            cherrypy.log("can not parse config file")
             sys.exit(1)
-        parser.read(config_file)
+        try:
+            config_dir = parser.get('conf', 'config_dir')
+            walk_config_dir(config_dir, parser)
+        except ConfigParser.NoOptionError:
+            pass
 
         try:
             accesslog = parser.get('weblog', 'accesslog')
@@ -779,17 +799,26 @@ if __name__ == '__main__':
         config_file = '/etc/pellmon.conf'
     if not os.path.isfile(config_file):
         config_file = '/usr/local/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        cherrypy.log("config file not found")
-        sys.exit(1)
-    parser.read(config_file)
+#    if not os.path.isfile(config_file):
+#        cherrypy.log("config file not found")
+#        sys.exit(1)
+    try:
+        parser.read(config_file)
+        config_dir = parser.get('conf', 'config_dir')
+        walk_config_dir(config_dir, parser)
+    except ConfigParser.NoOptionError:
+        pass
+    except ConfigParser.NoSectionError:
+        cherrypy.log("can not parse config file")
+    except:
+        cherrypy.log("Config file not found")
 
     # The RRD database, updated by pellMon
     try:
         polling = True
         db = parser.get('conf', 'database')
         graph_file = os.path.join(os.path.dirname(db), 'graph.png')
-    except ConfigParser.NoOptionError:
+    except:
         polling = False
         db = ''
 
@@ -799,20 +828,20 @@ if __name__ == '__main__':
         colorsDict = {}
         for key, value in colors:
             colorsDict[key] = value
-    except ConfigParser.NoSectionError:
+    except:
         colorsDict = {}
 
     # Get the names of the polled data
-    polldata = parser.items("pollvalues")
-
     try:
+        polldata = parser.items("pollvalues")
         # Get the names of the polled data
         rrd_ds_names = parser.items("rrd_ds_names")
         ds_names = {}
         for key, value in rrd_ds_names:
             ds_names[key] = value
-    except ConfigParser.NoSectionError:
+    except:
         ds_names = {}
+        polldata = []
 
     try:
         # Get the optional scales
@@ -820,18 +849,28 @@ if __name__ == '__main__':
         scale_data = {}
         for key, value in scales:
             scale_data[key] = value
-    except ConfigParser.NoSectionError:
+    except:
         scale_data = {}
 
     graph_lines=[]
+    logtick = None
     for key,value in polldata:
         if key in colorsDict and key in ds_names:
             graph_lines.append({'name':value, 'color':colorsDict[key], 'ds_name':ds_names[key]})
             if key in scale_data:
                 graph_lines[-1]['scale'] = scale_data[key]
+        if value == '_logtick' and key in ds_names:
+            logtick = ds_names[key]
+    try:
+        credentials = parser.items('authentication')
+    except:
+        credentials = [('testuser','12345')]
 
-    credentials = parser.items('authentication')
-    logfile = parser.get('conf', 'logfile')
+    try:
+        logfile = parser.get('conf', 'logfile')
+    except:
+        logfile = None
+
     try:
         webroot = parser.get ('conf', 'webroot') 
     except:
@@ -871,13 +910,18 @@ if __name__ == '__main__':
         WebSocketPlugin.start.__func__.priority = 66
         WebSocketPlugin(cherrypy.engine).subscribe()
         cherrypy.tools.websocket = WebSocketTool()
+    try:
+        port = int(parser.get('conf', 'port'))
+    except:
+        port = 8081
+
     global_conf = {
             'global':   { #w'server.environment': 'debug',
                           'tools.sessions.on' : True,
                           'tools.sessions.timeout': 7200,
                           'tools.auth.on': True,
                           'server.socket_host': '0.0.0.0',
-                          'server.socket_port': int(parser.get('conf', 'port')),
+                          'server.socket_port': port,
 
                           #'engine.autoreload.on': False,
                           #'checker.on': False,

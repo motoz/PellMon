@@ -24,6 +24,7 @@ Makefile \
 initscript/Makefile \
 data/Makefile \
 src/Makefile \
+src/conf.d/Makefile \
 src/Pellmonsrv/Makefile \
 src/Pellmonsrv/yapsy/Makefile \
 src/Pellmonsrv/plugins/Makefile \

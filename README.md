@@ -84,7 +84,7 @@ usage: pellmoncli.py [-h] {get,set,list,i}
 </pre>
 
 ###pellmon.conf
-Configuration values. 
+The default configuration is split up in several files in the conf.d directory using the directive `config_dir = /etc/pellmon/conf.d` in pellmon.conf.
 
 ##System installation:
     # Add system users

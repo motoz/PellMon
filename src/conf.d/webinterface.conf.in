@@ -1,0 +1,67 @@
+
+[authentication]
+# username = password, for webinterface
+##########################################################
+# IMPORTANT! Change this to your own username = password #
+##########################################################
+testuser = 12345
+
+[graphcolors]
+# To add/remove a ds-name from the rrd-database to/from the graph, set/remove
+# dxx = #hexcolorvalue, 
+# where dxx matches the [pollvalues] and [rrd_ds_names] sections in database.conf
+#
+#####################################################
+# Hide/show graph lines and change their color here #
+#####################################################
+d01 = #a6cee3
+d02 = #1f78b4
+d03 = #b2df8a
+d04 = #33a02c
+d05 = #fb9a99
+d06 = #ff7f00
+d07 = #cab2d6
+d08 = #2F2FFF
+d09 = #6a3d9a
+d10 = #ffff99
+d11 = #b15928
+d12 = #2F2FFF
+d13 = #2F2FFF
+d14 = #2F2FFF
+d15 = #2F2FFF
+
+[conf]
+# Select system image. Set an absolute path to use your own.
+# Choices: system.svg|system_nbe.svg|system_nbe_2w.svg|system_nbe_3w.svg|system_matene.svg|/path/to/your_own_image.svg
+
+############################
+# Choose system image here #
+############################
+system_image = system.svg
+
+
+[frontpage_widgets]
+# Select which widgets are displayed on the frontpage
+
+#########################################
+# Choose what is on the front page here #
+#########################################
+row_1 = systemimage,events
+row_2 = graph
+row_3 = consumption24h,silolevel
+
+
+
+[weblog]
+# optional pellmonweb logging
+#accesslog = @localstatedir@/log/pellmonweb/access.log
+#errorlog = @localstatedir@/log/pellmonweb/error.log
+
+[conf]
+# Port number for the webserver
+port = 8081
+
+# set path for the pellmon web application
+webroot = /
+
+
