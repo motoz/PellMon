@@ -1,4 +1,5 @@
 web_PYTHON = \
+	pellmonweb.py \
 	auth.py \
 	consumption.py \
 	logview.py \

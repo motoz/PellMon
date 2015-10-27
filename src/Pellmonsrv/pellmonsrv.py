@@ -743,8 +743,7 @@ def mkdir_p(path):
 
 
 
-if __name__ == "__main__":
-
+def run():
     daemon = MyDaemon()
     commands = {
         'start':daemon.start,

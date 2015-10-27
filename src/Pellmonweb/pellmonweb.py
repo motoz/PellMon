@@ -725,7 +725,7 @@ def walk_config_dir(config_dir, parser):
                     cherrypy.log("can not parse config file %s"%f)
 
 
-if __name__ == '__main__':
+def run():
     argparser = argparse.ArgumentParser(prog='pellmonweb')
     argparser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
     argparser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
@@ -734,10 +734,12 @@ if __name__ == '__main__':
     argparser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     argparser.add_argument('-d', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     args = argparser.parse_args()
-
+    
+    global dbus
     dbus = Dbus_handler(args.DBUS)
 
     #Look for temlates in this directory
+    global lookup
     lookup = myLookup(directories=[os.path.join(HERE, 'html')], dbus=dbus)
 
     config_file = args.CONFIG
@@ -814,6 +816,7 @@ if __name__ == '__main__':
         cherrypy.log("Config file not found")
 
     # The RRD database, updated by pellMon
+    global polling, db
     try:
         polling = True
         db = parser.get('conf', 'database')
@@ -823,6 +826,7 @@ if __name__ == '__main__':
         db = ''
 
     # the colors to use when drawing the graph
+    global colorsDict
     try:
         colors = parser.items('graphcolors')
         colorsDict = {}
@@ -832,6 +836,7 @@ if __name__ == '__main__':
         colorsDict = {}
 
     # Get the names of the polled data
+    global polldata
     try:
         polldata = parser.items("pollvalues")
         # Get the names of the polled data
@@ -852,7 +857,9 @@ if __name__ == '__main__':
     except:
         scale_data = {}
 
+    global graph_lines
     graph_lines=[]
+    global logtick
     logtick = None
     for key,value in polldata:
         if key in colorsDict and key in ds_names:
@@ -861,11 +868,14 @@ if __name__ == '__main__':
                 graph_lines[-1]['scale'] = scale_data[key]
         if value == '_logtick' and key in ds_names:
             logtick = ds_names[key]
+
+    global credentials
     try:
         credentials = parser.items('authentication')
     except:
         credentials = [('testuser','12345')]
 
+    global logfile
     try:
         logfile = parser.get('conf', 'logfile')
     except:
@@ -876,12 +886,13 @@ if __name__ == '__main__':
     except:
         webroot = '/'
 
+    global system_image
     try:
         system_image = os.path.join(os.path.join(MEDIA_DIR, 'img'), parser.get ('conf', 'system_image'))
     except:
         system_image = os.path.join(MEDIA_DIR, 'img/system.svg')
 
-
+    global frontpage_widgets
     frontpage_widgets = []
     try:
         for row, widgets in parser.items('frontpage_widgets'):
@@ -889,8 +900,11 @@ if __name__ == '__main__':
     except:
         pass
 
+    global timeChoices
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
+    global timeNames
     timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+    global timeSeconds
     timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
     ft=False
     fc=False

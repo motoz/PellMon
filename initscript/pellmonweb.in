@@ -11,7 +11,7 @@
 ### END INIT INFO
 
 NAME=pellmonweb
-DAEMON=pellmonweb.py
+DAEMON=pellmonweb
 USER=@user_web@
 GROUP=nogroup
 

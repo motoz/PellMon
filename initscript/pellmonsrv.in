@@ -13,7 +13,7 @@
 ### END INIT INFO
 
 NAME=pellmonsrv
-DAEMON=pellmonsrv.py
+DAEMON=pellmonsrv
 USER=@user_srv@
 GROUP=nogroup
 

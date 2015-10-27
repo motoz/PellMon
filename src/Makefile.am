@@ -1,6 +1,6 @@
 SUBDIRS = Pellmonsrv Pellmonweb Scotteprotocol conf.d
 
-bin_SCRIPTS = pellmonsrv.py pellmonweb.py pellmoncli.py
+bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli.py
 CLEANFILES = \
 	pellmon.conf
 
@@ -8,8 +8,6 @@ confdir = $(sysconfdir)/pellmon
 dist_conf_DATA = pellmon.conf
 
 EXTRA_DIST = \
-	pellmonsrv.py \
-	pellmoncli.py \
 	pellmon.conf.in
 
 do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
