@@ -1,6 +1,6 @@
 SUBDIRS = Pellmonsrv Pellmonweb Scotteprotocol conf.d
 
-bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli.py
+bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli
 CLEANFILES = \
 	pellmon.conf
 
