@@ -21,3 +21,4 @@ initscript/pellmonsrv
 initscript/pellmonweb
 *.tar.gz
 **/plugins/**/values.conf
+pellmon_conf/
