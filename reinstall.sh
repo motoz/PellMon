@@ -1,4 +1,5 @@
 echo "using sudo, password might be requested"
+
 echo "stopping daemons"
 sudo service pellmonsrv stop
 sudo service pellmonweb stop
@@ -17,6 +18,10 @@ sudo make install || exit 1
 
 echo "restore configuration"
 sudo cp -r pellmon_conf/pellmon/ /etc/ || exit 1
+
+echo "reload init (systemd might want this)"
+sudo update-rc.d pellmonsrv defaults
+sudo update-rc.d pellmonweb defaults
 
 echo "start daemons"
 sudo service pellmonsrv start || exit 1
