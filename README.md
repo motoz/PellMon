@@ -79,9 +79,7 @@ optional arguments:
 ###pellmoncli.py:
 
 Interactive command line client with tab completion. Reading and writing of setting values, and reading of measurement data.
-<pre>
-usage: pellmoncli.py [-h] {get,set,list,i}
-</pre>
+    usage: pellmoncli.py [-h] {get,set,list,i}
 
 ###pellmon.conf
 The default configuration is split up in several files in the conf.d directory using the directive `config_dir = /etc/pellmon/conf.d` in pellmon.conf.
@@ -131,17 +129,14 @@ The default configuration is split up in several files in the conf.d directory u
     make uninstall
 
 ##Dependencies:
-<pre>
-rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
-</pre>
+    rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
 
 ##Optional dependencies:
-<pre>
-python-ws4py
-</pre>
+    python-ws4py
+##Dependencies for plugins
+###OWFS:
+    pyownet
 
 ##Build dependencies:
-<pre>
-autoconf
-</pre>
+    autoconf
 
