@@ -22,15 +22,11 @@ from ConfigParser import ConfigParser
 from os import path
 import traceback
 import sys
-from threading import Thread, Timer, Lock
+from threading import Thread, Timer
 from time import time, sleep
 from logging import getLogger
 
 logger = getLogger('pellMon')
-
-# This is needed to find the local module ownet_fix
-sys.path.append(path.dirname(path.abspath(__file__)))
-import ownet_fix as ownet
 
 itemList=[]
 itemTags={}
@@ -41,13 +37,18 @@ class owfsplugin(protocols):
         protocols.__init__(self)
 
     def activate(self, conf, glob):
+        try:
+            import pyownet.protocol
+        except ImportError:
+            logger.info('OWFS: python module pyownet is missing')
+            raise
         protocols.activate(self, conf, glob)
         self.ow2index={}
         self.name2index={}
         self.sensors={}
         self.latches={}
         self.counters=[]
-        self.lock = Lock()
+        self.proxies = {}
 
         for key, value in self.conf.iteritems():
             port = 4304
@@ -74,17 +75,14 @@ class owfsplugin(protocols):
                     port = int(val[1])
                 owpath = val[0]
 
-                itempath = path.dirname(owpath)
-                itemattribute = path.basename(owpath)
-                try:
-                    self.sensors[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
-                except:
-                    self.sensors[self.ow2index[ow_name]] = (itempath, server, port)
-                itemList[self.ow2index[ow_name]]['owname'] = itemattribute
-                if 'uncached' in itempath:
+                if 'uncached' in owpath:
                     itemList[self.ow2index[ow_name]]['uncached'] = True
                 else:
                     itemList[self.ow2index[ow_name]]['uncached'] = False
+
+                self.sensors[self.ow2index[ow_name]] = (owpath, server)
+                if not server in self.proxies:
+                    self.proxies[server] = pyownet.protocol.proxy(host=server, port=port)
 
             if ow_data == 'type' and value == 'COUNTER':
                 itemList[self.ow2index[ow_name]]['function'] = 'COUNTER'
@@ -104,13 +102,9 @@ class owfsplugin(protocols):
                 if len(val) == 2:
                     port = int(val[1])
                 owpath = val[0]
-                itempath = path.dirname(owpath)
-                itemattribute = path.basename(owpath)
-                try:
-                    self.latches[self.ow2index[ow_name]] = ownet.Sensor(itempath, server, port)
-                except:
-                    self.latches[self.ow2index[ow_name]] = (itempath, server, port)
-                itemList[self.ow2index[ow_name]]['owlatch'] = itemattribute
+                self.latches[self.ow2index[ow_name]] = (owpath, server)
+                if not server in self.proxies:
+                    self.proxies[server] = pyownet.protocol.proxy(host=server, port=port)
 
             if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
@@ -124,29 +118,19 @@ class owfsplugin(protocols):
         item = itemList[self.name2index[itemName]]
         if (background_poll and item['uncached'] is False) or (
             item['uncached'] and background_poll is False):
-            with self.lock:
-                try:
-                    if item['function'] == 'COUNTER':
-                        return str(item['value'])
-                    else:
-                        sensor = self.sensors[self.name2index[itemName]]
-                        name = itemList[self.name2index[itemName]]['owname']
-                        name = name.replace('.','_')
-                        if isinstance(sensor, tuple):
-                            try:
-                                sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
-                                self.sensors[self.name2index[itemName]] = sensor
-                            except:
-                                return 'Error'
-                        attr =  getattr(sensor, name)
-                        while attr == None:
-                            attr =  getattr(sensor, name)
-                        item['value'] = str(attr)
-                        return str(attr)
-                except Exception, e:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
-                    return str(e)
+            try:
+                if item['function'] == 'COUNTER':
+                    return str(item['value'])
+                else:
+                    path, server = self.sensors[self.name2index[itemName]]
+                    proxy = self.proxies[server]
+                    data = proxy.read(path)
+                    item['value'] = data.decode('ascii').strip()
+                    return item['value']
+            except Exception, e:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_tb(exc_traceback, limit=10, file=sys.stdout)
+                return str(e)
         elif not background_poll:
             if 'value' in item:
                 return item['value']
@@ -160,17 +144,10 @@ class owfsplugin(protocols):
     def setItem(self, itemName, value):
         try:
             index = self.name2index[itemName]
-            if itemList[index]['type'] == 'R/W':                
-                sensor = self.sensors[self.name2index[itemName]]
-                name = itemList[self.name2index[itemName]]['owname']
-                name = name.replace('.','_')
-                if isinstance(sensor, tuple):
-                    try:
-                        sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
-                        self.sensors[self.name2index[itemName]] = sensor
-                    except:
-                        return 'error'
-                setattr(sensor, name, value)
+            if itemList[index]['type'] == 'R/W':
+                path, server = self.sensors[self.name2index[itemName]]
+                proxy = self.proxies[server]
+                data = proxy.write(path)
                 return 'OK'
             else:
                 return 'error'
@@ -185,28 +162,16 @@ class owfsplugin(protocols):
                 item = itemList[counter]
                 l = 0
                 if self.latches.has_key(counter):
-                    sensor = self.latches[counter]
-                    lname = item['owlatch'].replace('.','_')
-                    if isinstance(sensor, tuple):
-                        sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
-                        self.latches[counter] = sensor
-                    with self.lock:
-                        attr =  getattr(sensor, lname)
-                        while attr == None:
-                            attr =  getattr(sensor, lname)
-                        setattr(sensor, lname, 0)
-                    l = attr
-                if l == 1:
-                    sensor = self.sensors[counter]
-                    iname = item['owname'].replace('.','_')
-                    if isinstance(sensor, tuple):
-                        sensor = ownet.Sensor(sensor[0], sensor[1], sensor[2])
-                        self.sensors[counter] = sensor
-                    with self.lock:
-                        attr =  getattr(sensor, iname)
-                        while attr == None:
-                            attr =  getattr(sensor, iname)
-                    i = attr
+                    path, server = self.latches[counter]
+                    proxy = self.proxies[server]
+                    data = proxy.read(path)
+                    proxy.write(path, b'0')
+                    l = int(data)
+
+                if (counter in self.latches and l == 1) or (counter not in self.latches):
+                    path, server = self.sensors[counter]
+                    proxy = self.proxies[server]
+                    i = proxy.read(path).decode('ascii')
                     if i == item['last_i']:
                         item['value'] += 1
                         item['toggle'] = 0
@@ -217,7 +182,7 @@ class owfsplugin(protocols):
                             item['value'] +=1
                             item['toggle'] = 0
             except Exception, e:
-                pass
+                logger.debug('OWFS counter error '+str(e))
             sleep(5)
         
     def background_polling_thread(self):
@@ -225,8 +190,8 @@ class owfsplugin(protocols):
             try:
                 for item in itemList:
                     self.getItem(item['name'], background_poll=True)
-            except:
-                pass
+            except Exception, e:
+                logger.debug('OWFS background poll error: '+str(e))
             sleep(5)
 
     def getDataBase(self):

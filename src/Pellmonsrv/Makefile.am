@@ -2,6 +2,7 @@ SUBDIRS = plugins yapsy
 
 srv_PYTHON = \
 	daemon.py \
+	pellmonsrv.py \
 	plugin_categories.py \
 	__init__.py 
 
