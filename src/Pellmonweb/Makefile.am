@@ -71,7 +71,8 @@ nobase_dist_foohtml_DATA = \
 	html/events\
 	html/graph\
 	html/systemimage\
-	html/logview.html
+	html/logview.html \
+	html/about.html
 
 foohtmldir = $(pythondir)/Pellmonweb
 
