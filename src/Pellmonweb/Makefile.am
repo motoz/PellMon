@@ -3,6 +3,7 @@ web_PYTHON = \
 	auth.py \
 	consumption.py \
 	logview.py \
+	version.py \
 	__init__.py 
 
 webdir = $(pythondir)/Pellmonweb
@@ -73,4 +74,10 @@ nobase_dist_foohtml_DATA = \
 	html/logview.html
 
 foohtmldir = $(pythondir)/Pellmonweb
+
+do_substitution = $(SED) -e 's,[@]VERSION[@],$(VERSION),g'
+
+%: %.in Makefile
+	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+
 

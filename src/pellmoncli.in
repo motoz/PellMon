@@ -17,6 +17,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
+__version__ = '@VERSION@'
+
 import readline, os
 import sys
 import argparse
@@ -145,6 +148,9 @@ if __name__ == "__main__":
     # create the parser for the "interactive" option
     parser_d = subparsers.add_parser('i', help='enter interactive mode')
     parser_d.set_defaults(func=cli)
+
+    # version info
+    parser.add_argument('-V', '--version', action='version', version='%(prog)s version '+__version__)
 
     # parse arguments and run function according to command 
     args = parser.parse_args()

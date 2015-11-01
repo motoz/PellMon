@@ -21,7 +21,7 @@ EXTRA_DIST = \
 	database.conf.in \
 	webinterface.conf.in
 
-do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
+do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),g' \

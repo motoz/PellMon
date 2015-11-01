@@ -10,7 +10,7 @@ dist_conf_DATA = pellmon.conf
 EXTRA_DIST = \
 	pellmon.conf.in
 
-do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
+do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
@@ -19,6 +19,10 @@ do_substitution = sed -e 's,[@]pythondir[@],$(pythondir),g' \
 
 %.conf: %.conf.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+
+pellmoncli: pellmoncli.in Makefile
+	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+	chmod +x $@
 
 install-data-local:
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/log/pellmonsrv
