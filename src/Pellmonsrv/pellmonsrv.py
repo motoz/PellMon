@@ -41,6 +41,11 @@ import urllib2 as urllib
 import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
 
+try:
+    from version import __version__
+except:
+    __version__ = '@VERSION@'
+
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
     def __init__(self, dbus_service):
@@ -133,7 +138,7 @@ class MyDBUSService(dbus.service.Object):
     def GetItem(self, param):
         """Get the value for a data/parameter item"""
         if param == 'pellmonsrv_version':
-            return '0.0.0'
+            return __version__
         else:
             return conf.database.items[param].getItem()
 
@@ -759,6 +764,7 @@ def run():
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
+    parser.add_argument('-V', '--version', action='version', version='%(prog)s version '+__version__)
     args = parser.parse_args()
     if args.PLUGINDIR == '-':
         args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')

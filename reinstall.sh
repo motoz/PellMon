@@ -11,10 +11,10 @@ echo "backup pellmon configuration"
 cp -r /etc/pellmon/ pellmon_conf/ || exit 1
 
 echo "build pellmon"
-make || exit 1
+make --no-print-directory || exit 1
 
 echo "install pellmon"
-sudo make install || exit 1
+sudo make --no-print-directory install || exit 1
 
 echo "restore configuration"
 sudo cp -r pellmon_conf/pellmon/ /etc/ || exit 1

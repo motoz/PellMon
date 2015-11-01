@@ -52,6 +52,11 @@ import re
 import math
 
 try:
+    from version import __version__
+except:
+    __version__ = '@VERSION@'
+
+try:
     from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
     from ws4py.websocket import WebSocket
     websockets = True
@@ -670,11 +675,16 @@ class PellMonWeb:
             widgets.append(wr)
         tmpl = Template(plugintemplate, lookup=lookup)
 
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets, version = __version__)
         
     @cherrypy.expose
     def systemimage(self):
         return serve_file(system_image)
+
+    @cherrypy.expose
+    def about(self):
+        tmpl = lookup.get_template("about.html")
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), webroot=cherrypy.request.script_name, version = __version__)
 
 class WsHandler:
     @cherrypy.expose
@@ -733,6 +743,7 @@ def run():
     argparser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     argparser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     argparser.add_argument('-d', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
+    argparser.add_argument('-V', '--version', action='version', version='%(prog)s version '+__version__)
     args = argparser.parse_args()
     
     global dbus

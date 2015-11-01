@@ -1,9 +1,11 @@
-AC_INIT([PellMon], [0.1])
+AC_INIT([PellMon], [0.0.0])
 
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_PYTHON([2.7])
 
 AC_PROG_MKDIR_P
+
+AC_PROG_SED
 
 AC_ARG_WITH([user_srv],
 	AS_HELP_STRING([--with-user_srv=USER], [system user for pellmonsrv]),
