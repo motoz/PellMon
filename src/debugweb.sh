@@ -1,2 +1,2 @@
-./pellmonweb.py -U pellmonweb -C /etc/pellmon/pellmon.conf -d SYSTEM
+./pellmonweb -U pellmonweb -C /etc/pellmon/pellmon.conf -d SYSTEM
 
