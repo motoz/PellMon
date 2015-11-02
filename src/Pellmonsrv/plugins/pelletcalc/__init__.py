@@ -30,13 +30,16 @@ import traceback
 
 logger = getLogger('pellMon')
 
-itemList=[
+itemList = [
           {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',    'type':'R/W', 'unit':'g/360s', 'value': '1000', 'min':'0', 'max':'5000' },
           {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': '0'    },
+]
+
+state_tracker_items = [
           {'name':'power_kW',             'longname':'power',                    'type':'R',   'unit':'kW',     'value': '0'    }, 
           {'name':'mode',                 'longname':'mode',                     'type':'R',   'unit':'',       'value': '-'  }, 
           {'name':'alarm',                'longname':'alarm',                    'type':'R',   'unit':'',       'value': '-'  }, 
-         ]
+]
 
 counter_mode_items = [
         {'name':'feeder_rev_capacity',  'longname':'feeder capacity',          'type':'R',   'unit':'g'   ,   'value': '5.56' },
@@ -48,6 +51,9 @@ counter_mode_items = [
 
 itemTags = {'feeder_capacity' :     ['All', 'pelletCalc', 'Basic'],
             'feeder_time' :         ['All', 'pelletCalc'],
+           }
+
+state_tracker_tags = {
             'power_kW' :            ['All', 'pelletCalc', 'Basic', 'Overview'],
             'mode' :                ['All', 'pelletCalc', 'Basic', 'Overview'],
             'alarm' :               ['All', 'pelletCalc', 'Basic', 'Overview'],
@@ -87,10 +93,50 @@ class pelletcalc(protocols):
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
+        global itemList
         if not 'timer' in conf:
-            global itemList
             itemList += counter_mode_items
             itemTags.update(counter_mode_tags)
+
+        if not 'state_tracker' in self.conf:
+            self.conf['state_tracker'] = 'basic'
+
+        try:
+            self.power_window = int(self.conf['power_window'])
+            if self.power_window < 60 or self.power_window > 1800:
+                raise ValueError
+        except:
+            self.power_window = 300
+        try:
+            self.running_timeout = int(self.conf['running_timeout'])
+            if self.running_timeout < 5 or self.power_window > 300:
+                raise ValueError
+        except:
+            self.running_timeout = 60
+        try:
+            self.ignition_timeout = int(self.conf['ignition_timeout'])
+            if self.ignition_timeout < 60 or self.ignition_timeout > 1200:
+                raise ValueError
+        except:
+            self.ignition_timeout = 600
+        try:
+            self.starting_power = float(self.conf['starting_power'])
+            if self.starting_power < 0.5 or self.starting_power > 10:
+                raise ValueError
+        except:
+            self.starting_power = 5
+        try:
+            self.startup_feed_wait = float(self.conf['startup_feed_wait'])
+            if self.startup_feed_wait < 10 or self.startup_feed_wait > 300:
+                raise ValueError
+        except:
+            self.startup_feed_wait = 60
+
+
+        if conf['state_tracker'] == 'basic':
+            itemList += state_tracker_items
+            itemTags.update(state_tracker_tags)
+
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
@@ -109,9 +155,10 @@ class pelletcalc(protocols):
         with open(self.valuesfile, 'w') as f:
             self.valuestore.write(f)
 
-        t = Timer(5, self.calc_thread)
-        t.setDaemon(True)
-        t.start()
+        if self.conf['state_tracker'] == 'basic':
+            t = Timer(5, self.calc_thread)
+            t.setDaemon(True)
+            t.start()
 
     def deactivate(self):
         protocols.deactivate(self)
@@ -207,7 +254,7 @@ class pelletcalc(protocols):
             if feeder_time > self.feeder_time:
                 self.feeder_time = feeder_time
                 self.time_feeder_time = time()
-            if time() - self.time_state > 60:
+            if time() - self.time_state > self.startup_feed_wait:
                 # switch to 'Igniting' after 60s
                 self.time_state = time()
                 self.state = 'Igniting'
@@ -218,7 +265,7 @@ class pelletcalc(protocols):
             if feeder_time > self.feeder_time:
                 self.feeder_time = feeder_time
                 self.time_feeder_time = time()
-            if time() - self.time_feeder_time > 600:
+            if time() - self.time_feeder_time > self.ignition_timeout:
                 # if we are still in 'Igniting' after 10 min then go to 'Ignition failed'
                 self.time_state = time()
                 self.state = 'Ignition failed'
@@ -226,8 +273,8 @@ class pelletcalc(protocols):
                 self.oldstate = self.state
                 self.alarm_state = 'Ignition failed'
                 self.settings_changed('alarm', 'OK', self.alarm_state, itemtype='alarm')
-            if power > 5:
-                # switch to 'Running' when the 5 min average power is above 5kW
+            if power > self.starting_power:
+                # switch to 'Running' when the average power is above 5kW
                 self.time_state = time()
                 self.state = 'Running'
                 self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
@@ -241,7 +288,7 @@ class pelletcalc(protocols):
             if feeder_time > self.feeder_time:
                 self.feeder_time = feeder_time
                 self.time_feeder_time = time()
-            if time() - self.time_feeder_time > 60:
+            if time() - self.time_feeder_time > self.running_timeout:
                 # No activity for 60s, got to 'Cooling'
                 self.time_state = time()
                 self.state = 'Cooling'
@@ -284,7 +331,7 @@ class pelletcalc(protocols):
                     if timer > last_timer:
                         if self.state in ('Igniting','Running','Cooling'):
                             timer_sum += (timer - last_timer)
-                    while now - timelist[0][1] > 300 and len(timelist)>1:
+                    while now - timelist[0][1] > self.power_window and len(timelist)>1:
                         if timelist[1][2] in ('Igniting','Running','Cooling'):
                             timer_sum -= (timelist[1][0] - timelist[0][0])
                         del timelist[0]
@@ -294,7 +341,7 @@ class pelletcalc(protocols):
 
                     try:
                         capacity = float(self.getItem('feeder_capacity')) / 360
-                        self.power = timer_sum * capacity * 12 * 4.8 * 0.9 / 1000
+                        self.power = timer_sum * capacity * 3600 / self.power_window * 4.8 * 0.9 / 1000
                         self.calculate_state()
                     except KeyError:
                         logger.info("PelletCalc error, can't read 'feeder_capacity'")
