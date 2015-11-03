@@ -99,7 +99,7 @@ class pelletcalc(protocols):
             itemTags.update(counter_mode_tags)
 
         if not 'state_tracker' in self.conf:
-            self.conf['state_tracker'] = 'basic'
+            self.conf['state_tracker'] = 'generic'
 
         try:
             self.power_window = int(self.conf['power_window'])
@@ -136,7 +136,7 @@ class pelletcalc(protocols):
         except:
             self.log_changes = ['mode', 'alarm']
 
-        if conf['state_tracker'] == 'basic':
+        if conf['state_tracker'] == 'generic':
             itemList += state_tracker_items
             itemTags.update(state_tracker_tags)
 
@@ -158,7 +158,7 @@ class pelletcalc(protocols):
         with open(self.valuesfile, 'w') as f:
             self.valuestore.write(f)
 
-        if self.conf['state_tracker'] == 'basic':
+        if self.conf['state_tracker'] == 'generic':
             t = Timer(5, self.calc_thread)
             t.setDaemon(True)
             t.start()
