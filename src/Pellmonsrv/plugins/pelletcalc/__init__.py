@@ -131,7 +131,10 @@ class pelletcalc(protocols):
                 raise ValueError
         except:
             self.startup_feed_wait = 60
-
+        try:
+            self.log_changes = [s.strip() for s in self.conf['log_changes'].split(',')]
+        except:
+            self.log_changes = ['mode', 'alarm']
 
         if conf['state_tracker'] == 'basic':
             itemList += state_tracker_items
@@ -244,10 +247,12 @@ class pelletcalc(protocols):
                 self.time_feeder_time = time()
                 self.time_state = self.time_feeder_time
                 self.state = 'Starting'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
                 if not self.alarm_state == 'OK':
-                    self.settings_changed('alarm', self.alarm_state, 'OK', itemtype='alarm')
+                    if 'alarm' in self.log_changes:
+                        self.settings_changed('alarm', self.alarm_state, 'OK', itemtype='alarm')
                     self.alarm_state = 'OK'
 
         elif self.state == 'Starting':
@@ -258,7 +263,8 @@ class pelletcalc(protocols):
                 # switch to 'Igniting' after 60s
                 self.time_state = time()
                 self.state = 'Igniting'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
 
         elif self.state == 'Igniting':
@@ -269,15 +275,18 @@ class pelletcalc(protocols):
                 # if we are still in 'Igniting' after 10 min then go to 'Ignition failed'
                 self.time_state = time()
                 self.state = 'Ignition failed'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
                 self.alarm_state = 'Ignition failed'
-                self.settings_changed('alarm', 'OK', self.alarm_state, itemtype='alarm')
+                if 'alarm' in self.log_changes:
+                    self.settings_changed('alarm', 'OK', self.alarm_state, itemtype='alarm')
             if power > self.starting_power:
                 # switch to 'Running' when the average power is above 5kW
                 self.time_state = time()
                 self.state = 'Running'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
 
         elif self.state == 'Ignition failed':
@@ -292,7 +301,8 @@ class pelletcalc(protocols):
                 # No activity for 60s, got to 'Cooling'
                 self.time_state = time()
                 self.state = 'Cooling'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
 
         elif self.state == 'Cooling':
@@ -302,13 +312,15 @@ class pelletcalc(protocols):
                 self.time_feeder_time = time()
                 self.time_state = time()
                 self.state = 'Running'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
             elif power < 0.1:
                 # stay here until 5min average power is below 0.1kW
                 self.time_state = time()
                 self.state = 'Off'
-                self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
+                if 'mode' in self.log_changes:
+                    self.settings_changed('mode', self.oldstate, self.state, itemtype='mode')
                 self.oldstate = self.state
 
 
