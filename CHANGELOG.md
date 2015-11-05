@@ -2,9 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2015-11-05
 ### Added
 - The state tracker in the PelletCalc plugin has configurable parameters for every state change and can also be turned off completely, which removes the 'power_kW', 'mode' and 'alarm' items.
+- The PelletCalc plugin has a configuration setting for which type of events to log
 
 ## [0.1.0] - 2015-11-01
 ### Added
