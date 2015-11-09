@@ -22,8 +22,15 @@ from logging import getLogger
 
 logger = getLogger('pellMon')
 
-itemList=[{'name':'testitem1', 'longname':'test item 1', 'type':'W'}, {'name':'testitem2', 'type':'R', 'unit':'m/s'}, {'name':'testitem3', 'type':'R/W',  'min':'0', 'max':'100', 'unit':'HP'}]
+itemList = [{'name':'testitem1', 'longname':'test item 1', 'type':'W'}, {'name':'testitem2', 'type':'R', 'unit':'m/s'}, {'name':'testitem3', 'type':'R/W',  'min':'0', 'max':'100', 'unit':'HP'}]
 
+itemTags = {'testitem1' :     ['All', 'testplugin', 'Basic'],
+            'testitem2' :     ['All', 'testplugin', 'Basic', 'Overview'],
+            'testitem3' :     ['All', 'testplugin'],
+}
+
+itemDescriptions = {'testitem2' : 'This is test item 2',
+}
 
 class testplugin(protocols):
     def __init__(self):
@@ -38,19 +45,20 @@ class testplugin(protocols):
                 i['value'] = '1234'
         for key, value in self.conf.iteritems():
             itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'W', 'type':'R/W'})
+            itemTags[key] = ['All', 'testplugin', 'Basic']
         logger.info('testplugin activated...')
 
     def getItem(self, item):
         for i in itemList:
             if i['name'] == item:
-                logger.info('testplugin: Get %s=%s'%(item,i['value']))
+                logger.debug('testplugin: Get %s=%s'%(item,i['value']))
                 return i['value']
 
     def setItem(self, item, value):
         for i in itemList:
             if i['name'] == item:
                 i['value'] = value
-                logger.info('testplugin: Set %s=%s'%(item,str(value)))
+                logger.debug('testplugin: Set %s=%s'%(item,str(value)))
                 return 'OK'
         return['error']
 
@@ -61,4 +69,19 @@ class testplugin(protocols):
         return l
 
     def GetFullDB(self, tags):
-        return itemList
+        def match(requiredtags, existingtags):
+            for rt in requiredtags:
+                if rt != '' and not rt in existingtags:
+                    return False
+            return True
+            
+        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
+        for item in items:
+            try:
+                item['description'] = itemDescriptions[item['name']]
+            except:
+                item['description'] = ''
+        return items
+
+    def getMenutags(self):
+        return ['testplugin', 'Overview']
