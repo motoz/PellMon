@@ -65,45 +65,45 @@ dataBaseMap =  {
     'version':              { ('4.99','zzzz') : data (FrameZ04,  1,    -1) }, # decimals = -1 means that this is a string, not a number
 
 #    parameter name             versions        type   frame    index  dec    addr   min    max
-    'blower_low':           { ('4.99','zzzz') : param (FrameZ01,  0,    0,    'A00',   4,    50) },
-    'blower_high':          { ('4.99','zzzz') : param (FrameZ01,  1,    0,    'A01',   5,   100) },
+    'blower_low':           { ('4.00','zzzz') : param (FrameZ01,  0,    0,    'A00',   4,    50) },
+    'blower_high':          { ('4.00','zzzz') : param (FrameZ01,  1,    0,    'A01',   5,   100) },
     'blower_mid':           { ('4.99','zzzz') : param (FrameZ03, 14,    0,    'A06',   5,    75) },
-    'blower_cleaning':      { ('4.99','zzzz') : param (FrameZ01,  4,    0,    'A04',  25,   200) },
+    'blower_cleaning':      { ('4.00','zzzz') : param (FrameZ01,  4,    0,    'A04',  25,   200) },
     'boiler_temp_set':      { ('0000','zzzz') : param (FrameZ00, 10,    0,    'B01',  40,    85) },
-    'boiler_temp_min':      { ('4.99','zzzz') : param (FrameZ01,  9,    0,    'B03',  10,    70) },
-    'feeder_low':           { ('4.99','zzzz') : param (FrameZ01, 10,    2,    'B04',   0.5,  25) },
-    'feeder_high':          { ('4.99','zzzz') : param (FrameZ01, 11,    1,    'B05',   1,   100) },
-    'feed_per_minute':      { ('4.99','zzzz') : param (FrameZ01, 12,    0,    'B06',   1,     3) },
+    'boiler_temp_min':      { ('4.00','zzzz') : param (FrameZ01,  9,    0,    'B03',  10,    70) },
+    'feeder_low':           { ('4.00','zzzz') : param (FrameZ01, 10,    2,    'B04',   0.5,  25) },
+    'feeder_high':          { ('4.00','zzzz') : param (FrameZ01, 11,    1,    'B05',   1,   100) },
+    'feed_per_minute':      { ('4.00','zzzz') : param (FrameZ01, 12,    0,    'B06',   1,     3) },
 
-    'boiler_temp_diff_down':{ ('4.99','zzzz') : param (FrameZ01, 17,    0,    'C03',   0,    20) },
+    'boiler_temp_diff_down':{ ('4.00','zzzz') : param (FrameZ01, 17,    0,    'C03',   0,    20) },
     'boiler_temp_diff_up':  { ('4.99','zzzz') : param (FrameZ03, 13,    0,    'C04',   0,    15) },
 
-    'light_required':       { ('4.99','zzzz') : param (FrameZ01, 22,    0,    'D03',   0,   100) },
+    'light_required':       { ('4.00','zzzz') : param (FrameZ01, 22,    0,    'D03',   0,   100) },
 
-    'oxygen_regulation':    { ('4.99','zzzz') : param (FrameZ01, 23,    0,    'E00',   0,     2) },
-    'oxygen_low':           { ('4.99','zzzz') : param (FrameZ01, 24,    1,    'E01',  10,    19) },
-    'oxygen_high':          { ('4.99','zzzz') : param (FrameZ01, 25,    1,    'E02',   2,    12) },
+    'oxygen_regulation':    { ('4.00','zzzz') : param (FrameZ01, 23,    0,    'E00',   0,     2) },
+    'oxygen_low':           { ('4.00','zzzz') : param (FrameZ01, 24,    1,    'E01',  10,    19) },
+    'oxygen_high':          { ('4.00','zzzz') : param (FrameZ01, 25,    1,    'E02',   2,    12) },
     'oxygen_mid':           { ('6.50','zzzz') : param (FrameZ08, 7,     1,    'E06',   0,    21) },
-    'oxygen_gain':          { ('4.99','zzzz') : param (FrameZ01, 26,    2,    'E03',   0,    99.99) },
+    'oxygen_gain':          { ('4.00','zzzz') : param (FrameZ01, 26,    2,    'E03',   0,    99.99) },
 
-    'feeder_capacity_min':  { ('4.99','zzzz') : param (FrameZ01, 27,    0,    'F00', 400,  2000) },
+    'feeder_capacity_min':  { ('4.00','zzzz') : param (FrameZ01, 27,    0,    'F00', 400,  2000) },
     'feeder_capacity':      { ('0000','zzzz') : param (FrameZ00, 12,    0,    'F01', 400,  8000) },
-    'feeder_capacity_max':  { ('4.99','zzzz') : param (FrameZ01, 29,    0,    'F02', 400,  8000) },
+    'feeder_capacity_max':  { ('4.00','zzzz') : param (FrameZ01, 29,    0,    'F02', 400,  8000) },
 
 #    parameter name             versions        type   frame    index  dec    addr   min    max
     'chimney_draught':      { ('0000','6.85') : param (FrameZ00, 13,    0,    'G00',   0,    10) },
-    'chute_temp_max':       { ('4.99','zzzz') : param (FrameZ01, 31,    0,    'G01',  50,    90) },
-    'regulator_P':          { ('4.99','zzzz') : param (FrameZ01, 32,    1,    'G02',   1,    20) },
-    'regulator_I':          { ('4.99','zzzz') : param (FrameZ01, 33,    2,    'G03',   0,     5) },
-    'regulator_D':          { ('4.99','zzzz') : param (FrameZ01, 34,    1,    'G04',   1,    50) },
-    'blower_corr_low':      { ('4.99','zzzz') : param (FrameZ01, 39,    0,    'G05',  50,   150) },
-    'blower_corr_high':     { ('4.99','zzzz') : param (FrameZ01, 40,    0,    'G06',  50,   150) },
-    'cleaning_interval':    { ('4.99','zzzz') : param (FrameZ01, 41,    0,    'G07',   1,   120) },
-    'cleaning_time':        { ('4.99','zzzz') : param (FrameZ01, 42,    0,    'G08',   0,    60) },
+    'chute_temp_max':       { ('4.00','zzzz') : param (FrameZ01, 31,    0,    'G01',  50,    90) },
+    'regulator_P':          { ('4.00','zzzz') : param (FrameZ01, 32,    1,    'G02',   1,    20) },
+    'regulator_I':          { ('4.00','zzzz') : param (FrameZ01, 33,    2,    'G03',   0,     5) },
+    'regulator_D':          { ('4.00','zzzz') : param (FrameZ01, 34,    1,    'G04',   1,    50) },
+    'blower_corr_low':      { ('4.00','zzzz') : param (FrameZ01, 39,    0,    'G05',  50,   150) },
+    'blower_corr_high':     { ('4.00','zzzz') : param (FrameZ01, 40,    0,    'G06',  50,   150) },
+    'cleaning_interval':    { ('4.00','zzzz') : param (FrameZ01, 41,    0,    'G07',   1,   120) },
+    'cleaning_time':        { ('4.00','zzzz') : param (FrameZ01, 42,    0,    'G08',   0,    60) },
     'language':             { ('4.99','zzzz') : param (FrameZ04, 0,     0,    'G09',   0,     3) },
 
     'autocalculation':      { ('4.99','zzzz') : param (FrameZ03, 10,    0,    'H04',   0,     1) },
-    'time_minutes':         { ('4.99','zzzz') : param (FrameZ01, 44,    0,    'H07',   0,  1439) },
+    'time_minutes':         { ('4.00','zzzz') : param (FrameZ01, 44,    0,    'H07',   0,  1439) },
 
     'oxygen_corr_10':       { ('4.99','zzzz') : param (FrameZ03, 1,     0,    'I00',   0,   100) },
     'oxygen_corr_50':       { ('4.99','zzzz') : param (FrameZ03, 2,     0,    'I01',   0,   100) },
@@ -136,11 +136,11 @@ dataBaseMap =  {
     'blower_corr_mid':      { ('4.99','zzzz') : param (FrameZ05, 21,    0,    'M00',  50,   150) },
 
 #    parameter name             versions        type   frame    index  dec    addr   min    max
-    'min_power':            { ('4.99','zzzz') : param (FrameZ01, 37,    0,    'H02',  10,   100) },
-    'max_power':            { ('4.99','zzzz') : param (FrameZ01, 38,    0,    'H03',  10,   100) },
+    'min_power':            { ('4.00','zzzz') : param (FrameZ01, 37,    0,    'H02',  10,   100) },
+    'max_power':            { ('4.00','zzzz') : param (FrameZ01, 38,    0,    'H03',  10,   100) },
 
-    'burner_off':           { ('4.99','zzzz') : command (                     'V00',   0,     0) },
-    'burner_on':            { ('4.99','zzzz') : command (                     'V01',   0,     0) },
-    'reset_alarm':          { ('4.99','zzzz') : command (                     'V02',   0,     0) },
-    'reset_ignition':       { ('4.99','zzzz') : command (                     'D04',   0,     0) },
+    'burner_off':           { ('4.00','zzzz') : command (                     'V00',   0,     0) },
+    'burner_on':            { ('4.00','zzzz') : command (                     'V01',   0,     0) },
+    'reset_alarm':          { ('4.00','zzzz') : command (                     'V02',   0,     0) },
+    'reset_ignition':       { ('4.00','zzzz') : command (                     'D04',   0,     0) },
 }
