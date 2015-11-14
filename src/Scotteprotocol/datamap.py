@@ -62,7 +62,7 @@ dataBaseMap =  {
     'outside_temp':         { ('6.03','zzzz') : data (FrameZ06,  2,     0) },
     'indoor_temp':          { ('6.03','zzzz') : data (FrameZ06,  3,     0) },
     'flow':                 { ('6.03','zzzz') : data (FrameZ06,  4,     0) },
-    'version':              { ('0000','zzzz') : data (FrameZ04,  1,    -1) }, # decimals = -1 means that this is a string, not a number
+    'version':              { ('4.99','zzzz') : data (FrameZ04,  1,    -1) }, # decimals = -1 means that this is a string, not a number
 
 #    parameter name             versions        type   frame    index  dec    addr   min    max
     'blower_low':           { ('4.99','zzzz') : param (FrameZ01,  0,    0,    'A00',   4,    50) },
@@ -100,7 +100,7 @@ dataBaseMap =  {
     'blower_corr_high':     { ('4.99','zzzz') : param (FrameZ01, 40,    0,    'G06',  50,   150) },
     'cleaning_interval':    { ('4.99','zzzz') : param (FrameZ01, 41,    0,    'G07',   1,   120) },
     'cleaning_time':        { ('4.99','zzzz') : param (FrameZ01, 42,    0,    'G08',   0,    60) },
-    'language':             { ('0000','zzzz') : param (FrameZ04, 0,     0,    'G09',   0,     3) },
+    'language':             { ('4.99','zzzz') : param (FrameZ04, 0,     0,    'G09',   0,     3) },
 
     'autocalculation':      { ('4.99','zzzz') : param (FrameZ03, 10,    0,    'H04',   0,     1) },
     'time_minutes':         { ('4.99','zzzz') : param (FrameZ01, 44,    0,    'H07',   0,  1439) },

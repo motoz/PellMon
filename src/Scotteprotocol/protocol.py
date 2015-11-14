@@ -34,6 +34,7 @@ class Protocol(threading.Thread):
         """Initialize the protocol and database according to given version"""
         self.dummyDevice=False
         self.checksum=True
+        self.frame_term_crlf = False
         if device == None:
             self.dummyDevice=True
             self.dataBase = self.createDataBase('6.99')
@@ -76,8 +77,9 @@ class Protocol(threading.Thread):
                     logger.info('protocol checksums turned off')
                     logger.info('chip version detected as: %s'%version_string)
                 except:
-                    version_string = '0.0'
-                    logger.info('version detection failed')
+                    version_string = '4.0'
+                    self.frame_term_crlf= True
+                    logger.info("can't read program version, assuming 4.0")
         else:
             logger.info('chip version from config: %s'%version_string)
             try:
@@ -217,7 +219,7 @@ class Protocol(threading.Thread):
                 s=self.addCheckSum(commandqueue[1])
                 logger.debug('serial write'+s)
                 self.ser.flushInput()
-                self.ser.write(s+'\r')   
+                self.ser.write(s+'\r\n')   
                 logger.debug('serial written'+s)        
                 line=""
                 try:
@@ -244,7 +246,7 @@ class Protocol(threading.Thread):
                     try:
                         self.ser.flushInput()
                         logger.debug('serial write')
-                        self.ser.write(sendFrame+'\r')   
+                        self.ser.write(sendFrame+'\r\n')   
                         logger.debug('serial written')  
                         line=str(self.ser.read(frame.getLength(self))) 
                         logger.debug('serial read'+line)
@@ -266,7 +268,7 @@ class Protocol(threading.Thread):
                         try:
                             self.ser.flushInput()
                             logger.debug('serial write')
-                            self.ser.write(sendFrame+'\r')
+                            self.ser.write(sendFrame+'\r\n')
                             logger.debug('serial written')
                             line=str(self.ser.read(frame.getLength(self)))
                             logger.debug('answer: '+line)
@@ -325,7 +327,10 @@ class Frame:
         if protocol.checksum:
             return self.frameLength+1
         else:
-            return self.frameLength
+            if protocol.frame_term_crlf:
+                return self.frameLength + 2
+            else:
+                return self.frameLength
 
     def parse(self, s, protocol):
         logger.debug('Check checksum in parse '+s)
