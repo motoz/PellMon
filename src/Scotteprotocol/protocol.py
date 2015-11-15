@@ -59,7 +59,7 @@ class Protocol(threading.Thread):
             
         # message queue, used to send frame polling commands to pollThread
         self.q = Queue.Queue(300)
-        self.dataBase = self.createDataBase('0000')
+        self.dataBase = self.createDataBase('4.99')
         
         # Create and start poll_thread
         threading.Thread.__init__(self)
@@ -72,9 +72,9 @@ class Protocol(threading.Thread):
                 logger.info('chip version detected as: %s'%version_string)
             except:
                 self.checksum=False
+                logger.info('protocol checksums turned off')
                 try:
                     version_string = self.getItem('version').lstrip()
-                    logger.info('protocol checksums turned off')
                     logger.info('chip version detected as: %s'%version_string)
                 except:
                     self.frame_term_crlf= True
@@ -239,7 +239,10 @@ class Protocol(threading.Thread):
                 line=""
                 if not self.frame_term_crlf:
                     try:
-                        line=str(self.ser.read(2))
+                        if self.checksum:
+                            line=str(self.ser.read(3))
+                        else:
+                            line=str(self.ser.read(2))
                         logger.debug('serial read'+line)
                     except: 
                         logger.debug('Serial read error')
