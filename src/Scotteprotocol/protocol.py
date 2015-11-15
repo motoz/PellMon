@@ -34,6 +34,7 @@ class Protocol(threading.Thread):
         """Initialize the protocol and database according to given version"""
         self.dummyDevice=False
         self.checksum=True
+        self.frame_term_crlf = False
         if device == None:
             self.dummyDevice=True
             self.dataBase = self.createDataBase('6.99')
@@ -58,7 +59,7 @@ class Protocol(threading.Thread):
             
         # message queue, used to send frame polling commands to pollThread
         self.q = Queue.Queue(300)
-        self.dataBase = self.createDataBase('0000')
+        self.dataBase = self.createDataBase('4.99')
         
         # Create and start poll_thread
         threading.Thread.__init__(self)
@@ -71,27 +72,43 @@ class Protocol(threading.Thread):
                 logger.info('chip version detected as: %s'%version_string)
             except:
                 self.checksum=False
+                logger.info('protocol checksums turned off')
                 try:
                     version_string = self.getItem('version').lstrip()
-                    logger.info('protocol checksums turned off')
                     logger.info('chip version detected as: %s'%version_string)
                 except:
-                    version_string = '0.0'
-                    logger.info('version detection failed')
+                    self.frame_term_crlf= True
+                    try:
+                        version_string = self.getItem('version').lstrip()
+                        logger.info('chip version detected with checksums of and crlf on as: %s'%version_string)
+                    except:
+                        version_string = '4.00'
+                        logger.info("can't read program version, assuming 4.00")
+                        try:
+                            testread = self.getItem('power').lstrip()
+                            logger.info('Connected with protocol checksums turned off and crlf on')
+                        except:
+                            logger.info('Not connected? Check the cables')
         else:
             logger.info('chip version from config: %s'%version_string)
             try:
-                testread = self.getItem('version').lstrip()
+                testread = self.getItem('power').lstrip()
                 logger.info('Connected')
             except:
                 self.checksum=False
                 try:
-                    testread = self.getItem('version').lstrip()
+                    testread = self.getItem('power').lstrip()
                     logger.info('Connected with protocol checksums turned off')
                 except:
-                    logger.info('Not connected? Check the cables')
+                    self.frame_term_crlf= True
+                    try:
+                        testread = self.getItem('power').lstrip()
+                        logger.info('Connected with protocol checksums turned off and crlf on')
+                    except:
+                        logger.info('Not connected? Check the cables')
+
         self.dataBase = self.createDataBase(version_string)
-        
+
     def getDataBase(self):
         return self.dataBase  
                 
@@ -99,7 +116,7 @@ class Protocol(threading.Thread):
         if self.dummyDevice:
             return '1234'
         """Read data/parameter value"""
-        logger.debug('getitem')
+        #logger.debug('getitem')
         dataparam=self.dataBase[param]
         if hasattr(dataparam, 'frame'):
             ok=True
@@ -217,20 +234,29 @@ class Protocol(threading.Thread):
                 s=self.addCheckSum(commandqueue[1])
                 logger.debug('serial write'+s)
                 self.ser.flushInput()
-                self.ser.write(s+'\r')   
+                if self.frame_term_crlf:
+                    s += '\r\n'
+                self.ser.write(s)   
                 logger.debug('serial written'+s)        
                 line=""
-                try:
-                    line=str(self.ser.read(3))
-                    logger.debug('serial read'+line)
-                except: 
-                    logger.debug('Serial read error')
-                if line:
-                    # Send back the response
-                    commandqueue[2].put(line)
+                if not self.frame_term_crlf:
+                    try:
+                        if self.checksum:
+                            line=str(self.ser.read(3))
+                        else:
+                            line=str(self.ser.read(2))
+                        logger.debug('serial read'+line)
+                    except: 
+                        logger.debug('Serial read error')
+                    if line:
+                        # Send back the response
+                        commandqueue[2].put(line)
+                    else:
+                        commandqueue[2].put("No answer")
+                        logger.info('No answer')
                 else:
-                    commandqueue[2].put("No answer")
-                    logger.info('No answer')
+                    # These old versions don't answer at all, assume it went ok
+                    commandqueue[2].put("OK")
             
             # Get frame command
             if commandqueue[0]=="GET" or commandqueue[0]=="FORCE_GET":
@@ -238,13 +264,15 @@ class Protocol(threading.Thread):
                 frame = commandqueue[1]
                 # This frame could have been read recently by a previous queued read request, so check again if it's necessary to read
                 if time.time()-frame.readtime > 8.0 or commandqueue[0]=="FORCE_GET":
-                    sendFrame = self.addCheckSum(frame.pollFrame)+"\r"
+                    sendFrame = self.addCheckSum(frame.pollFrame)
                     logger.debug('sendFrame = '+sendFrame)
                     line=""
                     try:
                         self.ser.flushInput()
                         logger.debug('serial write')
-                        self.ser.write(sendFrame+'\r')   
+                        if self.frame_term_crlf:
+                            sendFrame += '\r\n'
+                        self.ser.write(sendFrame)   
                         logger.debug('serial written')  
                         line=str(self.ser.read(frame.getLength(self))) 
                         logger.debug('serial read'+line)
@@ -266,7 +294,9 @@ class Protocol(threading.Thread):
                         try:
                             self.ser.flushInput()
                             logger.debug('serial write')
-                            self.ser.write(sendFrame+'\r')
+                            if self.frame_term_crlf:
+                                sendFrame += '\r\n'
+                            self.ser.write(sendFrame)
                             logger.debug('serial written')
                             line=str(self.ser.read(frame.getLength(self)))
                             logger.debug('answer: '+line)
@@ -325,7 +355,10 @@ class Frame:
         if protocol.checksum:
             return self.frameLength+1
         else:
-            return self.frameLength
+            if protocol.frame_term_crlf:
+                return self.frameLength + 2
+            else:
+                return self.frameLength
 
     def parse(self, s, protocol):
         logger.debug('Check checksum in parse '+s)
