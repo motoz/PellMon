@@ -234,7 +234,9 @@ class Protocol(threading.Thread):
                 s=self.addCheckSum(commandqueue[1])
                 logger.debug('serial write'+s)
                 self.ser.flushInput()
-                self.ser.write(s+'\r')   
+                if self.frame_term_crlf:
+                    s += '\r\n'
+                self.ser.write(s)   
                 logger.debug('serial written'+s)        
                 line=""
                 if not self.frame_term_crlf:
@@ -262,12 +264,14 @@ class Protocol(threading.Thread):
                 frame = commandqueue[1]
                 # This frame could have been read recently by a previous queued read request, so check again if it's necessary to read
                 if time.time()-frame.readtime > 8.0 or commandqueue[0]=="FORCE_GET":
-                    sendFrame = self.addCheckSum(frame.pollFrame)+"\r"
+                    sendFrame = self.addCheckSum(frame.pollFrame)
                     logger.debug('sendFrame = '+sendFrame)
                     line=""
                     try:
                         self.ser.flushInput()
                         logger.debug('serial write')
+                        if self.frame_term_crlf:
+                            sendFrame += '\r\n'
                         self.ser.write(sendFrame)   
                         logger.debug('serial written')  
                         line=str(self.ser.read(frame.getLength(self))) 
@@ -290,7 +294,9 @@ class Protocol(threading.Thread):
                         try:
                             self.ser.flushInput()
                             logger.debug('serial write')
-                            self.ser.write(sendFrame+'\r')
+                            if self.frame_term_crlf:
+                                sendFrame += '\r\n'
+                            self.ser.write(sendFrame)
                             logger.debug('serial written')
                             line=str(self.ser.read(frame.getLength(self)))
                             logger.debug('answer: '+line)
