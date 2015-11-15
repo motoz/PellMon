@@ -77,9 +77,9 @@ class Protocol(threading.Thread):
                     logger.info('protocol checksums turned off')
                     logger.info('chip version detected as: %s'%version_string)
                 except:
-                    version_string = '4.0'
+                    version_string = '4.00'
                     self.frame_term_crlf= True
-                    logger.info("can't read program version, assuming 4.0")
+                    logger.info("can't read program version, assuming 4.00")
         else:
             logger.info('chip version from config: %s'%version_string)
             try:
@@ -101,7 +101,7 @@ class Protocol(threading.Thread):
         if self.dummyDevice:
             return '1234'
         """Read data/parameter value"""
-        logger.debug('getitem')
+        #logger.debug('getitem')
         dataparam=self.dataBase[param]
         if hasattr(dataparam, 'frame'):
             ok=True
@@ -219,20 +219,24 @@ class Protocol(threading.Thread):
                 s=self.addCheckSum(commandqueue[1])
                 logger.debug('serial write'+s)
                 self.ser.flushInput()
-                self.ser.write(s+'\r\n')   
+                self.ser.write(s+'\r')   
                 logger.debug('serial written'+s)        
                 line=""
-                try:
-                    line=str(self.ser.read(3))
-                    logger.debug('serial read'+line)
-                except: 
-                    logger.debug('Serial read error')
-                if line:
-                    # Send back the response
-                    commandqueue[2].put(line)
+                if not self.frame_term_crlf:
+                    try:
+                        line=str(self.ser.read(2))
+                        logger.debug('serial read'+line)
+                    except: 
+                        logger.debug('Serial read error')
+                    if line:
+                        # Send back the response
+                        commandqueue[2].put(line)
+                    else:
+                        commandqueue[2].put("No answer")
+                        logger.info('No answer')
                 else:
-                    commandqueue[2].put("No answer")
-                    logger.info('No answer')
+                    # These old versions don't answer at all, assume it went ok
+                    commandqueue[2].put("OK")
             
             # Get frame command
             if commandqueue[0]=="GET" or commandqueue[0]=="FORCE_GET":
@@ -246,7 +250,7 @@ class Protocol(threading.Thread):
                     try:
                         self.ser.flushInput()
                         logger.debug('serial write')
-                        self.ser.write(sendFrame+'\r\n')   
+                        self.ser.write(sendFrame)   
                         logger.debug('serial written')  
                         line=str(self.ser.read(frame.getLength(self))) 
                         logger.debug('serial read'+line)
@@ -268,7 +272,7 @@ class Protocol(threading.Thread):
                         try:
                             self.ser.flushInput()
                             logger.debug('serial write')
-                            self.ser.write(sendFrame+'\r\n')
+                            self.ser.write(sendFrame+'\r')
                             logger.debug('serial written')
                             line=str(self.ser.read(frame.getLength(self)))
                             logger.debug('answer: '+line)
