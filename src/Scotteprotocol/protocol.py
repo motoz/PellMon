@@ -77,23 +77,38 @@ class Protocol(threading.Thread):
                     logger.info('protocol checksums turned off')
                     logger.info('chip version detected as: %s'%version_string)
                 except:
-                    version_string = '4.00'
                     self.frame_term_crlf= True
-                    logger.info("can't read program version, assuming 4.00")
+                    try:
+                        version_string = self.getItem('version').lstrip()
+                        logger.info('chip version detected with checksums of and crlf on as: %s'%version_string)
+                    except:
+                        version_string = '4.00'
+                        logger.info("can't read program version, assuming 4.00")
+                        try:
+                            testread = self.getItem('power').lstrip()
+                            logger.info('Connected with protocol checksums turned off and crlf on')
+                        except:
+                            logger.info('Not connected? Check the cables')
         else:
             logger.info('chip version from config: %s'%version_string)
             try:
-                testread = self.getItem('version').lstrip()
+                testread = self.getItem('power').lstrip()
                 logger.info('Connected')
             except:
                 self.checksum=False
                 try:
-                    testread = self.getItem('version').lstrip()
+                    testread = self.getItem('power').lstrip()
                     logger.info('Connected with protocol checksums turned off')
                 except:
-                    logger.info('Not connected? Check the cables')
+                    self.frame_term_crlf= True
+                    try:
+                        testread = self.getItem('power').lstrip()
+                        logger.info('Connected with protocol checksums turned off and crlf on')
+                    except:
+                        logger.info('Not connected? Check the cables')
+
         self.dataBase = self.createDataBase(version_string)
-        
+
     def getDataBase(self):
         return self.dataBase  
                 
