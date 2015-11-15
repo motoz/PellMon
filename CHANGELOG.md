@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.3.0] - 2015-11-15
+### Added
+- ScotteCom plugin support for V4 control boxes older than 4.17
+
 ## [0.2.0] - 2015-11-05
 ### Added
 - The state tracker in the PelletCalc plugin has configurable parameters for every state change and can also be turned off completely, which removes the 'power_kW', 'mode' and 'alarm' items.
