@@ -1,6 +1,6 @@
 SUBDIRS = Pellmonsrv Pellmonweb Scotteprotocol conf.d
 
-bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli
+bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli pellmonconf
 CLEANFILES = \
 	pellmon.conf
 
@@ -21,6 +21,10 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
 
 pellmoncli: pellmoncli.in Makefile
+	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+	chmod +x $@
+
+pellmonconf: pellmonconf.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
 	chmod +x $@
 

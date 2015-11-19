@@ -1,0 +1,35 @@
+<%inherit file="layout.html"/>
+<%! 
+    scripts = ['codemirror/lib/codemirror.js', 'codemirror/mode/properties/properties.js', 'js/source.js'] 
+    stylesheets = ['css/pellmonconf.css']
+    printstylesheets = ['css/pellmonconf_print.css']
+    import os.path
+%>
+
+<link rel="stylesheet" href="../media/codemirror/lib/codemirror.css">
+
+<%def name="title()">
+${os.path.splitext(os.path.basename(filename))[0]}
+</%def>
+
+<div class="margin">
+
+
+
+    <div class="row ">
+        <div class="col-md-3" >
+            <ol id="itemlist">
+                %for f in filelist:
+                    <li>
+                    <a href=/?filename=${f}>${os.path.dirname(f)}/<b>${os.path.basename(f)}</b></a>
+                    </li>
+                %endfor
+            </ol>
+        </div>
+        <div class="col-md-9" id="sourceview" data-list_items="1" data-filename=${filename}>
+            <textarea form="sourceform" name="data" class="hidden">
+            </textarea>
+        </div>
+    </div>
+</div>
+

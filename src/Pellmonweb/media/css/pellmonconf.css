@@ -1,0 +1,214 @@
+/**
+ * Always show the scrollbar
+ * to stop the layout form shifting
+ * left/right when the page isn't high enough
+ */
+html {
+    overflow-y: scroll;
+}
+
+body
+{
+    background-color:#f3f3f3;
+}
+
+.selected {
+    text-decoration: none;
+    border-top: 3px solid; 
+}
+
+a:link {text-decoration:none; outline: none;}
+
+.col-centered{
+    display: inline-block;
+}
+
+#center
+{
+    text-align: center;
+}
+
+#left-align
+{
+    text-align: left"
+}
+
+/* fix for IE system image svg scaling error */
+object {
+    width: 100%;
+}
+
+body {
+  font: 300 14px 'Helvetica Neue', Helvetica;
+  overflow-x: hidden;
+}
+
+.node rect {
+  stroke: #333;
+  fill: #fff;
+}
+
+.edgePath path {
+  stroke: #333;
+  fill: #333;
+  color: #ff0000;
+  stroke-width: 1.5px;
+}
+
+.item_ID {
+    color: #002caa;
+    font-weight: bold;
+}
+
+.item_ITEM {
+    color: #002caa;
+}
+
+.item_channel {
+    color: #cab900;
+}
+
+.item_ACCESS {
+    color: #875a25;
+}
+
+.item_DESCRIPTION {
+    color: #b1a200;
+}
+
+.item_STORAGE {
+    color: #9B6D6D;
+}
+
+.item_LABEL {
+    color: #7ec1eb;
+}
+
+.item_DEFAULT_VALUE {
+    color: #582fa2;
+}
+
+.item_VALUE_TYPE {
+    color: #cf4e1b;
+}
+
+.item_Line {
+    color: #a3a6a8;
+}
+
+.item_READ_SERV_FNC {
+    color: #ff9920;
+}
+
+.item_WRITE_SERV_FNC {
+    color: #e74294;
+}
+
+.item_File {
+    color: #a3a6a8;
+}
+
+.item_SCALING {
+    color: #e96fd6;
+}
+
+.item_RAM_VALUE {
+    color: #3ad77d;
+}
+
+.item_PARAMETERS {
+    color: #7e0000;
+}
+
+.searchidform {
+    margin-bottom: 30px;
+    margin-top: 20px;
+}
+
+.itemheader {
+    color: #2A8C31;
+}
+
+.clear_bottom {
+    margin-bottom: 0px;
+}
+
+.row-no-padding {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.label-outer{
+
+    margin: 4px;
+}
+
+.expand {
+    padding-bottom: 10px;
+
+}
+.expand:hover {
+    background-color:#afa;
+    /*box-shadow: 0 0 20px 11px #AFA, 0 0 5px #AFA inset;*/
+    box-shadow: 0 0 8px -4px #00f ;
+}
+#itemlist {
+    /*overflow-y: scroll;*/
+    overflow-x: hidden;
+    list-style-type: none;
+    background-color: #fff;
+    padding-left: 5px;
+    margin-right: -10px;
+    margin-left: -5px;
+}
+
+#itemdata {
+    margin-bottom: 20px;
+}
+
+.margin {
+    margin-left: 15px;
+    margin-right: 10px;
+}
+
+.selecteditem {
+    text-decoration:underline;
+    font-weight: bold;
+}
+
+.whitebackground {
+    background-color: #fff;
+    margin-left: 10px;
+    margin-right: 5px;
+    padding: 5px;
+}
+
+.navbar-nav {
+    margin-top: 5px;
+}
+
+.navbar-toggle {
+    margin-top: 13px;
+}
+
+.CodeMirror {
+    margin-top: 0px !important;
+    margin-bottom: 5px !important;
+    margin-left: -5px !important;
+    margin-right: -10px !important;
+}
+
+.common_itemtext {
+    color: #b1cee0;
+}
+
+td{
+    border-style:none;
+    padding-right:10px;
+}
+
+tr td:first-child{
+    width:1%;
+    white-space:nowrap;
+
