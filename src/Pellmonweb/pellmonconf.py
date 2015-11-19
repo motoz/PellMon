@@ -146,6 +146,7 @@ def run(config_file):
 
     print 'Open http://<ip>:%u with your webbrowser to view the configuration tool'%int(args.port)
     print 'Run as root to be able to save changes'
+    print 'Quit with CTRL-C'
     cherrypy.config.update(global_conf)
     cherrypy.tree.mount(Pellmonconf(config_file), '/', config=app_conf)
     cherrypy.engine.start()
