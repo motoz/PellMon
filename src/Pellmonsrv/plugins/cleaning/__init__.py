@@ -48,7 +48,7 @@ itemList=[#{'name':'clean_after',  'longname':'Clean after',
 
 itemTags = {'clean_after' :    ['All', 'Basic', 'Cleaning'],
             'clean_time' :     ['All', 'Basic', 'Cleaning'],
-            'clean_kg' :       ['All', 'Basic', 'Cleaning'],
+            'clean_kg' :       ['All', 'Basic', 'Cleaning', 'Overview'],
             'clean_days' :     ['All', 'Basic', 'Cleaning'],
             'clean' :          ['All', 'Basic', 'Cleaning'],
            }
@@ -69,11 +69,8 @@ class cleaningplugin(protocols):
 
     def activate(self, conf, glob):
         protocols.activate(self, conf, glob)
+        self.items = {i['name']:i for i in itemList}
         self.db = self.glob['conf'].db
-        self.updateTime = 0
-        self.siloData = None
-        self.silo_days_left = None
-        self.silo_level = 0
         self.valuestore = ConfigParser()
         self.valuestore.add_section('values')
         self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
@@ -96,38 +93,49 @@ class cleaningplugin(protocols):
             pass
 
     def getItem(self, itemName):
+        item = self.items[itemName]
         if itemName == 'clean_kg':
             now = int(time.time())
-            start = self.getItem('clean_time')
-            start = datetime.strptime(start,'%d/%m/%y %H:%M')
-            start = int(mktime(start.timetuple()))
-            try:
-                return self.rrd_total(start, now)
-            except Exception, e:
-                return str(e)
+            if 'update_time' not in item or now - item['update_time'] > 600:
+                start = self.getItem('clean_time')
+                start = datetime.strptime(start,'%d/%m/%y %H:%M')
+                start = int(mktime(start.timetuple()))
+                try:
+                    item['value'] = self.rrd_total(start, now)
+                    item['update_time'] = now
+                    return item['value']
+                except Exception, e:
+                    return str(e)
+            else:
+                return item['value']
         else:
-            for i in itemList:
-                if i['name'] == itemName:
-                    return str(self.valuestore.get('values', itemName))
-        return 'error'
+            if itemName in self.items:
+                return str(self.valuestore.get('values', itemName))
+            else:
+                return 'error'
 
     def setItem(self, item, value):
         try:
-            if item=='clean':
+            if item == 'clean':
                 d = datetime.fromtimestamp(time.time())
                 s = d.strftime('%d/%m/%y %H:%M')
                 self.setItem('clean_time', s)
                 return 'OK'
-            self.updateTime = 0
+            elif item == 'clean_time':
+                self.items['clean_kg']['update_time'] = int(time.time())
             if itemValues.has_key(item):
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.valuestore.set('values', item, str(value))
-                f = open(self.valuesfile, 'w')
-                self.valuestore.write(f)
-                f.close()
-                return 'OK'
+                try:
+                    t = datetime.strptime(value,'%d/%m/%y %H:%M')
+                    self.valuestore.set('values', item, str(value))
+                    f = open(self.valuesfile, 'w')
+                    self.valuestore.write(f)
+                    f.close()
+                    return 'OK'
+                except Exception,e:
+                    return 'error'
         except Exception,e:
             return 'error'
 
