@@ -122,7 +122,7 @@ class cleaningplugin(protocols):
                 self.setItem('clean_time', s)
                 return 'OK'
             elif item == 'clean_time':
-                self.items['clean_kg']['update_time'] = int(time.time())
+                self.items['clean_kg']['update_time'] = 0
             if itemValues.has_key(item):
                 itemValues[item] = value
                 return 'OK'
