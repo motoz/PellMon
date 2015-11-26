@@ -1,5 +1,6 @@
 web_PYTHON = \
 	pellmonweb.py \
+	pellmonconf.py \
 	auth.py \
 	consumption.py \
 	logview.py \
@@ -16,7 +17,10 @@ nobase_dist_foohtml_DATA = \
 	media/js/websocket.js \
 	media/js/reconnectingwebsocket.js \
 	media/js/consumption.js \
+	media/js/source.js \
 	media/css/pellmon.css \
+	media/css/pellmonconf.css \
+	media/css/pellmonconf_print.css \
 	media/img/pellmon.svg \
 	media/img/spinner.gif \
 	media/img/system.svg \
@@ -62,6 +66,17 @@ nobase_dist_foohtml_DATA = \
 	media/flot/jquery.flot.time.js \
 	media/flot/jquery.flot.resize.js \
 	media/flot/jquery.flot.navigate.js \
+	media/codemirror/LICENSE \
+	media/codemirror/lib/codemirror.css \
+	media/codemirror/lib/codemirror.js \
+	media/codemirror/mode/clike/clike.js \
+	media/codemirror/mode/clike/index.html \
+	media/codemirror/mode/clike/scala.html \
+	media/codemirror/mode/properties/index.html \
+	media/codemirror/mode/properties/properties.js \
+	media/codemirror/mode/simple/simple.js \
+	html_conf/layout.html \
+	html_conf/source.html \
 	html/layout.html \
 	html/parameters.html \
 	html/consumption.html \

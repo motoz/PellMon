@@ -1,0 +1,155 @@
+.navbar
+{
+    display: none !important;
+}
+
+
+
+html {
+    overflow-y: hidden;
+}
+
+
+body
+{
+    background-color:#f3f3f3;
+}
+
+.selected {
+    text-decoration: none;
+    border-top: 3px solid; 
+}
+
+a:link {text-decoration:none; outline: none;  }
+
+.graphlinks {
+    font: 300 11px 'Helvetica Neue', Helvetica;
+}
+
+.col-centered{
+    display: inline-block;
+}
+
+#center
+{
+    text-align: center;
+}
+
+#left-align
+{
+    text-align: left"
+}
+
+
+
+body {
+  font: 300 14px 'Helvetica Neue', Helvetica;
+}
+
+.node rect {
+  stroke: #333;
+  fill: #fff;
+}
+
+.edgePath path {
+  stroke: #333;
+  fill: #333;
+  stroke-width: 1.5px;
+}
+
+
+.item_ID {
+    color: #002caa;
+    font-weight: bold;
+}
+
+.item_ITEM {
+    color: #002caa;
+}
+
+.item_channel {
+    color: #cab900;
+}
+
+.item_ACCESS {
+    color: #875a25;
+}
+
+.item_DESCRIPTION {
+    color: #b1a200;
+}
+
+.item_STORAGE {
+    color: #9B6D6D;
+}
+
+.item_LABEL {
+    color: #7ec1eb;
+}
+
+.item_DEFAULT_VALUE {
+    color: #582fa2;
+}
+
+.item_VALUE_TYPE {
+    color: #cf4e1b;
+}
+
+.item_Line {
+    color: #a3a6a8;
+}
+
+.item_READ_SERV_FNC {
+    color: #ff9920;
+}
+
+.item_WRITE_SERV_FNC {
+    color: #e74294;
+}
+
+.item_File {
+    color: #a3a6a8;
+}
+
+.item_SCALING {
+    color: #e96fd6;
+}
+
+.item_RAM_VALUE {
+    color: #3ad77d;
+}
+
+.item_PARAMETERS {
+    color: #7e0000;
+}
+
+.searchidform {
+    margin-bottom: 30px;
+    margin-top: 20px;
+}
+
+.itemheader {
+    color: #2A8C31;
+}
+
+.idform {
+    margin-bottom: 30px;
+    margin-top: 20px;
+}
+
+.itemheader {
+    color: #2ABC31;
+}
+
+.clear_bottom {
+    margin-bottom: 30px;
+}
+
+.row-no-padding {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+
+

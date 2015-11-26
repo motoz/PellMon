@@ -4,8 +4,9 @@ PellMon
 
 PellMon is logging, monitoring and configuration solution for pellet burners. It consists of a backend server daemon, which
 uses RRDtool as a logging database, and a frontend daemon providing a responsive mobile friendly web based user interface. 
-Additionally there is a command line tool for interfacing with the server. PellMon can communicate directly with a supported
-pellet burner, or it can use a feeder-auger revolution counter as base for pellet consumption calculation.
+Additionally there is a command line tool for interfacing with the server, and web based configuration tool.
+PellMon can communicate directly with a supported pellet burner, or it can use a feeder-auger revolution counter as
+base for pellet consumption calculation.
 
 PellMon uses plugins to provide data about your burner. The most fully featured plugin is ScotteCom, which enables communication 
 with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It gives you access to almost all configuration parameters 
@@ -33,7 +34,7 @@ Plugin documentation is found in the configuration file pellmon.conf.
 
 ####Contains:
 
-###pellmonsrv.py:
+###pellmonsrv:
 Communication daemon. Implements a DBUS interface for reading and writing setting values and reading of measurement data. Optionally handles logging of measurement data to an RRD database. 
 <pre>
 usage: pellmonsrv.py [-h] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-D {SESSION,SYSTEM}] [-p PLUGINDIR]
@@ -58,7 +59,7 @@ optional arguments:
                         Full path to plugin directory
 </pre>
 
-###pellmonweb.py:
+###pellmonweb:
 Webserver and webapp, plotting of measurement, calculated consumption and data and parameter reading/writing.
 <pre>
 usage: pellmonweb.py [-h] [-D] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-d {SESSION,SYSTEM}]
@@ -76,10 +77,22 @@ optional arguments:
   -d {SESSION,SYSTEM}, --DBUS {SESSION,SYSTEM}
                         which bus to use, SESSION is default
 </pre>
-###pellmoncli.py:
+###pellmoncli:
 
 Interactive command line client with tab completion. Reading and writing of setting values, and reading of measurement data.
     usage: pellmoncli.py [-h] {get,set,list,i}
+
+###pellmonconf:
+Web based text editor for the configuration files
+<pre>
+pellmonconf -h
+usage: pellmonconf [-h] [-P PORT] [-H HOST]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -P PORT, --port PORT  Port number for webinterface, default 8083
+  -H HOST, --host HOST  Host for webinterface, default 0.0.0.0
+</pre>
 
 ###pellmon.conf
 The default configuration is split up in several files in the conf.d directory using the directive `config_dir = /etc/pellmon/conf.d` in pellmon.conf.

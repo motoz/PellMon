@@ -1,0 +1,98 @@
+<%! scripts = [] %>
+<%! stylesheets = [] %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${next.title()}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="/media/img/favicon.ico">
+    <link href="/media/bs3/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    ${self.stylesheetIncludes()}
+    ${self.printstylesheetIncludes()}
+    <link rel="apple-touch-icon" sizes="57x57" href="/media/img/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/media/img/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/media/img/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/media/img/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/media/img/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/media/img/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/media/img/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/media/img/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/media/img/apple-touch-icon-180x180.png">
+    <meta name="apple-mobile-web-app-title" content="DBB">
+    <link rel="shortcut icon" href="/media/img/favicon.ico">
+    <link rel="icon" type="image/png" href="/media/img/favicon-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="/media/img/favicon-160x160.png" sizes="160x160">
+    <link rel="icon" type="image/png" href="/media/img/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="/media/img/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/media/img/favicon-32x32.png" sizes="32x32">
+    <meta name="msapplication-TileColor" content="#2d89ef">
+    <meta name="msapplication-TileImage" content="/media/img/mstile-144x144.png">
+    <meta name="msapplication-config" content="/media/img/browserconfig.xml">
+    <meta name="application-name" content="DBB">
+</head>
+<body>
+    <div class="navbar navbar-default navbar-static-top">
+        <div class="margin">
+            <form action="/save" method="post" id="sourceform" >
+                <input type="submit" class="btn btn-primary savebutton" value="Save" style="float: right"/>
+            </form>
+            <h4 id = "filename_header"></h4>
+        </div>
+    </div>
+
+    <div class="margin">
+            ${self.body()}
+    </div>
+
+    <!-- </div> -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="media/jquery/jquery.min.js"><\/script>')</script>
+    <script src="/media/bs3/js/bootstrap.min.js"></script>
+    ${self.scriptIncludes()}
+</body>
+</html>
+
+<%def name="scriptIncludes()">
+<%
+    all_scripts = []
+    t = self
+    while t:
+      all_scripts = getattr(t.module, 'scripts', []) + all_scripts
+      t = t.inherits
+%>
+% for script in all_scripts:
+    <script src="/media/${script}" type="text/javascript"></script>
+% endfor
+</%def>
+
+<%def name="stylesheetIncludes()">
+<%
+    all_stylesheets = []
+    t = self
+    while t:
+      all_stylesheets = getattr(t.module, 'stylesheets', []) + all_stylesheets
+      t = t.inherits
+%>
+% for stylesheet in all_stylesheets:
+    <link href="/media/${stylesheet}" rel="stylesheet" media="screen">
+% endfor
+</%def>
+
+<%def name="printstylesheetIncludes()">
+<%
+    all_printstylesheets = []
+    t = self
+    while t:
+      all_printstylesheets = getattr(t.module, 'printstylesheets', []) + all_printstylesheets
+      t = t.inherits
+%>
+% for stylesheet in all_printstylesheets:
+    <link href="/media/${stylesheet}" rel="stylesheet" media="print">
+% endfor
+</%def>
+
+<%def name="title()">
+    PellMonConf
+</%def>
+
+
