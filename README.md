@@ -8,29 +8,35 @@ Additionally there is a command line tool for interfacing with the server, and w
 PellMon can communicate directly with a supported pellet burner, or it can use a feeder-auger revolution counter as
 base for pellet consumption calculation.
 
-PellMon uses plugins to provide data about your burner. The most fully featured plugin is ScotteCom, which enables communication 
+PellMon uses plugins to provide data about your burner. The most fully featured plugin is **ScotteCom**, which enables communication 
 with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It gives you access to almost all configuration parameters 
 and measurement data, and also handles logging of alarms and mode/setting changes.
 
 The plugin system makes it easy to add custom plugins for extended functionality, a 'template' plugin is provided as an example
 along with the other preinstalled plugins:
 
-PelletCalc. Provides a calculated power value and pellet consumption from a feeder auger counter.
+**PelletCalc** Calculated power value and pellet consumption from a feeder auger counter.
 
-RaspberryPi. Gives access to inputs and outputs on the raspberry pi single board computer. One input can be configured
+**RaspberryPi** Access inputs and outputs on the raspberry pi single board computer. One input can be configured
 as a counter to provide a base for pellet consumption calculation. It also provides general I/O, and a tachometer input that can be used
 to measure the blower speed, by interfacing to the blowers tacho output or by using an optical detector.
 
-OWFS. Communicates with an owserver, and can be used to read onewire sensors, for instance temperature. It can also use a 
+**OWFS** Communicate with an owserver. Can be used to read onewire sensors, for instance temperature. It can also use a 
 onewire input (ds2460 based) to count feeder auger revolutions for use with the PelletCalc plugin. 
 
-CustomAlarms. Create an unlimited number of limits to watch on available data, optionally send email when a limit is exceeded.
+**Consumption** Calculate and graph hourly, weekly, monthly and yearly fuel consumption.
 
-Calculate. Provides editable expressions that calcualates new values based on the existing data.
+**CustomAlarms** Create an unlimited number of limits to watch on available data, optionally send email when a limit is exceeded.
 
-SiloLevel. Uses rrdtool to calculate and graph the pellet silo level from the fill-up time to current time. 
+**Calculate** A simple script engine to to calcualate new values based on the existing data and automate things.
 
-Plugin documentation is found in the configuration file pellmon.conf.
+**SiloLevel** Calculate and graph the pellet silo level from the fill-up time to current time.
+
+**Cleaning** Calculate how much fuel is burned since the boiler was last cleaned.
+
+**Onewire** Read onewire sensor data using the kernel driver interface /sys/bus/w1/
+
+Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
 ####Contains:
 
@@ -80,6 +86,7 @@ optional arguments:
 ###pellmoncli:
 
 Interactive command line client with tab completion. Reading and writing of setting values, and reading of measurement data.
+
     usage: pellmoncli.py [-h] {get,set,list,i}
 
 ###pellmonconf:
