@@ -1,4 +1,4 @@
-AC_INIT([PellMon], [0.4.0])
+AC_INIT([PellMon], [0.5.0-dev])
 
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_PYTHON([2.7])
@@ -40,6 +40,7 @@ src/Pellmonsrv/plugins/silolevel/Makefile \
 src/Pellmonsrv/plugins/pelletcalc/Makefile \
 src/Pellmonsrv/plugins/consumption/Makefile \
 src/Pellmonsrv/plugins/cleaning/Makefile \
+src/Pellmonsrv/plugins/onewire/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 

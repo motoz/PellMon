@@ -15,6 +15,7 @@ nobase_dist_conf_DATA = \
 	plugins/raspberrygpio.conf \
 	plugins/scottecom.conf \
 	plugins/testplugin.conf \
+	plugins/onewire.conf \
 	plugins/pelletcalc.conf
 
 EXTRA_DIST = \
