@@ -149,7 +149,7 @@ The default configuration is split up in several files in the conf.d directory u
     make uninstall
 
 ##Dependencies:
-    rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil
+    rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil python-argcomplete
 
 ##Optional dependencies:
     python-ws4py

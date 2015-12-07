@@ -1,4 +1,5 @@
-#! /usr/bin/python
+#!/usr/bin/python
+# PYTHON_ARGCOMPLETE_OK
 # -*- coding: utf-8 -*-
 
 """
@@ -23,6 +24,7 @@ __version__ = '@VERSION@'
 import readline, os
 import sys
 import argparse
+import argcomplete
 from gi.repository import Gio, GLib
 
 # Handles tab completion with input_raw
@@ -114,7 +116,10 @@ def cli(args):
                     run=False
         except KeyboardInterrupt:
             run=False
-    
+
+def get_set_completer(prefix, parsed_args, **kwargs):
+    return (item for item in getdb() if item.startswith(prefix))
+
 if __name__ == "__main__":
 
     # Connect to pellmonsrv on the dbus system bus
@@ -133,12 +138,12 @@ if __name__ == "__main__":
 
     # create the parser for the "get" command
     parser_a = subparsers.add_parser('get', help='read item value')
-    parser_a.add_argument('item', nargs='+', help='name of the item to read')
+    parser_a.add_argument('item', nargs='+', help='name of the item to read').completer = get_set_completer
     parser_a.set_defaults(func=getItemCli)
 
     # create the parser for the "set" command
     parser_b = subparsers.add_parser('set', help='write item value')
-    parser_b.add_argument('item', help='name of the item to write')
+    parser_b.add_argument('item', help='name of the item to write').completer = get_set_completer
     parser_b.add_argument('value', help='value to write')
     parser_b.set_defaults(func=setItemCli)
 
@@ -152,6 +157,8 @@ if __name__ == "__main__":
 
     # version info
     parser.add_argument('-V', '--version', action='version', version='%(prog)s version '+__version__)
+
+    argcomplete.autocomplete(parser)
 
     # parse arguments and run function according to command 
     args = parser.parse_args()
