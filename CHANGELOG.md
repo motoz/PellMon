@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Shell command line completion for pellmoncli
 
+### Changed
+- New dependency: python-argcomplete
+
 ## [0.5.0] - 2015-11-30
 ### Added
 - Onewire plugin, reads onewire sensor data from /sys/bus/w1/devices/
