@@ -36,5 +36,5 @@ install-data-local:
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/lib/pellmon
 	chown $(user_srv) $(DESTDIR)$(localstatedir)/lib/pellmon
 
-install_exec_hook:
+install-exec-hook:
 	activate-global-python-argcomplete
