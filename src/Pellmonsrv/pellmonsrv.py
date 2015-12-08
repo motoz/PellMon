@@ -80,9 +80,11 @@ class Database(threading.Thread):
         manager.collectPlugins()
         activated_plugins = []
         failed_plugins= []
-        for plugin in manager.getPluginsOfCategory('Protocols'):
-            if plugin.name in conf.enabled_plugins:
+        plugins = {plugin.name : plugin for plugin in manager.getPluginsOfCategory('Protocols')}
+        for plugin_name in conf.enabled_plugins:
+            if plugin_name in plugins:
                 try:
+                    plugin = plugins[plugin_name]
                     plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
                     self.protocols.append(plugin)
                     for item in plugin.plugin_object.getDataBase():
