@@ -1,12 +1,14 @@
 CLEANFILES = \
 	database.conf \
-	pellmonweb.conf
+	webinterface.conf
 
 confdir = $(sysconfdir)/pellmon/conf.d
 
-nobase_dist_conf_DATA = \
+nobase_nodist_conf_DATA = \
 	webinterface.conf \
-	database.conf \
+	database.conf 
+
+nobase_dist_conf_DATA = \
 	email.conf \
 	enabled_plugins.conf \
 	plugins/owfs.conf \
@@ -30,5 +32,5 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]localstatedir[@],$(localstatedir),g'
 
 %.conf: %.conf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
 

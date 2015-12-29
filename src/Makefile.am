@@ -1,14 +1,22 @@
 SUBDIRS = Pellmonsrv Pellmonweb Scotteprotocol conf.d
 
 bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli pellmonconf
+
 CLEANFILES = \
-	pellmon.conf
+	pellmon.conf \
+	pellmonconf \
+	pellmoncli
 
 confdir = $(sysconfdir)/pellmon
-dist_conf_DATA = pellmon.conf
+
+nodist_conf_DATA = pellmon.conf
 
 EXTRA_DIST = \
-	pellmon.conf.in
+	pellmon.conf.in \
+	pellmoncli.in \
+	pellmonsrv \
+	pellmonweb \
+	pellmonconf.in
 
 do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
@@ -18,14 +26,14 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]localstatedir[@],$(localstatedir),g'
 
 %.conf: %.conf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
 
 pellmoncli: pellmoncli.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
 	chmod +x $@
 
 pellmonconf: pellmonconf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(srcdir)/$@
+	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
 	chmod +x $@
 
 install-data-local:
@@ -36,5 +44,5 @@ install-data-local:
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/lib/pellmon
 	chown $(user_srv) $(DESTDIR)$(localstatedir)/lib/pellmon
 
-install-exec-hook:
-	activate-global-python-argcomplete
+##install-exec-hook:
+##	activate-global-python-argcomplete
