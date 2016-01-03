@@ -33,10 +33,6 @@ import os
 
 SESSION_KEY = '_cp_username'
 
-lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
-
-    
-    
     # An example implementation which uses an ORM could be:
     # u = User.get(username)
     # if u is None:
@@ -122,8 +118,9 @@ def all_of(*conditions):
 
 class AuthController(object):
     
-    def __init__(self, credentials):
+    def __init__(self, credentials, lookup):
         self.credentials = credentials
+        self.lookup = lookup
     
     def on_login(self, username):
         """Called on successful login"""
@@ -136,7 +133,7 @@ class AuthController(object):
     def get_loginform(self, username, msg="Enter login information", from_page="/"):
         from_page = escape(from_page, True)
         username = escape(username, True)
-        tmpl = lookup.get_template("login.html")
+        tmpl = self.lookup.get_template("login.html")
         return tmpl.render(user_name=username, username=cherrypy.session.get('_cp_username'), from_page=from_page, msg=msg, webroot=cherrypy.request.script_name)
 
     def check_credentials(self, username, password):

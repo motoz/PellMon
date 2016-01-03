@@ -25,18 +25,19 @@ from cgi import escape
 from datetime import datetime
 from dateutil import tz
 import codecs
-lookup = TemplateLookup(directories=[os.path.join(os.path.dirname(__file__), 'html')])
+
 HERE = tz.tzlocal()
 UTC = tz.gettz('UTC')
 
 class LogViewer(object):    
-    def __init__(self, logfile):
+    def __init__(self, logfile, lookup):
         self.logfile = logfile
+        self.lookup = lookup
     
     @cherrypy.expose
     def logView(self):
         #Look for temlates in this directory
-        tmpl = lookup.get_template("logview.html")
+        tmpl = self.lookup.get_template("logview.html")
         return tmpl.render(username = cherrypy.session.get('_cp_username'), webroot=cherrypy.request.script_name)
     
     @cherrypy.expose
@@ -77,7 +78,7 @@ class LogViewer(object):
                     except:
                         seconds = None
                     timelines.append((seconds, line))
-                tmpl = lookup.get_template("loglines.html")
+                tmpl = self.lookup.get_template("loglines.html")
                 return tmpl.render(lines=timelines, webroot=cherrypy.request.script_name)
             except Exception,e:
                 return str(e)

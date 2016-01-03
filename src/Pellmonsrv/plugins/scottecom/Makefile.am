@@ -5,4 +5,4 @@ scottecom_PYTHON = \
 	scottecom.py \
 	__init__.py 
 
-scottecomdir = $(libdir)/Pellmonsrv/plugins/scottecom
+scottecomdir = $(pythondir)/Pellmonsrv/plugins/scottecom

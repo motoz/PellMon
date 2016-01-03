@@ -1,4 +1,4 @@
 pelletcalc_PYTHON = \
 	__init__.py 
 
-pelletcalcdir = $(libdir)/Pellmonsrv/plugins/pelletcalc
+pelletcalcdir = $(pythondir)/Pellmonsrv/plugins/pelletcalc

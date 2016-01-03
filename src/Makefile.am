@@ -5,7 +5,8 @@ bin_SCRIPTS = pellmonsrv pellmonweb pellmoncli pellmonconf
 CLEANFILES = \
 	pellmon.conf \
 	pellmonconf \
-	pellmoncli
+	pellmoncli \
+	pellmonweb
 
 confdir = $(sysconfdir)/pellmon
 
@@ -14,8 +15,8 @@ nodist_conf_DATA = pellmon.conf
 EXTRA_DIST = \
 	pellmon.conf.in \
 	pellmoncli.in \
+	pellmonweb.in \
 	pellmonsrv \
-	pellmonweb \
 	pellmonconf.in
 
 do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
@@ -23,10 +24,15 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
 	-e 's,[@]confdir[@],$(confdir),g' \
+	-e 's,[@]datadir[@],$(datadir),g' \
 	-e 's,[@]localstatedir[@],$(localstatedir),g'
 
 %.conf: %.conf.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+
+pellmonweb: pellmonweb.in Makefile
+	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	chmod +x $@
 
 pellmoncli: pellmoncli.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@

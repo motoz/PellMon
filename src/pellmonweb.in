@@ -19,4 +19,4 @@
 
 from Pellmonweb import pellmonweb
 
-pellmonweb.run('@datadir@/media')
+pellmonweb.run('@datadir@/Pellmonweb')
