@@ -44,11 +44,8 @@ pellmonconf: pellmonconf.in Makefile
 
 install-data-local:
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/log/pellmonsrv
-	chown $(user_srv) $(DESTDIR)$(localstatedir)/log/pellmonsrv
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/log/pellmonweb
-	chown $(user_web) $(DESTDIR)$(localstatedir)/log/pellmonweb
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/lib/pellmon
-	chown $(user_srv) $(DESTDIR)$(localstatedir)/lib/pellmon
 
 ##install-exec-hook:
 ##	activate-global-python-argcomplete

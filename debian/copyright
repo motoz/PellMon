@@ -1,0 +1,383 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pellmon
+Source: <https://github.com/motoz/pellmon>
+
+#----------------------------------------------------------------------------
+Copyright: 2010-2012 Joe Walnes
+Files: ./src/Pellmonweb/media/js/reconnectingwebsocket.js
+# licensecheck(1): ./src/Pellmonweb/media/js/reconnectingwebsocket.js: MIT/X11 (BSD like)
+License:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+
+#----------------------------------------------------------------------------
+Copyright: 2013 Anders Nylund
+Files: ./src/Pellmonweb/auth.py
+# licensecheck(1): ./src/Pellmonweb/auth.py: GPL (v3 or later)
+License:
+  Based on http://tools.cherrypy.org/wiki/AuthenticationAndAccessRestrictions
+ .
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#----------------------------------------------------------------------------
+Copyright: 2013-2014 Anders Nylund
+Files: ./src/pellmoncli.in
+	./src/Pellmonsrv/plugin_categories.py
+	./src/Pellmonsrv/daemon.py
+	./src/Pellmonsrv/plugins/calculate/__init__.py
+	./src/Pellmonsrv/plugins/scottecom/scottecom.py
+	./src/Pellmonsrv/plugins/testplugin/__init__.py
+	./src/Pellmonsrv/plugins/cleaning/__init__.py
+	./src/Pellmonsrv/plugins/onewire/__init__.py
+	./src/Pellmonsrv/plugins/pelletcalc/__init__.py
+	./src/Pellmonsrv/plugins/consumption/__init__.py
+	./src/Pellmonsrv/plugins/silolevel/__init__.py
+	./src/Pellmonsrv/plugins/owfs/__init__.py
+	./src/Pellmonsrv/plugins/raspberrygpio/__init__.py
+	./src/Pellmonsrv/plugins/customalarms/__init__.py
+	./src/Pellmonweb/pellmonconf.py
+	./src/Pellmonweb/pellmonweb.py
+# licensecheck(1): ./src/pellmoncli.in: GPL (v3 or later)
+License:
+  This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#----------------------------------------------------------------------------
+Copyright: 2013 Anders Nylund
+Files: ./src/pellmonconf.in
+	./src/pellmonweb
+	./src/pellmonsrv
+	./src/Pellmonsrv/pellmonsrv.py
+	./src/Pellmonsrv/plugins/scottecom/menus.py
+	./src/Pellmonsrv/plugins/scottecom/datamenu.py
+	./src/Pellmonsrv/plugins/scottecom/descriptions.py
+	./src/Pellmonweb/consumption.py
+	./src/Pellmonweb/logview.py
+	./src/Scotteprotocol/protocol.py
+	./src/Scotteprotocol/transformations.py
+	./src/Scotteprotocol/datamap.py
+	./src/Scotteprotocol/enumerations.py
+	./src/Scotteprotocol/frames.py
+# licensecheck(1): ./src/pellmonconf.in: GPL (v2 or later)
+License:
+  This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#----------------------------------------------------------------------------
+Copyright: 2007-2014 IOLA and Ole Laursen.
+Files: ./src/Pellmonweb/media/flot/jquery.flot.navigate.js
+# licensecheck(1): ./src/Pellmonweb/media/flot/jquery.flot.navigate.js: UNKNOWN
+License:
+  Licensed under the MIT license.
+ .
+ The default behaviour is double click and scrollwheel up/down to zoom in, drag
+ to pan. The plugin defines plot.zoom({ center }), plot.zoomOut() and
+ plot.pan( offset ) so you easily can add custom controls. It also fires
+ "plotpan" and "plotzoom" events, useful for synchronizing plots.
+ .
+ The plugin supports these options:
+ .
+ zoom: {
+ interactive: false
+ trigger: "dblclick" // or "click" for single click
+
+#............................................................................
+# Gray hits with matching text of "copyright":
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/flot/jquery.flot.navigate.js: 88, 
+#	jquery.event.drag.js ~ v1.5 ~ Copyright (c) 2008, Three Dub Media (http://threedubmedia.com)
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/flot/jquery.flot.navigate.js: 101, 
+#	Copyright (c) 2011 Brandon Aaron (http://brandonaaron.net)
+#----------------------------------------------------------------------------
+Copyright: 2007-2014 IOLA and Ole Laursen.
+Files: ./src/Pellmonweb/media/flot/jquery.flot.resize.js
+# licensecheck(1): ./src/Pellmonweb/media/flot/jquery.flot.resize.js: UNKNOWN
+License:
+  Licensed under the MIT license.
+ .
+ It works by listening for changes on the placeholder div (through the jQuery
+ resize event plugin) - if the size changes, it will redraw the plot.
+ .
+ There are no options. If you need to disable the plugin for some plots, you
+ can just fix the size of their placeholders.
+
+#............................................................................
+# Gray hits with matching text of "copyright":
+# !!! manual check needed ./src/Pellmonweb/media/flot/jquery.flot.resize.js: 20, 
+#	Copyright (c) 2010 "Cowboy" Ben Alman, Dual licensed under the MIT and GPL licenses., http://benalman.com/about/license/
+#----------------------------------------------------------------------------
+Copyright: 2007-2014 IOLA and Ole Laursen.
+Files: ./src/Pellmonweb/media/flot/jquery.flot.time.js
+# licensecheck(1): ./src/Pellmonweb/media/flot/jquery.flot.time.js: UNKNOWN
+License:
+  Licensed under the MIT license.
+ .
+ Set axis.mode to "time" to enable. See the section "Time series data" in
+ API.txt for details.
+
+#............................................................................
+# Gray hits with matching text of "copyright":
+# !!! manual check needed ./src/Pellmonweb/media/flot/jquery.flot.time.js: 71, 
+#	switch (c) {
+#----------------------------------------------------------------------------
+Copyright: 2013 Twitter, Inc
+Files: ./src/Pellmonweb/media/bs3/css/bootstrap.min.css
+# licensecheck(1): ./src/Pellmonweb/media/bs3/css/bootstrap.min.css: UNKNOWN
+License:
+  Licensed under the Apache License v2.0
+ http://www.apache.org/licenses/LICENSE-2.0
+ .
+ Designed and built with all the love in the world by @mdo and @fat.
+
+#----------------------------------------------------------------------------
+Copyright: 2011 Felix Gnass [fgnass at neteye dot de]
+Files: ./src/Pellmonweb/media/js/spin.js
+# licensecheck(1): ./src/Pellmonweb/media/js/spin.js: UNKNOWN
+License:
+  Licensed under the MIT license
+
+#----------------------------------------------------------------------------
+Copyright: // CodeMirror, copyright (c) by Marijn Haverbeke and others // Distributed under an MIT license: http://codemirror.net/LICENSE
+Files: ./src/Pellmonweb/media/codemirror/mode/properties/properties.js
+	./src/Pellmonweb/media/codemirror/mode/simple/simple.js
+	./src/Pellmonweb/media/codemirror/mode/clike/clike.js
+# licensecheck(1): ./src/Pellmonweb/media/codemirror/mode/properties/properties.js: UNKNOWN
+License:
+  (function(mod) {
+
+#----------------------------------------------------------------------------
+Copyright: 2003-2011 **    / __/ __// _ | / /  / _ |    (c) LAMP/EPFL             **
+ 11-2014 /*! jQuery v1..0 | (c) jQuery Foundation, Inc. | jquery.org/license */
+ 2013 Twitter Inc. http://www.apache.org/licenses/LICENSE-2.0
+Files: ./src/Pellmonweb/media/jquery/jquery.min.js
+	./src/Pellmonweb/media/bs3/js/bootstrap.js
+	./src/Pellmonweb/media/bs3/js/bootstrap.min.js
+	./src/Pellmonweb/media/codemirror/mode/clike/scala.html
+# licensecheck(1): ./src/Pellmonweb/media/jquery/jquery.min.js: UNKNOWN
+License: NO_LICENSE_TEXT_FOUND
+
+#............................................................................
+# Gray hits with matching text of "copyright":
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 24, 
+#	Copyright 2013 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 81, 
+#	Copyright 2013 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 180, 
+#	Copyright 2013 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 290, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 508, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 688, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 843, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 1091, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 1477, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 1595, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 1754, 
+#	Copyright 2012 Twitter, Inc.
+# NO_LICENSE_TEXT_FOUND   ./src/Pellmonweb/media/bs3/js/bootstrap.js: 1890, 
+#	Copyright 2012 Twitter, Inc.
+#----------------------------------------------------------------------------
+Copyright: NO_COPYRIGHT_INFO_FOUND
+Files: ./Makefile.am
+	./configure.ac
+	./autogen.sh
+	./initscript/Makefile.am
+	./initscript/pellmonsrv.in
+	./initscript/pellmonweb.in
+	./debian/control
+	./src/Makefile.am
+	./src/pellmon.conf.in
+	./src/Pellmonsrv/Makefile.am
+	./src/Pellmonsrv/__init__.py
+	./src/Pellmonsrv/version.py.in
+	./src/Pellmonsrv/yapsy/Makefile.am
+	./src/Pellmonsrv/yapsy/IPlugin.py
+	./src/Pellmonsrv/yapsy/__init__.py
+	./src/Pellmonsrv/yapsy/PluginManager.py
+	./src/Pellmonsrv/plugins/onewire.pellmon-plugin
+	./src/Pellmonsrv/plugins/cleaning.pellmon-plugin
+	./src/Pellmonsrv/plugins/silolevel.pellmon-plugin
+	./src/Pellmonsrv/plugins/Makefile.am
+	./src/Pellmonsrv/plugins/consumption.pellmon-plugin
+	./src/Pellmonsrv/plugins/owfs.pellmon-plugin
+	./src/Pellmonsrv/plugins/testplugin.pellmon-plugin
+	./src/Pellmonsrv/plugins/customalarms.pellmon-plugin
+	./src/Pellmonsrv/plugins/raspberrygpio.pellmon-plugin
+	./src/Pellmonsrv/plugins/calculate.pellmon-plugin
+	./src/Pellmonsrv/plugins/pelletcalc.pellmon-plugin
+	./src/Pellmonsrv/plugins/scottecom.pellmon-plugin
+	./src/Pellmonsrv/plugins/calculate/Makefile.am
+	./src/Pellmonsrv/plugins/scottecom/Makefile.am
+	./src/Pellmonsrv/plugins/scottecom/__init__.py
+	./src/Pellmonsrv/plugins/testplugin/Makefile.am
+	./src/Pellmonsrv/plugins/cleaning/Makefile.am
+	./src/Pellmonsrv/plugins/onewire/Makefile.am
+	./src/Pellmonsrv/plugins/pelletcalc/Makefile.am
+	./src/Pellmonsrv/plugins/consumption/Makefile.am
+	./src/Pellmonsrv/plugins/consumption/templates/consumption24h
+	./src/Pellmonsrv/plugins/consumption/templates/consumption1y
+	./src/Pellmonsrv/plugins/consumption/templates/consumption7d
+	./src/Pellmonsrv/plugins/consumption/templates/consumption8w
+	./src/Pellmonsrv/plugins/silolevel/Makefile.am
+	./src/Pellmonsrv/plugins/owfs/Makefile.am
+	./src/Pellmonsrv/plugins/raspberrygpio/Makefile.am
+	./src/Pellmonsrv/plugins/customalarms/Makefile.am
+	./src/Pellmonweb/Makefile.am
+	./src/Pellmonweb/__init__.py
+	./src/Pellmonweb/version.py.in
+	./src/Pellmonweb/media/js/logview.js
+	./src/Pellmonweb/media/js/index.js
+	./src/Pellmonweb/media/js/consumption.js
+	./src/Pellmonweb/media/js/parameters.js
+	./src/Pellmonweb/media/js/source.js
+	./src/Pellmonweb/media/js/websocket.js
+	./src/Pellmonweb/media/bs3/fonts/glyphicons-halflings-regular.svg
+	./src/Pellmonweb/media/bs3/css/bootstrap-theme.min.css
+	./src/Pellmonweb/media/bs3/css/bootstrap-theme.css
+	./src/Pellmonweb/media/img/system_matene.svg
+	./src/Pellmonweb/media/img/system.svg
+	./src/Pellmonweb/media/img/system_nbe_2w.svg
+	./src/Pellmonweb/media/img/pellmon.svg
+	./src/Pellmonweb/media/img/system_nbe.svg
+	./src/Pellmonweb/media/img/browserconfig.xml
+	./src/Pellmonweb/media/img/system_nbe_3w.svg
+	./src/Pellmonweb/media/css/pellmon.css
+	./src/Pellmonweb/media/css/pellmonconf_print.css
+	./src/Pellmonweb/media/css/pellmonconf.css
+	./src/Pellmonweb/media/codemirror/lib/codemirror.css
+	./src/Pellmonweb/media/codemirror/mode/properties/index.html
+	./src/Pellmonweb/media/codemirror/mode/clike/index.html
+	./src/Pellmonweb/html_conf/layout.html
+	./src/Pellmonweb/html_conf/source.html
+	./src/Pellmonweb/html/layout.html
+	./src/Pellmonweb/html/graph
+	./src/Pellmonweb/html/events
+	./src/Pellmonweb/html/parameters.html
+	./src/Pellmonweb/html/about.html
+	./src/Pellmonweb/html/consumption.html
+	./src/Pellmonweb/html/loglines.html
+	./src/Pellmonweb/html/index.html
+	./src/Pellmonweb/html/login.html
+	./src/Pellmonweb/html/logview.html
+	./src/Pellmonweb/html/systemimage
+	./src/Scotteprotocol/Makefile.am
+	./src/Scotteprotocol/__init__.py
+	./src/conf.d/email.conf
+	./src/conf.d/Makefile.am
+	./src/conf.d/database.conf.in
+	./src/conf.d/webinterface.conf.in
+	./src/conf.d/enabled_plugins.conf
+	./src/conf.d/plugins/calculate.conf
+	./src/conf.d/plugins/customalarms.conf
+	./src/conf.d/plugins/testplugin.conf
+	./src/conf.d/plugins/owfs.conf
+	./src/conf.d/plugins/pelletcalc.conf
+	./src/conf.d/plugins/raspberrygpio.conf
+	./src/conf.d/plugins/onewire.conf
+	./src/conf.d/plugins/scottecom.conf
+	./data/Makefile.am
+	./data/pellmon_dbus.conf.in
+# licensecheck(1): ./Makefile.am: *No copyright* UNKNOWN
+License: NO_LICENSE_TEXT_FOUND
+
+#----------------------------------------------------------------------------
+# Binary files (skipped):
+# ./src/Pellmonweb/media/bs3/fonts/glyphicons-halflings-regular.woff
+# ./src/Pellmonweb/media/bs3/fonts/glyphicons-halflings-regular.eot
+# ./src/Pellmonweb/media/bs3/fonts/glyphicons-halflings-regular.ttf
+# ./src/Pellmonweb/media/img/favicon-32x32.png
+# ./src/Pellmonweb/media/img/favicon-196x196.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-72x72.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-152x152.png
+# ./src/Pellmonweb/media/img/favicon-96x96.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-60x60.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-57x57.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-144x144.png
+# ./src/Pellmonweb/media/img/mstile-310x310.png
+# ./src/Pellmonweb/media/img/mstile-310x150.png
+# ./src/Pellmonweb/media/img/favicon.ico
+# ./src/Pellmonweb/media/img/apple-touch-icon-precomposed.png
+# ./src/Pellmonweb/media/img/favicon-160x160.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-76x76.png
+# ./src/Pellmonweb/media/img/mstile-70x70.png
+# ./src/Pellmonweb/media/img/favicon-16x16.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-114x114.png
+# ./src/Pellmonweb/media/img/mstile-150x150.png
+# ./src/Pellmonweb/media/img/spinner.gif
+# ./src/Pellmonweb/media/img/apple-touch-icon.png
+# ./src/Pellmonweb/media/img/apple-touch-icon-120x120.png
+# ./src/Pellmonweb/media/img/mstile-144x144.png
+
+#----------------------------------------------------------------------------
+# Huge files   (skipped):
+# ./src/Pellmonweb/media/flot/jquery.flot.js
+# ./src/Pellmonweb/media/jquery/jquery.js
+# ./src/Pellmonweb/media/bs3/css/bootstrap.css
+# ./src/Pellmonweb/media/codemirror/lib/codemirror.js
+
+#----------------------------------------------------------------------------
+# This is meant only as a template example.
+#
+# Edit this accordinng to the "Machine-readable debian/copyright file" as
+# http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/ .
+#
+# Generate typical license templates with the "debmake -c" to STDOUT
+# and merge them into here as needed.  See "man 8 debmake" for more.
+#
+# licensecheck(1) from the devscripts package is used here to determin
+# the name of the license that applies.
+#
+# Please avoid to pick license terms that are more restrictive than the
+# packaged work, as it may make Debian's contributions unacceptable upstream.
+
