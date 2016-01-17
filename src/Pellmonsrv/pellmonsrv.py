@@ -40,6 +40,7 @@ import sys, traceback
 import urllib2 as urllib
 import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
+import sqlite3
 
 try:
     from version import __version__
@@ -91,7 +92,7 @@ class Database(threading.Thread):
                         self.items[item] = getset(item, plugin.plugin_object)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
-                    print str(e), plugin.name
+                    #print str(e), plugin.name
                     failed_plugins.append(plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
         if activated_plugins:
@@ -186,6 +187,56 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
     def changed_parameters(self, message):
         pass
+
+class Keyval_storage(object):
+    def __init__(self, dbfile):
+        self.dbfile = dbfile
+        conn = sqlite3.connect(dbfile)
+        cursor = conn.cursor()
+        self.lock = threading.Lock()
+        try:
+            cursor.execute("SELECT value from keyval")
+        except sqlite3.OperationalError:
+            cursor.execute("CREATE TABLE keyval (id TEXT PRIMARY KEY, value TEXT, confvalue TEXT NOT NULL DEFAULT '-')")
+        conn.close()
+
+    def readval(self, item):
+        try:
+            with self.lock:
+                conn = sqlite3.connect(self.dbfile)
+                cursor = conn.cursor()
+                cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
+                value, = cursor.next()
+                return value.encode('ascii')
+        except Exception, e:
+            #print e
+            return 'error'
+
+    def writeval(self, item, value=None, confval=None):
+        value = str(value)
+        try:
+            with self.lock:
+                conn = sqlite3.connect(self.dbfile)
+                cursor = conn.cursor()
+                if confval is None:
+                    cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
+                                            ?,?,(select confvalue from keyval where id =    ?
+                                    ))""", (item, value, item))
+                    conn.commit()
+                else:
+                    try:
+                        cursor.execute("SELECT value, confvalue FROM keyval WHERE id=?", (item,))
+                        value,confvalue = cursor.next()
+                        if confvalue != confval:
+                            cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
+                            conn.commit()
+                    except:
+                        cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
+                        conn.commit()
+
+        except Exception as e: #ssqlite3.OperationalError:
+            print e 
+            raise
 
 class Poller(threading.Thread):
     def __init__(self, ev):
@@ -424,7 +475,6 @@ class MyDaemon(Daemon):
 
         # Load all plugins of 'protocol' category.
         conf.database = Database()
-
         try:
             if conf.USER:
                 drop_privileges(conf.USER, conf.GROUP)
@@ -618,14 +668,14 @@ class config:
         try:
             self.db = parser.get('conf', 'database')
         except:
-            self.polling=False
+            self.db = '/tmp/pellmon_rrd_database.db'
 
         # The persistent RRD database
         try:
             self.nvdb = parser.get('conf', 'persistent_db') 
         except:
             if self.polling:
-                self.nvdb = self.db        
+                self.nvdb = self.db
         try:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
         except:
@@ -707,6 +757,17 @@ class config:
             self.email_followup = int(parser.get('email', 'followup'))
         except:
             self.email_followup = None
+
+        try:
+            keyval_db = parser.get('conf', 'settings_db')
+        except:
+            try:
+                keyval_db = os.path.join(os.path.dirname(self.nvdb), 'pellmon_settings.db')
+            except:
+                keyval_db = '/tmp/pellmon_settings.db'
+            mkdir_p(os.path.dirname(keyval_db))
+            self.keyval_storage = Keyval_storage(keyval_db)
+
 
 
 def getgroups(user):

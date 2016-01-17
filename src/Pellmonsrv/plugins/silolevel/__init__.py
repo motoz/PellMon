@@ -69,26 +69,15 @@ class silolevelplugin(protocols):
         self.siloData = None
         self.silo_days_left = None
         self.silo_level = 0
-        self.valuestore = ConfigParser()
-        self.valuestore.add_section('values')
-        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
         self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
         self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
         for item in itemList:
             if item['type'] == 'R/W':
-                self.valuestore.set('values', item['name'], item['value'])
+                value = self.store_setting(item['name'], item['value'], item['value'])
+                if value == 'error':
+                    self.store_setting(item['name'], confval = str(item['value']))
             else:
                 itemValues[item['name']] = item['value']
-        self.valuestore.read(self.valuesfile)
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
-        try:
-            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-            os.chown(self.valuesfile, uid, gid)
-        except:
-            pass
         self._insert_template('silolevel', """
 <h4>Silo level</h4>
 <div class="image-responsive" id="silolevel" style="height:400px">
@@ -144,12 +133,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
         elif itemName == 'silo_days_left':
             self.getItem('siloLevelData')
             return self.silo_days_left
-        for i in itemList:
-            if i['name'] == itemName:
-                return str(self.valuestore.get('values', itemName))
         if itemName == 'siloLevelData':
             return self.graphData()
-        return 'error'
+        return self.load_setting(itemName)
 
     def setItem(self, item, value):
         try:
@@ -158,10 +144,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.valuestore.set('values', item, str(value))
-                f = open(self.valuesfile, 'w')
-                self.valuestore.write(f)
-                f.close()
+                self.store_setting(item, str(value))
                 if item=='silo_reset_level':
                     d = datetime.fromtimestamp(time.time())
                     s = d.strftime('%d/%m/%y %H:%M')

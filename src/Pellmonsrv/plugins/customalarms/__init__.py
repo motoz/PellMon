@@ -76,23 +76,23 @@ class alarmplugin(protocols):
                 logger.info(str(e))
             itemTags[key].append(alarm_name)
         self.valuestore = ConfigParser()
-        self.valuestore.add_section('values')
-        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
+#        self.valuestore.add_section('values')
+#        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
         for item in itemList:
             if item['type'] == 'R/W':
-                self.valuestore.set('values', item['name'], item['value'])
+                self.store_setting(item['name'], confval = item['value'])
             else:
                 itemValues[item['name']] = item['value']
-        self.valuestore.read(self.valuesfile)
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
-        try:
-            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-            os.chown(self.valuesfile, uid, gid)
-        except:
-            pass
+#        self.valuestore.read(self.valuesfile)
+#        f = open(self.valuesfile, 'w')
+#        self.valuestore.write(f)
+#        f.close()
+#        try:
+#            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
+#            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
+#            os.chown(self.valuesfile, uid, gid)
+#        except:
+#            pass
 
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)
@@ -103,7 +103,7 @@ class alarmplugin(protocols):
             return str(itemValues[item])
         except:
             try:
-                return self.valuestore.get('values', item)
+                return self.load_setting(item)
             except:
                 return 'error'
 
@@ -113,10 +113,10 @@ class alarmplugin(protocols):
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.valuestore.set('values', item, str(value))
-                f = open(self.valuesfile, 'w')
-                self.valuestore.write(f)
-                f.close()
+                self.store_setting(item, str(value))
+#                f = open(self.valuesfile, 'w')
+#                self.valuestore.write(f)
+#                f.close()
                 return 'OK'
         except Exception,e:
             return 'error'

@@ -296,24 +296,25 @@ class calculateplugin(protocols):
                 except Exception,e: 
                     logger.info(str(e))
                     raise e
-            self.valuestore = ConfigParser()
-            self.valuestore.add_section('values')
-            self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
+#            self.valuestore = ConfigParser()
+#            self.valuestore.add_section('values')
+#            self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
             for item in itemList:
                 if item['type'] == 'R/W':
-                    self.valuestore.set('values', item['name'], item['value'])
+#                    self.valuestore.set('values', item['name'], item['value'])
+                    self.store_setting(item['name'], confval = item['value'])
                 else:
                     itemValues[item['name']] = item['value']
-            self.valuestore.read(self.valuesfile)
-            f = open(self.valuesfile, 'w')
-            self.valuestore.write(f)
-            f.close()
-            try:
-                uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-                gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-                os.chown(self.valuesfile, uid, gid)
-            except:
-                pass
+#            self.valuestore.read(self.valuesfile)
+#            f = open(self.valuesfile, 'w')
+#            self.valuestore.write(f)
+#            f.close()
+#            try:
+#                uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
+#                gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
+#                os.chown(self.valuesfile, uid, gid)
+#            except:
+#                pass
         except Exception, e:
             logger.info( str(e))
             raise
@@ -329,7 +330,7 @@ class calculateplugin(protocols):
                         calc = Calc(prog, self.glob)
                         return calc.run()
                     except Exception, e:
-                        calc = Calc(prog, self.glob)
+                        #calc = Calc(prog, self.glob)
                         logger.info(calc_item+' error: '+str(e))
                         return 'error'
             except:
@@ -337,10 +338,12 @@ class calculateplugin(protocols):
                     return item['value']
                 else:
                     try:
-                        value = self.valuestore.get('values', itemName)
+                        value = self.load_setting(itemName)
                         return value
                     except:
                         return 'error'
+        else:
+            return 'error'
 
     def setItem(self, itemname, value):
         try:
@@ -360,10 +363,7 @@ class calculateplugin(protocols):
             try:
                 item = itemList[self.name2index[itemname]]
                 if item['type'] == 'R/W':
-                    self.valuestore.set('values', item['name'], str(value))
-                    f = open(self.valuesfile, 'w')
-                    self.valuestore.write(f)
-                    f.close()
+                    self.store_setting(item['name'], str(value))
                     return 'OK'
             except Exception,e:
                 return 'error'

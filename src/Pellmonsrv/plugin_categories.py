@@ -65,8 +65,13 @@ class protocols(IPlugin):
         return self.glob['conf'].database.items[item].getItem()
     
     def getTemplate(self, template):
-        print template, 'sadf'
         try:
             return self.templates[template]
         except KeyError:
             return None
+
+    def load_setting(self, item):
+        return self.glob['conf'].keyval_storage.readval(item)
+
+    def store_setting(self, item, value=None, confval=None):
+        self.glob['conf'].keyval_storage.writeval(item, value, confval)
