@@ -198,24 +198,25 @@ class Keyval_storage(object):
             cursor.execute("SELECT value from keyval")
         except sqlite3.OperationalError:
             cursor.execute("CREATE TABLE keyval (id TEXT PRIMARY KEY, value TEXT, confvalue TEXT NOT NULL DEFAULT '-')")
+        conn.commit()
         conn.close()
 
     def readval(self, item):
-        try:
-            with self.lock:
+        with self.lock:
+            try:
                 conn = sqlite3.connect(self.dbfile)
                 cursor = conn.cursor()
                 cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
                 value, = cursor.next()
+                conn.close()
                 return value.encode('ascii')
-        except Exception, e:
-            #print e
-            return 'error'
+            except Exception, e:
+                return 'error'
 
     def writeval(self, item, value=None, confval=None):
         value = str(value)
-        try:
-            with self.lock:
+        with self.lock:
+            try:
                 conn = sqlite3.connect(self.dbfile)
                 cursor = conn.cursor()
                 if confval is None:
@@ -233,10 +234,10 @@ class Keyval_storage(object):
                     except:
                         cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
                         conn.commit()
+                conn.close()
+            except Exception as e: #ssqlite3.OperationalError:
+                raise
 
-        except Exception as e: #ssqlite3.OperationalError:
-            print e 
-            raise
 
 class Poller(threading.Thread):
     def __init__(self, ev):
@@ -759,14 +760,14 @@ class config:
             self.email_followup = None
 
         try:
-            keyval_db = parser.get('conf', 'settings_db')
+            self.keyval_db = parser.get('conf', 'settings_db')
         except:
             try:
-                keyval_db = os.path.join(os.path.dirname(self.nvdb), 'pellmon_settings.db')
+                self.keyval_db = os.path.join(os.path.dirname(self.nvdb), 'pellmon_settings.db')
             except:
-                keyval_db = '/tmp/pellmon_settings.db'
-            mkdir_p(os.path.dirname(keyval_db))
-            self.keyval_storage = Keyval_storage(keyval_db)
+                self.keyval_db = '/tmp/pellmon_settings.db'
+            mkdir_p(os.path.dirname(self.keyval_db))
+            self.keyval_storage = Keyval_storage(self.keyval_db)
 
 
 
@@ -872,6 +873,8 @@ def run():
             os.chown(dbdir, uid, gid)
             if os.path.isfile(dbfile):
                 os.chown(dbfile, uid, gid)
+            if os.path.isfile(conf.keyval_db):
+                os.chown(conf.keyval_db, uid, gid)
 
     # must be be set before calling daemon.start
     daemon.pidfile = args.PIDFILE
