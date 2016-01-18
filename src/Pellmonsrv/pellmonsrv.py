@@ -827,7 +827,7 @@ def run():
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
-    parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
+    parser.add_argument('-O', '--OLDPLUGINDIR', default='-', help='Transfer settings from the old plugin directory if exists')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s version '+__version__)
     args = parser.parse_args()
     if args.PLUGINDIR == '-':
@@ -847,6 +847,7 @@ def run():
     conf = config(config_file)
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
+    conf.old_plugin_dir = args.OLDPLUGINDIR
 
     if args.USER:
         conf.USER = args.USER
