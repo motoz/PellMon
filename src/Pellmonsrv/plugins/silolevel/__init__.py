@@ -19,7 +19,6 @@
 
 from Pellmonsrv.plugin_categories import protocols
 from threading import Thread, Timer
-from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 import time
@@ -78,6 +77,7 @@ class silolevelplugin(protocols):
                     self.store_setting(item['name'], confval = str(item['value']))
             else:
                 itemValues[item['name']] = item['value']
+        self.migrate_settings('silolevel')
         self._insert_template('silolevel', """
 <h4>Silo level</h4>
 <div class="image-responsive" id="silolevel" style="height:400px">

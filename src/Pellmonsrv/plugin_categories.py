@@ -17,7 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from Pellmonsrv.yapsy.IPlugin import IPlugin
-
+from ConfigParser import ConfigParser
+import os
+    
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
     def activate(self, conf, glob):
@@ -75,3 +77,19 @@ class protocols(IPlugin):
 
     def store_setting(self, item, value=None, confval=None):
         self.glob['conf'].keyval_storage.writeval(item, value, confval)
+
+    def migrate_settings(self, plugin):
+        """This is used to migrate settings from the old values.conf text files
+        to the new sqlite database"""
+        oldsettings = ConfigParser()
+        try:
+            oldfile = os.path.join(self.glob['conf'].old_plugin_dir, plugin, 'values.conf')
+            if os.path.isfile(oldfile):
+                oldsettings.read(oldfile)
+                for key, value in oldsettings.items('values'):
+                    self.store_setting(key, value)
+                os.rename(oldfile, oldfile + '.migrated')
+                logger.info('migrated settings from %s plugin to settings database'%plugin)
+        except Exception, e:
+            logger.info('migration of old %s plugin settings failed'%plugin)
+
