@@ -19,7 +19,6 @@
 
 from Pellmonsrv.plugin_categories import protocols
 from threading import Thread, Timer
-from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 from logging import getLogger
@@ -296,25 +295,12 @@ class calculateplugin(protocols):
                 except Exception,e: 
                     logger.info(str(e))
                     raise e
-#            self.valuestore = ConfigParser()
-#            self.valuestore.add_section('values')
-#            self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
             for item in itemList:
                 if item['type'] == 'R/W':
-#                    self.valuestore.set('values', item['name'], item['value'])
                     self.store_setting(item['name'], confval = item['value'])
                 else:
                     itemValues[item['name']] = item['value']
-#            self.valuestore.read(self.valuesfile)
-#            f = open(self.valuesfile, 'w')
-#            self.valuestore.write(f)
-#            f.close()
-#            try:
-#                uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-#                gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-#                os.chown(self.valuesfile, uid, gid)
-#            except:
-#                pass
+            self.migrate_settings('calculate')
         except Exception, e:
             logger.info( str(e))
             raise

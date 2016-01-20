@@ -21,7 +21,6 @@ from Pellmonsrv.plugin_categories import protocols
 from multiprocessing import Process, Queue
 from threading import Thread, Timer
 from time import time, sleep
-from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 import sys
@@ -140,23 +139,10 @@ class pelletcalc(protocols):
             itemList += state_tracker_items
             itemTags.update(state_tracker_tags)
 
-#        self.valuestore = ConfigParser()
-#        self.valuestore.add_section('values')
-#        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
         for item in itemList:
             if item['type'] == 'R/W':
                 self.store_setting(item['name'], confval = str(item['value']))
-#        self.valuestore.read(self.valuesfile)
-
-#        try:
-#            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-#            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-#            os.chown(self.valuesfile, uid, gid)
-#        except:
-#            pass
-
-#        with open(self.valuesfile, 'w') as f:
-#            self.valuestore.write(f)
+        self.migrate_settings('pelletcalc')
 
         if self.conf['state_tracker'] == 'generic':
             t = Timer(5, self.calc_thread)
@@ -205,8 +191,6 @@ class pelletcalc(protocols):
                 i['value'] = value
                 if i['type'] in['R/W', 'W']:
                     self.store_setting(item, str(value))
-#                    with open(self.valuesfile, 'w') as f:
-#                        self.valuestore.write(f)
                 return 'OK'
         return 'Error'
 
