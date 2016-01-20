@@ -19,7 +19,10 @@
 from Pellmonsrv.yapsy.IPlugin import IPlugin
 from ConfigParser import ConfigParser
 import os
-    
+from logging import getLogger
+
+logger = getLogger('pellMon')
+
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
     def activate(self, conf, glob):
