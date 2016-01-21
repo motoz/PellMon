@@ -1,5 +1,5 @@
 owfsplugin_PYTHON = \
 	__init__.py
 
-owfsplugindir = $(libdir)/Pellmonsrv/plugins/owfs
+owfsplugindir = $(pythondir)/Pellmonsrv/plugins/owfs
 

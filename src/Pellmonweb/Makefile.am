@@ -97,7 +97,7 @@ nobase_dist_foohtml_DATA = \
 	html/logview.html \
 	html/about.html
 
-foohtmldir = $(pythondir)/Pellmonweb
+foohtmldir = $(datadir)/Pellmonweb
 
 do_substitution = $(SED) -e 's,[@]VERSION[@],$(VERSION),g'
 

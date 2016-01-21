@@ -1,7 +1,7 @@
 consumptionplugin_PYTHON = \
 	__init__.py 
 
-consumptionplugindir = $(libdir)/Pellmonsrv/plugins/consumption
+consumptionplugindir = $(pythondir)/Pellmonsrv/plugins/consumption
 
 nobase_dist_templates_DATA = \
 	templates/consumption1y \
@@ -9,4 +9,4 @@ nobase_dist_templates_DATA = \
 	templates/consumption7d \
 	templates/consumption24h
 
-templatesdir = $(libdir)/Pellmonsrv/plugins/consumption
+templatesdir = $(pythondir)/Pellmonsrv/plugins/consumption

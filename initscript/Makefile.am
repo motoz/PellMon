@@ -35,7 +35,7 @@ pellmonsrv: pellmonsrv.in Makefile
 		-e 's,[@]user_srv[@],$(user_srv),g' \
 		-e 's,[@]bindir[@],$(bindir),g' \
 		-e 's,[@]confdir[@],$(sysconfdir)/pellmon,g' \
-		-e 's,[@]libdir[@],$(libdir),g' \
+		-e 's,[@]pythondir[@],$(pythondir),g' \
 		$< > $@
 	chmod +x $@
 

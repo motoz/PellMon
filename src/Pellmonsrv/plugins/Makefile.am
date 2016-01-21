@@ -13,4 +13,4 @@ nobase_dist_plugins_DATA = \
 	onewire.pellmon-plugin \
 	consumption.pellmon-plugin
 
-pluginsdir = $(libdir)/Pellmonsrv/plugins
+pluginsdir = $(pythondir)/Pellmonsrv/plugins
