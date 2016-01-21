@@ -72,9 +72,7 @@ class silolevelplugin(protocols):
         self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
         for item in itemList:
             if item['type'] == 'R/W':
-                value = self.store_setting(item['name'], item['value'], item['value'])
-                if value == 'error':
-                    self.store_setting(item['name'], confval = str(item['value']))
+                self.store_setting(item['name'], confval = str(item['value']))
             else:
                 itemValues[item['name']] = item['value']
         self.migrate_settings('silolevel')

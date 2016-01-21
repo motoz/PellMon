@@ -74,13 +74,12 @@ class alarmplugin(protocols):
             except Exception,e:
                 logger.info(str(e))
             itemTags[key].append(alarm_name)
-        self.valuestore = ConfigParser()
         for item in itemList:
             if item['type'] == 'R/W':
                 self.store_setting(item['name'], confval = item['value'])
             else:
                 itemValues[item['name']] = item['value']
-        self.migrate_settings('silolevel')
+        self.migrate_settings('customalarms')
 
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)

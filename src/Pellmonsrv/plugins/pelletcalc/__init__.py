@@ -180,7 +180,7 @@ class pelletcalc(protocols):
             for i in itemList:
                 if i['name'] == item:
                     if i['type'] == 'R/W':
-                        return self.load_setting('values', item)
+                        return self.load_setting(item)
                     else:
                         return i['value']
         return 'Error'
