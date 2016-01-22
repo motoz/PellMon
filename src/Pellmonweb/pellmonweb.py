@@ -906,8 +906,8 @@ def run(DATADIR):
     try:
         for row, widgets in parser.items('frontpage_widgets'):
             frontpage_widgets.append([s.strip() for s in widgets.split(',')])
-    except:
-        pass
+    except ConfigParser.NoSectionError:
+        frontpage_widgets = [['systemimage', 'events'],['graph'],['consumption7d', 'silolevel']]
 
     global timeChoices
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
