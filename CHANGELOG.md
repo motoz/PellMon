@@ -1,13 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
-This project adheres to [Semantic Versioning](http://semver.org/).
+This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
 - Shell command line completion for pellmoncli
+- debian package
 
 ### Changed
 - New dependency: python-argcomplete
+- plugin settins moved to a central sqlite database, pellmon-settings.db, in the same folder as the rrd database. Old settings are migrated automatically
 
 ## [0.5.0] - 2015-11-30
 ### Added
