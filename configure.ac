@@ -1,4 +1,4 @@
-AC_INIT([PellMon], [0.6.0~dev])
+AC_INIT([PellMon], [0.6.0])
 
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_PYTHON([2.7])
