@@ -36,7 +36,8 @@ import codecs
 import ConfigParser
 
 class Pellmonconf:
-    def __init__(self, config_file = ''):
+    def __init__(self, config_file = '', lookup = None):
+        self.lookup = lookup
         self.filelist = []
         self.dirs = {}
         filename = os.path.basename(config_file)
@@ -82,7 +83,7 @@ class Pellmonconf:
 
     @cherrypy.expose
     def index(self, filename = 'pellmon.conf'):
-        tmpl = lookup.get_template("source.html")
+        tmpl = self.lookup.get_template("source.html")
         return tmpl.render(filename=filename, filelist=self.filelist)
 
     @cherrypy.expose
@@ -110,11 +111,10 @@ class Pellmonconf:
             error = {'msg':'only POST'}
             return json.dumps({'success':False, 'error':error})
 
-HERE = os.path.dirname(os.path.realpath(__file__))
-MEDIA_DIR = os.path.join(HERE, 'media')
-lookup = TemplateLookup(directories=[os.path.join(HERE, 'html_conf')])
 
-def run(config_file):
+def run(config_file, datadir):
+    MEDIA_DIR = os.path.join(datadir, 'media')
+    lookup = TemplateLookup(directories=[os.path.join(datadir, 'html_conf')])
 
     argparser = argparse.ArgumentParser(prog='pellmonconf')
 
@@ -148,7 +148,7 @@ def run(config_file):
     print 'Run as root to be able to save changes'
     print 'Quit with CTRL-C'
     cherrypy.config.update(global_conf)
-    cherrypy.tree.mount(Pellmonconf(config_file), '/', config=app_conf)
+    cherrypy.tree.mount(Pellmonconf(config_file, lookup), '/', config=app_conf)
     cherrypy.engine.start()
     cherrypy.engine.block()
 

@@ -40,6 +40,7 @@ import sys, traceback
 import urllib2 as urllib
 import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
+import sqlite3
 
 try:
     from version import __version__
@@ -80,16 +81,18 @@ class Database(threading.Thread):
         manager.collectPlugins()
         activated_plugins = []
         failed_plugins= []
-        for plugin in manager.getPluginsOfCategory('Protocols'):
-            if plugin.name in conf.enabled_plugins:
+        plugins = {plugin.name : plugin for plugin in manager.getPluginsOfCategory('Protocols')}
+        for plugin_name in conf.enabled_plugins:
+            if plugin_name in plugins:
                 try:
+                    plugin = plugins[plugin_name]
                     plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
                     self.protocols.append(plugin)
                     for item in plugin.plugin_object.getDataBase():
                         self.items[item] = getset(item, plugin.plugin_object)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
-                    print str(e), plugin.name
+                    #print str(e), plugin.name
                     failed_plugins.append(plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
         if activated_plugins:
@@ -184,6 +187,57 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
     def changed_parameters(self, message):
         pass
+
+class Keyval_storage(object):
+    def __init__(self, dbfile):
+        self.dbfile = dbfile
+        conn = sqlite3.connect(dbfile)
+        cursor = conn.cursor()
+        self.lock = threading.Lock()
+        try:
+            cursor.execute("SELECT value from keyval")
+        except sqlite3.OperationalError:
+            cursor.execute("CREATE TABLE keyval (id TEXT PRIMARY KEY, value TEXT, confvalue TEXT NOT NULL DEFAULT '-')")
+        conn.commit()
+        conn.close()
+
+    def readval(self, item):
+        with self.lock:
+            try:
+                conn = sqlite3.connect(self.dbfile)
+                cursor = conn.cursor()
+                cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
+                value, = cursor.next()
+                conn.close()
+                return value.encode('ascii')
+            except Exception, e:
+                return 'error'
+
+    def writeval(self, item, value=None, confval=None):
+        value = str(value)
+        with self.lock:
+            try:
+                conn = sqlite3.connect(self.dbfile)
+                cursor = conn.cursor()
+                if confval is None:
+                    cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
+                                            ?,?,(select confvalue from keyval where id =    ?
+                                    ))""", (item, value, item))
+                    conn.commit()
+                else:
+                    try:
+                        cursor.execute("SELECT value, confvalue FROM keyval WHERE id=?", (item,))
+                        value,confvalue = cursor.next()
+                        if confvalue != confval:
+                            cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
+                            conn.commit()
+                    except:
+                        cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
+                        conn.commit()
+                conn.close()
+            except Exception as e: #ssqlite3.OperationalError:
+                raise
+
 
 class Poller(threading.Thread):
     def __init__(self, ev):
@@ -422,7 +476,6 @@ class MyDaemon(Daemon):
 
         # Load all plugins of 'protocol' category.
         conf.database = Database()
-
         try:
             if conf.USER:
                 drop_privileges(conf.USER, conf.GROUP)
@@ -616,14 +669,14 @@ class config:
         try:
             self.db = parser.get('conf', 'database')
         except:
-            self.polling=False
+            self.db = '/tmp/pellmon_rrd_database.db'
 
         # The persistent RRD database
         try:
             self.nvdb = parser.get('conf', 'persistent_db') 
         except:
             if self.polling:
-                self.nvdb = self.db        
+                self.nvdb = self.db
         try:
             self.db_store_interval = int(parser.get('conf', 'db_store_interval'))
         except:
@@ -706,6 +759,17 @@ class config:
         except:
             self.email_followup = None
 
+        try:
+            self.keyval_db = parser.get('conf', 'settings_db')
+        except:
+            try:
+                self.keyval_db = os.path.join(os.path.dirname(self.nvdb), 'pellmon_settings.db')
+            except:
+                self.keyval_db = '/tmp/pellmon_settings.db'
+            mkdir_p(os.path.dirname(self.keyval_db))
+            self.keyval_storage = Keyval_storage(self.keyval_db)
+
+
 
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
@@ -764,6 +828,7 @@ def run():
     parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
+    parser.add_argument('-O', '--OLDPLUGINDIR', default='-', help='Transfer settings from the old plugin directory if exists')
     parser.add_argument('-V', '--version', action='version', version='%(prog)s version '+__version__)
     args = parser.parse_args()
     if args.PLUGINDIR == '-':
@@ -783,6 +848,7 @@ def run():
     conf = config(config_file)
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
+    conf.old_plugin_dir = args.OLDPLUGINDIR
 
     if args.USER:
         conf.USER = args.USER
@@ -809,6 +875,8 @@ def run():
             os.chown(dbdir, uid, gid)
             if os.path.isfile(dbfile):
                 os.chown(dbfile, uid, gid)
+            if os.path.isfile(conf.keyval_db):
+                os.chown(conf.keyval_db, uid, gid)
 
     # must be be set before calling daemon.start
     daemon.pidfile = args.PIDFILE

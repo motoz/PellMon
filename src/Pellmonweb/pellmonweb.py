@@ -204,8 +204,8 @@ class Dbus_handler:
         
 class PellMonWeb:
     def __init__(self):
-        self.logview = LogViewer(logfile)
-        self.auth = AuthController(credentials)
+        self.logview = LogViewer(logfile, lookup)
+        self.auth = AuthController(credentials, lookup)
         self.consumptionview = Consumption(polling, db, dbus, lookup)
 
     @cherrypy.expose
@@ -717,9 +717,6 @@ class myLookup(TemplateLookup):
             self.put_string(uri, plugin)
             return super(myLookup, self).get_template(uri)
 
-HERE = os.path.dirname(webpath)
-MEDIA_DIR = os.path.join(HERE, 'media')
-FAVICON = os.path.join(MEDIA_DIR, 'favicon.ico')
 
 parser = ConfigParser.ConfigParser()
 config_file = 'pellmon.conf'
@@ -735,7 +732,8 @@ def walk_config_dir(config_dir, parser):
                     cherrypy.log("can not parse config file %s"%f)
 
 
-def run():
+def run(DATADIR):
+    MEDIA_DIR = os.path.join(DATADIR, 'media')
     argparser = argparse.ArgumentParser(prog='pellmonweb')
     argparser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
     argparser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
@@ -751,7 +749,7 @@ def run():
 
     #Look for temlates in this directory
     global lookup
-    lookup = myLookup(directories=[os.path.join(HERE, 'html')], dbus=dbus)
+    lookup = myLookup(directories=[os.path.join(DATADIR, 'html')], dbus=dbus)
 
     config_file = args.CONFIG
 
@@ -908,8 +906,8 @@ def run():
     try:
         for row, widgets in parser.items('frontpage_widgets'):
             frontpage_widgets.append([s.strip() for s in widgets.split(',')])
-    except:
-        pass
+    except ConfigParser.NoSectionError:
+        frontpage_widgets = [['systemimage', 'events'],['graph'],['consumption7d', 'silolevel']]
 
     global timeChoices
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
