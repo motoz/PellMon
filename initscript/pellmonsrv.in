@@ -20,8 +20,9 @@ GROUP=nogroup
 EXEC=@bindir@/$DAEMON
 PIDFILE=/var/run/$NAME/$DAEMON.pid
 CONFIGFILE=@confdir@/pellmon.conf
+OLDPLUGINDIR=/usr/local/lib/Pellmonsrv/plugins/
 PLUGINDIR=@pythondir@/Pellmonsrv/plugins
-ARGS="start --PIDFILE=$PIDFILE --USER=$USER --GROUP=$GROUP --CONFIG=$CONFIGFILE --DBUS=SYSTEM --PLUGINDIR=$PLUGINDIR"
+ARGS="start --PIDFILE=$PIDFILE --USER=$USER --GROUP=$GROUP --CONFIG=$CONFIGFILE --DBUS=SYSTEM --PLUGINDIR=$PLUGINDIR --OLDPLUGINDIR=$OLDPLUGINDIR"
 
 . /lib/lsb/init-functions
 

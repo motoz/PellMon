@@ -19,7 +19,6 @@
 
 from Pellmonsrv.plugin_categories import protocols
 from threading import Thread, Timer
-from ConfigParser import ConfigParser
 from os import path
 import os, grp, pwd
 import time
@@ -71,26 +70,14 @@ class cleaningplugin(protocols):
         protocols.activate(self, conf, glob)
         self.items = {i['name']:i for i in itemList}
         self.db = self.glob['conf'].db
-        self.valuestore = ConfigParser()
-        self.valuestore.add_section('values')
-        self.valuesfile = path.join(path.dirname(__file__), 'values.conf')
         self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
         self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
         for item in itemList:
             if item['type'] == 'R/W':
-                self.valuestore.set('values', item['name'], item['value'])
+                self.store_setting(item['name'], confval = item['value'])
             else:
                 itemValues[item['name']] = item['value']
-        self.valuestore.read(self.valuesfile)
-        f = open(self.valuesfile, 'w')
-        self.valuestore.write(f)
-        f.close()
-        try:
-            uid = pwd.getpwnam(self.glob['conf'].USER).pw_uid
-            gid = grp.getgrnam(self.glob['conf'].GROUP).gr_gid
-            os.chown(self.valuesfile, uid, gid)
-        except:
-            pass
+        self.migrate_settings('cleaning')
 
     def getItem(self, itemName):
         item = self.items[itemName]
@@ -109,8 +96,8 @@ class cleaningplugin(protocols):
             else:
                 return item['value']
         else:
-            if itemName in self.items:
-                return str(self.valuestore.get('values', itemName))
+            if itemName in self.items and item['type'] == 'R/W':
+                return str(self.load_setting(itemName))
             else:
                 return 'error'
 
@@ -129,10 +116,7 @@ class cleaningplugin(protocols):
             else:
                 try:
                     t = datetime.strptime(value,'%d/%m/%y %H:%M')
-                    self.valuestore.set('values', item, str(value))
-                    f = open(self.valuesfile, 'w')
-                    self.valuestore.write(f)
-                    f.close()
+                    self.store_setting(item, str(value))
                     return 'OK'
                 except Exception,e:
                     return 'error'
