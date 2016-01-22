@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [0.6.1] - 2016-01-22
 ### Added
 - Shell command line completion for pellmoncli
 - debian package
