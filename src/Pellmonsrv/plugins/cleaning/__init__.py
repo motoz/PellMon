@@ -30,6 +30,7 @@ import simplejson as json
 import re
 import math
 import random
+from Pellmonsrv.database import Item, Getsetitem
 
 logger = getLogger('pellMon')
 
@@ -66,13 +67,22 @@ class cleaningplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, db):
+        protocols.activate(self, conf, glob, db)
         self.items = {i['name']:i for i in itemList}
-        self.db = self.glob['conf'].db
+        self.rrdfile = self.glob['conf'].db
         self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
         self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
+        self.itemrefs = []
         for item in itemList:
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                dbitem.__setattr__(key, value)
+            if dbitem.name in itemTags:
+                dbitem.__setattr__('tags', itemTags[dbitem.name])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
+
             if item['type'] == 'R/W':
                 self.store_setting(item['name'], confval = item['value'])
             else:
@@ -123,34 +133,13 @@ class cleaningplugin(protocols):
         except Exception,e:
             return 'error'
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        for item in items:
-            item['description'] = itemDescriptions[item['name']]
-        return items
-        
     def getMenutags(self):
         return Menutags
-
 
     def rrd_total(self, start, end):
         start = str(start)
         end = str(end)
-        command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:%s:AVERAGE'%(self.db,self.feeder_time),'DEF:b=%s:%s:AVERAGE'%(self.db,self.feeder_capacity), 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%lf\"']
+        command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:%s:AVERAGE'%(self.rrdfile,self.feeder_time),'DEF:b=%s:%s:AVERAGE'%(self.rrdfile,self.feeder_capacity), 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%lf\"']
         cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
         try:
             total = str(int(float(cmd.communicate()[0].splitlines()[1].strip('"'))))

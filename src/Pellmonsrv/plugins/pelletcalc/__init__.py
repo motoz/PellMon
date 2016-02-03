@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from multiprocessing import Process, Queue
 from threading import Thread, Timer
 from time import time, sleep
@@ -82,6 +83,9 @@ Menutags = ['pelletCalc', 'Overview']
 class pelletcalc(protocols):
     def __init__(self):
         protocols.__init__(self)
+
+    def activate(self, conf, glob, db):
+        protocols.activate(self, conf, glob, db)
         self.power = 0
         self.state = 'Off'
         self.oldstate = self.state
@@ -89,9 +93,8 @@ class pelletcalc(protocols):
         self.time_state = self.time_count
         self.feeder_time = None
         self.alarm_state = 'OK'
+        self.itemrefs = []
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
         global itemList
         if not 'timer' in conf:
             itemList += counter_mode_items
@@ -144,6 +147,15 @@ class pelletcalc(protocols):
                 self.store_setting(item['name'], confval = str(item['value']))
         self.migrate_settings('pelletcalc')
 
+        for item in itemList:
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                dbitem.__setattr__(key, value)
+            if dbitem.name in itemTags:
+                dbitem.__setattr__('tags', itemTags[dbitem.name])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
+
         if self.conf['state_tracker'] == 'generic':
             t = Timer(5, self.calc_thread)
             t.setDaemon(True)
@@ -154,10 +166,10 @@ class pelletcalc(protocols):
 
     def getItem(self, item):
         if item == 'feeder_rev':
-            return self.getGlobalItem(self.conf['counter'])
+            return self.db.get_value(self.conf['counter'])
         elif item == 'feeder_time':
             if 'timer' in self.conf:
-                return str(int(round(float(self.getGlobalItem(self.conf['timer'])))))
+                return str(int(round(float(self.db.get_value(self.conf['timer'])))))
             else:
                 rev = float(self.getItem('feeder_rev'))
                 rp6m = int(self.getItem('feeder_rp6m'))
@@ -188,33 +200,14 @@ class pelletcalc(protocols):
     def setItem(self, item, value):
         for i in itemList:
             if i['name'] == item:
-                i['value'] = value
+                #i['value'] = value
                 if i['type'] in['R/W', 'W']:
                     self.store_setting(item, str(value))
-                return 'OK'
+                return 'OK'#
         return 'Error'
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        for item in items:
-            item['description'] = itemDescriptions[item['name']]
-        return items
-        
     def getMenutags(self):
         return Menutags
-
 
     def calculate_state(self):
         try:

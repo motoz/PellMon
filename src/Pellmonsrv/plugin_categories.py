@@ -25,10 +25,11 @@ logger = getLogger('pellMon')
 
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
-    def activate(self, conf, glob):
+    def activate(self, conf, glob, db):
         # Save globals for plugin access to everything
         self.glob = glob
         self.conf = conf
+        self.db = db
         self.templates = {}
         IPlugin.activate(self)
 
@@ -43,17 +44,6 @@ class protocols(IPlugin):
         """Set the value of one item"""
         return 'ok'
 
-    def getDataBase(self):
-        """Return a list of item names"""
-        return []
-
-    def GetFullDB(self, tags):
-        """Return a list of dictionarys, each dictionary contains at least
-        'name':'item_name', 'type':'R|R/W|W'
-        and optionally 
-        'min', 'max', 'unit', 'longname', 'description' keys with string type values"""
-        return []
-
     def sendmail(self, msg):
         """Callback to send mail message"""
         glob['sendmail'](msg)
@@ -64,11 +54,7 @@ class protocols(IPlugin):
 
     def getMenutags(self):
         return []
-    
-    def getGlobalItem(self, item):
-        """Get items from other plugins"""
-        return self.glob['conf'].database.items[item].getItem()
-    
+
     def getTemplate(self, template):
         try:
             return self.templates[template]

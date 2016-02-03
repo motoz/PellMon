@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from threading import Thread, Timer
 from os import path
 import os, grp, pwd
@@ -35,8 +36,9 @@ class alarmplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, db):
+        protocols.activate(self, conf, glob, db)
+        self.itemrefs = []
         for key, value in self.conf.iteritems():
             try:
                 alarm_name = key.split('_')[0]
@@ -79,6 +81,15 @@ class alarmplugin(protocols):
                 self.store_setting(item['name'], confval = item['value'])
             else:
                 itemValues[item['name']] = item['value']
+
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                dbitem.__setattr__(key, value)
+            if dbitem.name in itemTags:
+                dbitem.__setattr__('tags', itemTags[dbitem.name])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
+
         self.migrate_settings('customalarms')
 
         t = Timer(5, self.poll_thread)
@@ -105,24 +116,6 @@ class alarmplugin(protocols):
         except Exception,e:
             return 'error'
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        return items
-        
     def getMenutags(self):
         return Menutags
 

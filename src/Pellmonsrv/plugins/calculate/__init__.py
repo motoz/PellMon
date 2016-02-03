@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from threading import Thread, Timer
 from os import path
 import os, grp, pwd
@@ -37,7 +38,7 @@ gstore = {}
 transstring = maketrans('\t', ' ')
 
 class Calc():
-    def __init__(self, prog, glob, stack=None):
+    def __init__(self, prog, db, stack=None):
         prog = prog.translate(transstring)
         calc = []
         for row in prog.splitlines():
@@ -48,7 +49,7 @@ class Calc():
             self.stack = []
         else:
             self.stack = stack
-        self.glob = glob
+        self.db = db
         self.store = {}
 
     def execute(self):
@@ -74,12 +75,12 @@ class Calc():
             self.stack.append(str(q-d))
         elif c=='get':
             item = self.stack.pop()
-            value = self.glob['conf'].database.items[item].getItem()
+            value = self.db.get_value(item)
             self.stack.append(value)
         elif c=='set':
             item = self.stack.pop()
             value = self.stack.pop()
-            result = self.glob['conf'].database.items[item].setItem(value)
+            result = self.db.set_value(item, value)
             self.stack.append(result)
         elif c=='>':
             item2 = self.stack.pop()
@@ -107,8 +108,8 @@ class Calc():
                 self.stack.append(itemFalse)
         elif c=='exec':
             name = self.stack.pop()
-            calc = self.glob['conf'].database.items[name].getItem()
-            prog = Calc(calc, self.glob, stack=self.stack)
+            calc = self.db.get_value(name)
+            prog = Calc(calc, self.db, stack=self.stack)
             prog.run()
         elif c=='pop':
             self.stack.pop()
@@ -233,11 +234,12 @@ class calculateplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, db):
+        protocols.activate(self, conf, glob, db)
         self.calc2index={}
         self.name2index={}
         self.tasks = {}
+        self.itemrefs = []
         try:
             for key, value in self.conf.iteritems():
                 try:
@@ -301,6 +303,16 @@ class calculateplugin(protocols):
                 else:
                     itemValues[item['name']] = item['value']
             self.migrate_settings('calculate')
+    
+            for item in itemList:
+                dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                for key, value in item.iteritems():
+                    dbitem.__setattr__(key, value)
+                if dbitem.name in itemTags:
+                    dbitem.__setattr__('tags', itemTags[dbitem.name])
+                self.db.insert(dbitem)
+                self.itemrefs.append(dbitem)
+
         except Exception, e:
             logger.info( str(e))
             raise
@@ -313,10 +325,9 @@ class calculateplugin(protocols):
                 if item['type'] in ['R','R/W']:
                     prog = self.getItem(calc_item)
                     try:
-                        calc = Calc(prog, self.glob)
+                        calc = Calc(prog, self.db)
                         return calc.run()
                     except Exception, e:
-                        #calc = Calc(prog, self.glob)
                         logger.info(calc_item+' error: '+str(e))
                         return 'error'
             except:
@@ -338,11 +349,11 @@ class calculateplugin(protocols):
             prog = self.getItem(calc_item)
             try:
                 stack = [str(value)]
-                calc = Calc(prog, self.glob, stack=stack)
+                calc = Calc(prog, self.db, stack=stack)
                 calc.run()
                 return 'OK'
             except Exception, e:
-                calc = Calc(prog, self.glob)
+                calc = Calc(prog, self.db)
                 logger.info(calc_item+' error: '+str(e))
                 return 'error'
         except:  
@@ -354,24 +365,6 @@ class calculateplugin(protocols):
             except Exception,e:
                 return 'error'
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        return items
-        
     def getMenutags(self):
         return Menutags
         t = Timer(5, self.poll_thread)
@@ -389,7 +382,7 @@ class calcthread(Thread):
     def run(self):
         while True:
             try:
-                prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.glob)
+                prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.db)
                 prog.run()
             except:
                 pass

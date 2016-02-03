@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from ConfigParser import ConfigParser
 from os import path
 import traceback
@@ -36,19 +37,20 @@ class owfsplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
+    def activate(self, conf, glob, db):
         try:
             self.protocol = __import__('pyownet.protocol').protocol
         except ImportError:
             logger.info('OWFS: python module pyownet is missing')
             raise
-        protocols.activate(self, conf, glob)
+        protocols.activate(self, conf, glob, db)
         self.ow2index={}
         self.name2index={}
         self.sensors={}
         self.latches={}
         self.counters=[]
         self.proxies = {}
+        self.itemrefs = []
 
         for key, value in self.conf.iteritems():
             port = 4304
@@ -62,7 +64,6 @@ class owfsplugin(protocols):
                 
             if ow_data == 'item':
                 itemList[self.ow2index[ow_name]]['name'] = value
-                itemTags[value] = ['All', 'OWFS', 'Basic']
                 self.name2index[value]=self.ow2index[ow_name]
 
             if ow_data == 'path':
@@ -114,6 +115,17 @@ class owfsplugin(protocols):
 
             if ow_data == 'type' and value in ['R','R/W']:
                 itemList[self.ow2index[ow_name]]['type'] = value
+
+        # Create dbitems from the list and insert into the database
+        for item in itemList:
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                dbitem.__setattr__(key, value)
+            # Give it some default tags so it's visible in the web interface
+            dbitem.__setattr__('tags', ['Basic', 'All', 'OWFS'])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
+
 
         t = Timer(0.1, self.background_polling_thread)
         t.setDaemon(True)
@@ -233,24 +245,6 @@ class owfsplugin(protocols):
                 logger.debug('OWFS background poll error: '+str(e))
             sleep(5)
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        return items
-        
     def getMenutags(self):
         return Menutags
 

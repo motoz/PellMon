@@ -41,6 +41,7 @@ import urllib2 as urllib
 import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
 import sqlite3
+from database import Database as _Database
 
 try:
     from version import __version__
@@ -57,19 +58,11 @@ class dbus_signal_handler(logging.Handler):
         s = json.dumps([{'name':'__event__', 'value':msg}])
         self.dbus_service.changed_parameters(s)
 
-class Database(threading.Thread):
+class Database(threading.Thread, _Database):
     def __init__(self):
-        class getset:
-            def __init__(self, item, obj):
-                self.item = item
-                self.obj = obj
-            def getItem(self):
-                return self.obj.getItem(self.item)
-            def setItem(self, value):
-                return self.obj.setItem(self.item, value)
         threading.Thread.__init__(self)
+        _Database.__init__(self)
         self.dbus_service = None
-        self.items={}
         self.values={}
         self.protocols=[]
         self.setDaemon(True)
@@ -86,13 +79,11 @@ class Database(threading.Thread):
             if plugin_name in plugins:
                 try:
                     plugin = plugins[plugin_name]
-                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self)
                     self.protocols.append(plugin)
-                    for item in plugin.plugin_object.getDataBase():
-                        self.items[item] = getset(item, plugin.plugin_object)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
-                    #print str(e), plugin.name
+                    print str(e), plugin.name
                     failed_plugins.append(plugin.name)
                     logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
         if activated_plugins:
@@ -105,9 +96,9 @@ class Database(threading.Thread):
         while True:
             time.sleep(2)
             changed_params = []
-            for item_name in self.items:
+            for item_name, item in self.items():
                 try:
-                    value = self.items[item_name].getItem()
+                    value = item.value
                     if item_name in self.values:
                         if value != self.values[item_name]:
                             changed_params.append({'name':item_name, 'value':value})
@@ -143,29 +134,28 @@ class MyDBUSService(dbus.service.Object):
         if param == 'pellmonsrv_version':
             return __version__
         else:
-            return conf.database.items[param].getItem()
+            return conf.database.get_value(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return conf.database.items[param].setItem(value)
+        return conf.database.set_value(param, value)
 
     @dbus.service.method('org.pellmon.int', out_signature='as')
     def GetDB(self):
-        """Get list of all data/parameter/command items"""
-        db=[]
-        for plugin in conf.database.protocols:
-            db = db + plugin.plugin_object.getDataBase()
-        db.sort()
-        return db
+        """Get list of all item names"""
+        return conf.database.keys()
 
     @dbus.service.method(dbus_interface='org.pellmon.int', in_signature='as', out_signature='aa{sv}')
     def GetFullDB(self, tags):
-        """Get list of all data/parameter/command items"""
-        db=[]
-        for plugin in conf.database.protocols:
-            db = db + plugin.plugin_object.GetFullDB(tags)
-        return db
+        """Get list of all items with matching tags"""
+        def match(requiredtags, existingtags):
+            for rt in requiredtags:
+                if rt != '' and not rt in existingtags:
+                    return False
+            return True
+
+        return [ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)]
 
     @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):
@@ -181,7 +171,7 @@ class MyDBUSService(dbus.service.Object):
             template = plugin.plugin_object.getTemplate(name)
             if template:
                 return template
-        return 'Template not found'
+        return 'Template not found '+name
 
     #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
@@ -270,7 +260,7 @@ class Poller(threading.Thread):
                                 value = 'U'
                         else:
                             try:
-                                value = conf.database.items[data['name']].getItem()
+                                value = conf.database[data['name']].value
                                 try:
                                     if 'COUNTER'  in data['ds_type'] or 'DERIVE' in data['ds_type']:
                                         value = str(int(value))
@@ -296,7 +286,7 @@ class Poller(threading.Thread):
                         logger.info('IOError: %s,  Trying Z01...'%e.strerror)
                         try:
                             # Strange fix for stange problem with some scotte burners
-                            conf.database.items['oxygen_regulation'].getItem()
+                            conf.database['oxygen_regulation'].value
                         except Exception as e:
                             logger.info('error in retry %s'%str(e) )
                     except Exception as e:
