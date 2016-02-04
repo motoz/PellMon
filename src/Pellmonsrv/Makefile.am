@@ -4,6 +4,7 @@ srv_PYTHON = \
 	daemon.py \
 	pellmonsrv.py \
 	plugin_categories.py \
+	database.py \
 	__init__.py
 
 nodist_srv_PYTHON = \
