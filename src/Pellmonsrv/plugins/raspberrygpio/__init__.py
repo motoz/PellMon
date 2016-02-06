@@ -397,21 +397,21 @@ class raspberry_gpio(protocols):
             except Exception,e:
                 logger.info(str(e))
 
+        signal.signal(signal.SIGINT, signal_handler)
+        self.request = Queue()
+        self.response = Queue()
+        self.root = root(self.request, self.response, itemList)
+        self.root.start()
+
         # Create dbitems from the list and insert into the database
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), 0)
             for key, value in item.iteritems():
                 dbitem.__setattr__(key, value)
             # Give it some default tags so it's visible in the web interface
             dbitem.__setattr__('tags', ['All', 'raspberryGPIO', 'Basic'])
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
-
-        signal.signal(signal.SIGINT, signal_handler)
-        self.request = Queue()
-        self.response = Queue()
-        self.root = root(self.request, self.response, itemList)
-        self.root.start()
 
     def deactivate(self):
         protocols.deactivate(self)

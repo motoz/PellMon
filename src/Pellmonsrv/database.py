@@ -26,10 +26,10 @@ class Item(object):
         self.value = value
 
 class Getsetitem(Item):
-    def __init__(self, name, getter, setter):
+    def __init__(self, name, getter, setter, value=None):
         self.getter = getter
         self.setter = setter
-        super(Getsetitem, self).__init__(name, None)
+        super(Getsetitem, self).__init__(name, value)
 
     @property
     def value(self):
