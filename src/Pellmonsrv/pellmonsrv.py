@@ -83,9 +83,11 @@ class Database(threading.Thread, _Database):
                     self.protocols.append(plugin)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
-                    print str(e), plugin.name
                     failed_plugins.append(plugin.name)
-                    logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
+                    if conf.command == 'debug':
+                        raise
+                    else:
+                        logger.debug('Plugin error:%s'%str(e)   )
         if activated_plugins:
             logger.info('Activated plugins: %s'%', '.join(activated_plugins))
         if failed_plugins:
@@ -870,6 +872,8 @@ def run():
 
     # must be be set before calling daemon.start
     daemon.pidfile = args.PIDFILE
+
+    conf.command = args.command
 
     commands[args.command]()
 
