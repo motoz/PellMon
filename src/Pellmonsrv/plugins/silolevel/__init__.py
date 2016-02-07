@@ -100,6 +100,11 @@ class silolevelplugin(protocols):
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
 
+        dbitem = Getsetitem('siloLevelData', lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+        dbitem.type = 'R'
+        self.db.insert(dbitem)
+        self.itemrefs.append(dbitem)
+
         self._insert_template('silolevel', """
 <h4>Silo level</h4>
 <div class="image-responsive" id="silolevel" style="height:400px">

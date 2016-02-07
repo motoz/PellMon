@@ -74,20 +74,26 @@ class cleaningplugin(protocols):
         self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
         self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
         self.itemrefs = []
+
+        self.migrate_settings('cleaning')
+
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+
+            if item['type'] == 'R/W':
+                self.store_setting(item['name'], confval = item['value'])
+                value = self.load_setting(item['name'])
+            else:
+                value = item['value']
+                itemValues[item['name']] = value
+
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), value)
             for key, value in item.iteritems():
-                dbitem.__setattr__(key, value)
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
             if dbitem.name in itemTags:
                 dbitem.__setattr__('tags', itemTags[dbitem.name])
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
-
-            if item['type'] == 'R/W':
-                self.store_setting(item['name'], confval = item['value'])
-            else:
-                itemValues[item['name']] = item['value']
-        self.migrate_settings('cleaning')
 
     def getItem(self, itemName):
         item = self.items[itemName]
