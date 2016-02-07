@@ -66,7 +66,7 @@ class scottecom(protocols):
                 self.itemrefs.append(dbitem)
 
             # Create and start settings_pollthread to log settings changed locally
-            settings = menus.getDbWithTags(('Settings',))
+            settings = [item for item in params if 'Settings' in menus.itemtags(item)]
             ht = threading.Timer(3, self.settings_pollthread, args=(settings,))
             ht.setDaemon(True)
             ht.start()
