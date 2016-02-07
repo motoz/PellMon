@@ -142,15 +142,20 @@ class pelletcalc(protocols):
             itemList += state_tracker_items
             itemTags.update(state_tracker_tags)
 
-        for item in itemList:
-            if item['type'] == 'R/W':
-                self.store_setting(item['name'], confval = str(item['value']))
         self.migrate_settings('pelletcalc')
 
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            if item['type'] == 'R/W':
+                self.store_setting(item['name'], confval = str(item['value']))
+                value = self.load_setting(item['name'])
+            else:
+                value = item['value']
+
+        for item in itemList:
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), value)
             for key, value in item.iteritems():
-                dbitem.__setattr__(key, value)
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
             if dbitem.name in itemTags:
                 dbitem.__setattr__('tags', itemTags[dbitem.name])
             self.db.insert(dbitem)

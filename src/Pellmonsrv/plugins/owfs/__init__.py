@@ -120,7 +120,8 @@ class owfsplugin(protocols):
         for item in itemList:
             dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
             for key, value in item.iteritems():
-                dbitem.__setattr__(key, value)
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
             # Give it some default tags so it's visible in the web interface
             dbitem.__setattr__('tags', ['Basic', 'All', 'OWFS'])
             self.db.insert(dbitem)
@@ -237,7 +238,7 @@ class owfsplugin(protocols):
             sleep(5)
         
     def background_polling_thread(self):
-       while True:
+        while True:
             try:
                 for item in itemList:
                     self.getItem(item['name'], background_poll=True)

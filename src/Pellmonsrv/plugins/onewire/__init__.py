@@ -69,9 +69,10 @@ class onewireplugin(protocols):
 
             # Create dbitems from the list and insert into the database
             for item in self.itemList:
-                dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), item['value'])
                 for key, value in item.iteritems():
-                    dbitem.__setattr__(key, value)
+                    if key is not 'value':
+                        dbitem.__setattr__(key, value)
                 # Give it some default tags so it's visible in the web interface
                 dbitem.__setattr__('tags', ['Basic', 'All', 'Onewire'])
                 self.db.insert(dbitem)
