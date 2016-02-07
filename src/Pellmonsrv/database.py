@@ -28,7 +28,11 @@ class Item(object):
 class Getsetitem(Item):
     def __init__(self, name, getter, setter, value=None):
         self.getter = getter
-        self.setter = setter
+        self.setter_use_later = setter
+        def first_set(*args, **kwargs):
+            # Don't call the setter on the first property set, that's from init
+            self.setter = self.setter_use_later
+        self.setter = first_set 
         super(Getsetitem, self).__init__(name, value)
 
     @property

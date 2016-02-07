@@ -81,21 +81,24 @@ class silolevelplugin(protocols):
             raise
         self.itemrefs = []
 
+        self.migrate_settings('silolevel')
+
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            if item['type'] == 'R/W':
+                self.store_setting(item['name'], confval = str(item['value']))
+                value = self.load_setting(item['name'])
+            else:
+                itemValues[item['name']] = item['value']
+                value = item['value']
+
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), value)
             for key, value in item.iteritems():
-                dbitem.__setattr__(key, value)
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
             if dbitem.name in itemTags:
                 dbitem.__setattr__('tags', itemTags[dbitem.name])
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
-
-            if item['type'] == 'R/W':
-                self.store_setting(item['name'], confval = str(item['value']))
-            else:
-                itemValues[item['name']] = item['value']
-
-        self.migrate_settings('silolevel')
 
         self._insert_template('silolevel', """
 <h4>Silo level</h4>

@@ -76,21 +76,25 @@ class alarmplugin(protocols):
             except Exception,e:
                 logger.info(str(e))
             itemTags[key].append(alarm_name)
+
+        self.migrate_settings('customalarms')
+
         for item in itemList:
             if item['type'] == 'R/W':
                 self.store_setting(item['name'], confval = item['value'])
+                value = self.load_setting(item['name'])
             else:
-                itemValues[item['name']] = item['value']
+                value = item['value']
+                itemValues[item['name']] = value
 
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), value)
             for key, value in item.iteritems():
-                dbitem.__setattr__(key, value)
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
             if dbitem.name in itemTags:
                 dbitem.__setattr__('tags', itemTags[dbitem.name])
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
-
-        self.migrate_settings('customalarms')
 
         t = Timer(5, self.poll_thread)
         t.setDaemon(True)
@@ -123,7 +127,7 @@ class alarmplugin(protocols):
         for name, data in alarms.items():
             try:
                 item = self.getItem(name+'_item')
-                value = float(self.glob['conf'].database.items[item].getItem())
+                value = float(self.db[item].value)
                 comparator = self.getItem(name+'_comparator')
                 level = float(self.getItem(name+'_level'))
                 alarm = 0
