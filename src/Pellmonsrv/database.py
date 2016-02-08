@@ -19,6 +19,14 @@
 
 from weakref import WeakValueDictionary
 import time
+import sqlite3, threading
+
+class Keyval_storage:
+    keyval_storage = None
+
+def init_keyval_storage(f):
+    #global keyval_storage
+    Keyval_storage.keyval_storage = Keyval_storage(f)
 
 class Item(object):
     def __init__(self, name, value=None):
@@ -34,20 +42,24 @@ class Getsetitem(Item):
             self.setter = self.setter_use_later
         self.setter = first_set 
         super(Getsetitem, self).__init__(name, value)
+        self._value = value
 
     @property
     def value(self):
-        v = self.getter(self.name)
-        return v
+        if self.getter is not None:
+            self._value = self.getter(self.name)
+        return self._value
 
     @value.setter
     def value(self, value):
-        self.setter(self.name, value)
+        if self.setter is not None:
+            self.setter(self.name, value)
+        self._value = value
 
 class Cacheditem(Getsetitem):
-    def __init__(self, name, getter, setter):
+    def __init__(self, name, getter, setter, value=None):
         self.update_time = 0
-        super(Cacheditem, self).__init__(name, getter, setter)
+        super(Cacheditem, self).__init__(name, getter, setter, value)
 
     @Getsetitem.value.getter
     def value(self):
@@ -57,6 +69,25 @@ class Cacheditem(Getsetitem):
             self.cached_value = self.getter(self.name)
             self.update_time = time.time()
             return self.cached_value
+
+class Storeditem(Getsetitem):
+    def __init__(self, name, getter, setter, value=None):
+        self.update_time = 0
+        self._value = value
+        super(Storeditem, self).__init__(name, getter, setter, value)
+        Keyval_storage.keyval_storage.writeval(self.name, confval=value)
+        self._value = Keyval_storage.keyval_storage.readval(self.name)
+
+    @Getsetitem.value.setter
+    def value(self, value):
+     try:
+        Getsetitem.value.setter(self)
+        if value != self._value:
+            self.setter(self.name, value)
+            Keyval_storage.keyval_storage.writeval(self.name, value)
+            self._value = value
+     except Exception, e:
+        print e
 
 class Database(WeakValueDictionary):
     def __init__(self):
@@ -78,3 +109,52 @@ class Database(WeakValueDictionary):
         except:
             return 'error'
 
+class Keyval_storage(object):
+    def __init__(self, dbfile):
+        self.dbfile = dbfile
+        conn = sqlite3.connect(dbfile)
+        cursor = conn.cursor()
+        self.lock = threading.Lock()
+        try:
+            cursor.execute("SELECT value from keyval")
+        except sqlite3.OperationalError:
+            cursor.execute("CREATE TABLE keyval (id TEXT PRIMARY KEY, value TEXT, confvalue TEXT NOT NULL DEFAULT '-')")
+        conn.commit()
+        conn.close()
+
+    def readval(self, item):
+        with self.lock:
+            try:
+                conn = sqlite3.connect(self.dbfile)
+                cursor = conn.cursor()
+                cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
+                value, = cursor.next()
+                conn.close()
+                return value.encode('ascii')
+            except Exception, e:
+                return 'error'
+
+    def writeval(self, item, value=None, confval=None):
+        value = str(value)
+        with self.lock:
+            try:
+                conn = sqlite3.connect(self.dbfile)
+                cursor = conn.cursor()
+                if confval is None:
+                    cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
+                                            ?,?,(select confvalue from keyval where id =    ?
+                                    ))""", (item, value, item))
+                    conn.commit()
+                else:
+                    try:
+                        cursor.execute("SELECT value, confvalue FROM keyval WHERE id=?", (item,))
+                        value,confvalue = cursor.next()
+                        if confvalue != confval:
+                            cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
+                            conn.commit()
+                    except:
+                        cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
+                        conn.commit()
+                conn.close()
+            except Exception as e: #ssqlite3.OperationalError:
+                raise

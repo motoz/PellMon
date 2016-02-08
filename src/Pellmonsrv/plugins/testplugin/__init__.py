@@ -18,7 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
-from Pellmonsrv.database import Item, Getsetitem
+from Pellmonsrv.database import Item, Getsetitem, Storeditem
 from logging import getLogger
 
 logger = getLogger('pellMon')
@@ -60,6 +60,15 @@ class testplugin(protocols):
                 dbitem.__setattr__('tags', itemTags[dbitem.name])
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
+            def setter(name, value):
+                print name, value
+            i = Storeditem('stored', None, setter, 'storedvalue')
+            i.tags = ['All', 'testplugin', 'Basic'] 
+            i.type = 'R/W'
+            i.min = '0'
+            i.max = '120'
+            self.db.insert(i)
+            self.itemrefs.append(i)
 
     def getItem(self, item):
         v = self.itemvalues[item]

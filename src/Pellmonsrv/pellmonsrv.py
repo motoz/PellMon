@@ -40,8 +40,8 @@ import sys, traceback
 import urllib2 as urllib
 import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
-import sqlite3
 from database import Database as _Database
+from database import init_keyval_storage
 
 try:
     from version import __version__
@@ -61,6 +61,7 @@ class dbus_signal_handler(logging.Handler):
 class Database(threading.Thread, _Database):
     def __init__(self):
         threading.Thread.__init__(self)
+        init_keyval_storage(conf.keyval_db)
         _Database.__init__(self)
         self.dbus_service = None
         self.values={}
@@ -179,57 +180,6 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
     def changed_parameters(self, message):
         pass
-
-class Keyval_storage(object):
-    def __init__(self, dbfile):
-        self.dbfile = dbfile
-        conn = sqlite3.connect(dbfile)
-        cursor = conn.cursor()
-        self.lock = threading.Lock()
-        try:
-            cursor.execute("SELECT value from keyval")
-        except sqlite3.OperationalError:
-            cursor.execute("CREATE TABLE keyval (id TEXT PRIMARY KEY, value TEXT, confvalue TEXT NOT NULL DEFAULT '-')")
-        conn.commit()
-        conn.close()
-
-    def readval(self, item):
-        with self.lock:
-            try:
-                conn = sqlite3.connect(self.dbfile)
-                cursor = conn.cursor()
-                cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
-                value, = cursor.next()
-                conn.close()
-                return value.encode('ascii')
-            except Exception, e:
-                return 'error'
-
-    def writeval(self, item, value=None, confval=None):
-        value = str(value)
-        with self.lock:
-            try:
-                conn = sqlite3.connect(self.dbfile)
-                cursor = conn.cursor()
-                if confval is None:
-                    cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
-                                            ?,?,(select confvalue from keyval where id =    ?
-                                    ))""", (item, value, item))
-                    conn.commit()
-                else:
-                    try:
-                        cursor.execute("SELECT value, confvalue FROM keyval WHERE id=?", (item,))
-                        value,confvalue = cursor.next()
-                        if confvalue != confval:
-                            cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
-                            conn.commit()
-                    except:
-                        cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
-                        conn.commit()
-                conn.close()
-            except Exception as e: #ssqlite3.OperationalError:
-                raise
-
 
 class Poller(threading.Thread):
     def __init__(self, ev):
@@ -759,9 +709,6 @@ class config:
             except:
                 self.keyval_db = '/tmp/pellmon_settings.db'
             mkdir_p(os.path.dirname(self.keyval_db))
-            self.keyval_storage = Keyval_storage(self.keyval_db)
-
-
 
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]

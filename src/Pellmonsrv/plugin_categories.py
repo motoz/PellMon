@@ -20,6 +20,7 @@ from Pellmonsrv.yapsy.IPlugin import IPlugin
 from ConfigParser import ConfigParser
 import os
 from logging import getLogger
+from database import Keyval_storage
 
 logger = getLogger('pellMon')
 
@@ -62,10 +63,10 @@ class protocols(IPlugin):
             return None
 
     def load_setting(self, item):
-        return self.glob['conf'].keyval_storage.readval(item)
+        return Keyval_storage.keyval_storage.readval(item)
 
     def store_setting(self, item, value=None, confval=None):
-        self.glob['conf'].keyval_storage.writeval(item, value, confval)
+        Keyval_storage.keyval_storage.writeval(item, value, confval)
 
     def migrate_settings(self, plugin):
         """This is used to migrate settings from the old values.conf text files
