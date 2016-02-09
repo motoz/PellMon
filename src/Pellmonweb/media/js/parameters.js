@@ -58,7 +58,7 @@ $(".save").on('submit', function(e) {
 			btn.button('reset');
 			if(data.value === 'OK') {
 				setParam(name, value);
-				textfield.val('');
+				//textfield.val('');
 			} else {
 				textfield.addClass('error');
 			}
@@ -92,8 +92,12 @@ function getParams() {
             for (var param in data) {
                 var container = $('#' + param + '-value');
                 if(container.length > 0) {
-                    container.html(data[param]);
+                    container.text(data[param]);
                     count = count-1;
+                }
+                var container = $('#' + param + '-form');
+                if(container.length > 0) {
+                    container.val(data[param]);
                 }
             }
 

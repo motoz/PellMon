@@ -147,7 +147,7 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int', out_signature='as')
     def GetDB(self):
         """Get list of all item names"""
-        return conf.database.keys()
+        return sorted(conf.database.keys())
 
     @dbus.service.method(dbus_interface='org.pellmon.int', in_signature='as', out_signature='aa{sv}')
     def GetFullDB(self, tags):
@@ -158,7 +158,7 @@ class MyDBUSService(dbus.service.Object):
                     return False
             return True
 
-        return [ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)]
+        return sorted([ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name'])
 
     @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):
@@ -166,7 +166,7 @@ class MyDBUSService(dbus.service.Object):
         menutags=[]
         for plugin in conf.database.protocols:
             menutags = menutags + plugin.plugin_object.getMenutags()
-        return menutags
+        return sorted(list(set(menutags)))
 
     @dbus.service.method('org.pellmon.int', in_signature='s', out_signature='s')
     def getPlugins(self, name):

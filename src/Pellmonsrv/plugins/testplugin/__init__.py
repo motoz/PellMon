@@ -60,13 +60,16 @@ class testplugin(protocols):
                 dbitem.__setattr__('tags', itemTags[dbitem.name])
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
-            def setter(name, value):
-                print name, value
-            i = Storeditem('stored', None, setter, 'storedvalue')
+            def mysetter(name, value):
+                print 'set: ', name, value
+            i = Storeditem('stored', 'defaultvalue', setter=mysetter)
             i.tags = ['All', 'testplugin', 'Basic'] 
             i.type = 'R/W'
             i.min = '0'
             i.max = '120'
+            i.unit = 'm'
+            i.description = "this is a test item"
+            i.longname = "stored item"
             self.db.insert(i)
             self.itemrefs.append(i)
 

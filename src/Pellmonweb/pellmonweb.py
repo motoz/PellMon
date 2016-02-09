@@ -44,7 +44,7 @@ import pwd
 import grp
 import subprocess
 from datetime import datetime
-from cgi import escape
+#from cgi import escape
 from threading import Timer, Lock
 import signal
 import simplejson
@@ -55,7 +55,8 @@ try:
     from version import __version__
 except:
     __version__ = '@VERSION@'
-
+def escape(t):
+    return t
 try:
     from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
     from ws4py.websocket import WebSocket
@@ -521,17 +522,8 @@ class PellMonWeb:
         paramlist = [param for param in parameters.split(',') if param in db]
         responselist = [ {'name':param, 'value':dbus.getItem(param)} for param in paramlist]
         message = simplejson.dumps(responselist)
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         return message
-
-        if cherrypy.request.method == "GET":
-            if param in(parameterlist):
-                try:
-                    result = dbus.getItem(param)
-                except:
-                    result = 'error'
-            else: result = 'not found'
-            cherrypy.response.headers['Content-Type'] = 'application/json'
-            return simplejson.dumps(dict(param=param, value=result))
 
     @cherrypy.expose
     @require() #requires valid login
@@ -582,7 +574,7 @@ class PellMonWeb:
                 try:
                     a = item['longname']
                 except:
-                    item['longname'] = item['name']
+                    item['longname'] = item['name'].title()
                 try:
                     a = item['unit']
                 except:

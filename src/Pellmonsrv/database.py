@@ -71,7 +71,7 @@ class Cacheditem(Getsetitem):
             return self.cached_value
 
 class Storeditem(Getsetitem):
-    def __init__(self, name, getter, setter, value=None):
+    def __init__(self, name, value=None, getter=None, setter=None):
         self.update_time = 0
         self._value = value
         super(Storeditem, self).__init__(name, getter, setter, value)
