@@ -44,7 +44,7 @@ import pwd
 import grp
 import subprocess
 from datetime import datetime
-#from cgi import escape
+from cgi import escape
 from threading import Timer, Lock
 import signal
 import simplejson
@@ -55,8 +55,7 @@ try:
     from version import __version__
 except:
     __version__ = '@VERSION@'
-def escape(t):
-    return t
+
 try:
     from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
     from ws4py.websocket import WebSocket
@@ -595,12 +594,12 @@ class PellMonWeb:
                     else:
                         # get parameter
                         try:
-                            values[parameterlist.index(item['name'])]=escape(dbus.getItem(item['name']))
+                            values[parameterlist.index(item['name'])]=dbus.getItem(item['name'])
                         except:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets, webroot=cherrypy.request.script_name, from_page=cherrypy.url())
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=escape(t1), tags=tags, websockets=websockets, webroot=cherrypy.request.script_name, from_page=cherrypy.url())
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -691,7 +690,7 @@ def parameterReader(q, parameterlist):
     #parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = escape(dbus.getItem(item['name']))
+            value = dbus.getItem(item['name'])
         except:
             value='error'
         q.put((item['name'],value))
