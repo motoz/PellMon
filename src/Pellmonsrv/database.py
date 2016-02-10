@@ -25,7 +25,6 @@ class Keyval_storage:
     keyval_storage = None
 
 def init_keyval_storage(f):
-    #global keyval_storage
     Keyval_storage.keyval_storage = Keyval_storage(f)
 
 class Item(object):
@@ -88,11 +87,12 @@ class Storeditem(Getsetitem):
             self._value = value
      except Exception, e:
         print e
+        raise
 
 class Database(WeakValueDictionary):
     def __init__(self):
         WeakValueDictionary.__init__(self)
-
+    
     def insert(self, item):
         self[item.name] = item
 
@@ -106,7 +106,7 @@ class Database(WeakValueDictionary):
         try:
             self[name].value = value
             return 'OK'
-        except:
+        except Exception, e:
             return 'error'
 
 class Keyval_storage(object):
@@ -130,12 +130,13 @@ class Keyval_storage(object):
                 cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
                 value, = cursor.next()
                 conn.close()
-                return value.encode('ascii')
+                return value
             except Exception, e:
+                print e
                 return 'error'
 
     def writeval(self, item, value=None, confval=None):
-        value = str(value)
+        value = unicode(value)
         with self.lock:
             try:
                 conn = sqlite3.connect(self.dbfile)
@@ -156,5 +157,6 @@ class Keyval_storage(object):
                         cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
                         conn.commit()
                 conn.close()
-            except Exception as e: #ssqlite3.OperationalError:
+            except Exception as e:
+                     e
                 raise

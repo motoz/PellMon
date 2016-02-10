@@ -146,7 +146,7 @@ class pelletcalc(protocols):
 
         for item in itemList:
             if item['type'] == 'R/W':
-                self.store_setting(item['name'], confval = str(item['value']))
+                self.store_setting(item['name'], confval = item['value'])
                 value = self.load_setting(item['name'])
             else:
                 value = item['value']
@@ -207,7 +207,7 @@ class pelletcalc(protocols):
             if i['name'] == item:
                 #i['value'] = value
                 if i['type'] in['R/W', 'W']:
-                    self.store_setting(item, str(value))
+                    self.store_setting(item, value)
                 return 'OK'#
         return 'Error'
 

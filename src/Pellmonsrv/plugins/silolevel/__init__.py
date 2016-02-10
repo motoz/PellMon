@@ -85,7 +85,7 @@ class silolevelplugin(protocols):
 
         for item in itemList:
             if item['type'] == 'R/W':
-                self.store_setting(item['name'], confval = str(item['value']))
+                self.store_setting(item['name'], confval = item['value'])
                 value = self.load_setting(item['name'])
             else:
                 itemValues[item['name']] = item['value']
@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.store_setting(item, str(value))
+                self.store_setting(item, value)
                 if item=='silo_reset_level':
                     d = datetime.fromtimestamp(time.time())
                     s = d.strftime('%d/%m/%y %H:%M')

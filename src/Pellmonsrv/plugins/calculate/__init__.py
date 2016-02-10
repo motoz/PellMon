@@ -302,8 +302,9 @@ class calculateplugin(protocols):
                     self.store_setting(item['name'], confval = item['value'])
                 else:
                     itemValues[item['name']] = item['value']
+
             self.migrate_settings('calculate')
-    
+
             for item in itemList:
                 dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
                 for key, value in item.iteritems():
@@ -361,7 +362,7 @@ class calculateplugin(protocols):
             try:
                 item = itemList[self.name2index[itemname]]
                 if item['type'] == 'R/W':
-                    self.store_setting(item['name'], str(value))
+                    self.store_setting(item['name'], value)
                     return 'OK'
             except Exception,e:
                 return 'error'

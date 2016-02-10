@@ -132,7 +132,7 @@ class cleaningplugin(protocols):
             else:
                 try:
                     t = datetime.strptime(value,'%d/%m/%y %H:%M')
-                    self.store_setting(item, str(value))
+                    self.store_setting(item, value)
                     return 'OK'
                 except Exception,e:
                     return 'error'

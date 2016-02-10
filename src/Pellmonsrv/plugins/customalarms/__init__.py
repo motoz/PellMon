@@ -115,7 +115,7 @@ class alarmplugin(protocols):
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.store_setting(item, str(value))
+                self.store_setting(item, value)
                 return 'OK'
         except Exception,e:
             return 'error'
