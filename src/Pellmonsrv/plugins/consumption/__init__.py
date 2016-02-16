@@ -76,7 +76,7 @@ class Consumption_plugin(protocols):
         self.itemrefs = []
         self.rrdfile = self.glob['conf'].db
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            dbitem = Getsetitem(item['name'], None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
             for key, value in item.iteritems():
                 dbitem.__setattr__(key, value)
             self.db.insert(dbitem)
@@ -206,6 +206,7 @@ class Consumption_plugin(protocols):
             average = total / bars
             return json.dumps({'bardata':bardata_, 'total':total, 'average':average})
         except Exception, e:
+            print e
             return str(e)
 
     def rrd_total(self, start, end, cache=True):

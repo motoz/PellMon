@@ -52,7 +52,7 @@ class testplugin(protocols):
         for item in itemList:
             self.itemvalues[item['name']] = item['value']
 
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), item['value'])
+            dbitem = Getsetitem(item['name'], item['value'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
             for key, value in item.iteritems():
                 if key is not 'value':
                     dbitem.__setattr__(key, value)

@@ -118,7 +118,7 @@ class owfsplugin(protocols):
 
         # Create dbitems from the list and insert into the database
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            dbitem = Getsetitem(item['name'], None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
             for key, value in item.iteritems():
                 if key is not 'value':
                     dbitem.__setattr__(key, value)

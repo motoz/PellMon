@@ -87,7 +87,7 @@ class alarmplugin(protocols):
                 value = item['value']
                 itemValues[item['name']] = value
 
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), value)
+            dbitem = Getsetitem(item['name'], value, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
             for key, value in item.iteritems():
                 if key is not 'value':
                     dbitem.__setattr__(key, value)
@@ -115,7 +115,7 @@ class alarmplugin(protocols):
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.store_setting(item, value)
+                self.setting_item(store, value)
                 return 'OK'
         except Exception,e:
             return 'error'

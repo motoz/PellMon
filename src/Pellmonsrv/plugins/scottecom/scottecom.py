@@ -46,7 +46,7 @@ class scottecom(protocols):
             """Get list of all data/parameter/command items"""
             params = self.protocol.getDataBase()
             for item in params:
-                dbitem = Getsetitem(item, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                dbitem = Getsetitem(item, None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
                 if hasattr(params[item], 'max'): 
                     dbitem.max = str(params[item].max)
                 if hasattr(params[item], 'min'): 

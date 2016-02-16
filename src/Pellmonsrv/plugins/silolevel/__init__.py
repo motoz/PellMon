@@ -91,7 +91,7 @@ class silolevelplugin(protocols):
                 itemValues[item['name']] = item['value']
                 value = item['value']
 
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), value)
+            dbitem = Getsetitem(item['name'], value, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v) )
             for key, value in item.iteritems():
                 if key is not 'value':
                     dbitem.__setattr__(key, value)
@@ -100,7 +100,7 @@ class silolevelplugin(protocols):
             self.db.insert(dbitem)
             self.itemrefs.append(dbitem)
 
-        dbitem = Getsetitem('siloLevelData', lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+        dbitem = Getsetitem('siloLevelData', None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
         dbitem.type = 'R'
         self.db.insert(dbitem)
         self.itemrefs.append(dbitem)

@@ -405,7 +405,7 @@ class raspberry_gpio(protocols):
 
         # Create dbitems from the list and insert into the database
         for item in itemList:
-            dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v), 0)
+            dbitem = Getsetitem(item['name'], 0, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
             for key, value in item.iteritems():
                 dbitem.__setattr__(key, value)
             # Give it some default tags so it's visible in the web interface

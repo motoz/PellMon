@@ -72,6 +72,12 @@ class Cacheditem(Getsetitem):
                 self.update_time = time.time()
                 return self.cached_value
 
+    @property
+    def uncached_value(self):
+        if self.getter:
+            self.cached_value = self.getter(self.name)
+            self.update_time = time.time()
+
 class Storeditem(Getsetitem):
     def __init__(self, name, value=None, getter=None, setter=None):
         super(Storeditem, self).__init__(name, value, getter, setter)
@@ -80,14 +86,12 @@ class Storeditem(Getsetitem):
 
     @Getsetitem.value.setter
     def value(self, value):
-        print 'setter'
         try:
             with self.lock:
-                self.setter(self.name, value)
                 if value != self._value:
                     Keyval_storage.keyval_storage.writeval(self.name, value)
                     self._value = value
-                Getsetitem.value.setter(self)
+                self.setter(self.name, value)
         except Exception, e:
            print e
 
@@ -144,7 +148,6 @@ class Keyval_storage(object):
                 conn = sqlite3.connect(self.dbfile)
                 cursor = conn.cursor()
                 if confval is None:
-                    print 'writeval', value
                     cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
                                             ?,?,(select confvalue from keyval where id =    ?
                                     ))""", (item, value, item))
