@@ -39,7 +39,7 @@ transstring = maketrans('\t', ' ')
 
 class Calc():
     def __init__(self, prog, db, stack=None):
-        prog = prog.translate(transstring)
+        #prog = prog.translate(transstring)
         calc = []
         for row in prog.splitlines():
           calc += row.split(' ')
@@ -60,19 +60,19 @@ class Calc():
         if c=='/':
             q = float(self.stack.pop())
             d = float(self.stack.pop())
-            self.stack.append(str(d/q))
+            self.stack.append(unicode(d/q))
         elif c == '*':
             d = float(self.stack.pop())
             q = float(self.stack.pop())
-            self.stack.append(str(d*q))
+            self.stack.append(unicode(d*q))
         elif c=='+':
             d = float(self.stack.pop())
             q = float(self.stack.pop())
-            self.stack.append(str(d+q))
+            self.stack.append(unicode(d+q))
         elif c=='-':
             d = float(self.stack.pop())
             q = float(self.stack.pop())
-            self.stack.append(str(q-d))
+            self.stack.append(unicode(q-d))
         elif c=='get':
             item = self.stack.pop()
             value = self.db.get_value(item)
@@ -85,19 +85,19 @@ class Calc():
         elif c=='>':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) > float(item2))))
+            self.stack.append(unicode(int(float(item1) > float(item2))))
         elif c=='<':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) < float(item2))))
+            self.stack.append(unicode(int(float(item1) < float(item2))))
         elif c=='==':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) == float(item2))))
+            self.stack.append(unicode(int(float(item1) == float(item2))))
         elif c=='!=':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) != float(item2))))
+            self.stack.append(unicode(int(float(item1) != float(item2))))
         elif c=='?':
             itemFalse = self.stack.pop()
             itemTrue = self.stack.pop()
@@ -137,38 +137,38 @@ class Calc():
             else:
                 self.stack.append(item2)
         elif c == 'sto':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             self.store[var] = self.stack.pop()
         elif c == 'del':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             if self.store.has_key(var):
                 del gstore[var]
         elif c == 'def':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             value = self.stack.pop()
             if not self.store.has_key(var):
                 self.store[var] = value
         elif c == 'rcl':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             try:
                 self.stack.append(self.store[var])
             except:
                 raise ValueError('no variable named %s'%var)
         elif c == 'gsto':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             gstore[var] = self.stack.pop()
         elif c == 'gdef':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             value = self.stack.pop()
             if not gstore.has_key(var):
                 gstore[var] = value
         elif c == 'gdel':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             if gstore.has_key(var):
                 del gstore[var]
         elif c == 'grcl':
             try:
-                var = str(self.stack.pop())
+                var = unicode(self.stack.pop())
                 self.stack.append(gstore[var])
             except:
                 raise ValueError('no global named %s'%var)
@@ -282,7 +282,7 @@ class calculateplugin(protocols):
                         self.name2index[key]=len(itemList)-1
 
                     elif calc_data == 'progtype':
-                        if value in ['R','R/W']:                                                                                                            
+                        if value in ['R','R/W']:
                             itemList[self.calc2index[calc_name]]['type'] = value
                         else:
                            raise ValueError('unknown type %s in %s'%(value, key)) 
@@ -306,7 +306,7 @@ class calculateplugin(protocols):
             self.migrate_settings('calculate')
 
             for item in itemList:
-                dbitem = Getsetitem(item['name'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                dbitem = Getsetitem(item['name'], None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
                 for key, value in item.iteritems():
                     if key != 'value':
                         dbitem.__setattr__(key, value)
@@ -350,7 +350,7 @@ class calculateplugin(protocols):
             calc_item = item['calc_item']
             prog = self.getItem(calc_item)
             try:
-                stack = [str(value)]
+                stack = [unicode(value)]
                 calc = Calc(prog, self.db, stack=stack)
                 calc.run()
                 return 'OK'

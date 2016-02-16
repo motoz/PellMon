@@ -1,18 +1,15 @@
-#!/usr/bin/python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 """
     Copyright (C) 2013  Anders Nylund
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
@@ -30,18 +27,19 @@ def init_keyval_storage(f):
 class Item(object):
     def __init__(self, name, value=None):
         self.name = name
+
+class Plainitem(Item):
+    def __init__(self, name, value=None):
+        self.name = name
         self.value = value
 
 class Getsetitem(Item):
-    def __init__(self, name, getter, setter, value=None):
-        self.getter = getter
-        self.setter_use_later = setter
-        def first_set(*args, **kwargs):
-            # Don't call the setter on the first property set, that's from init
-            self.setter = self.setter_use_later
-        self.setter = first_set 
+    def __init__(self, name, value=None, getter=None, setter=None):
         super(Getsetitem, self).__init__(name, value)
+        self.getter = getter
+        self.setter = setter
         self._value = value
+        self.lock = threading.Lock()
 
     @property
     def value(self):
@@ -56,43 +54,47 @@ class Getsetitem(Item):
         self._value = value
 
 class Cacheditem(Getsetitem):
-    def __init__(self, name, getter, setter, value=None):
+    def __init__(self, name, value=None, getter=None, setter=None, timeout=5):
         self.update_time = 0
-        super(Cacheditem, self).__init__(name, getter, setter, value)
+        self.timeout = timeout
+        super(Cacheditem, self).__init__(name, value, getter, setter)
 
     @Getsetitem.value.getter
     def value(self):
-        if time.time() - self.update_time < 5:
+        if time.time() - self.update_time < self.timeout:
             return self.cached_value
         else:
-            self.cached_value = self.getter(self.name)
-            self.update_time = time.time()
-            return self.cached_value
+            with self.lock:
+                if self.getter:
+                    self.cached_value = self.getter(self.name)
+                else:
+                    self.cached_value = self._value
+                self.update_time = time.time()
+                return self.cached_value
 
 class Storeditem(Getsetitem):
     def __init__(self, name, value=None, getter=None, setter=None):
-        self.update_time = 0
-        self._value = value
-        super(Storeditem, self).__init__(name, getter, setter, value)
+        super(Storeditem, self).__init__(name, value, getter, setter)
         Keyval_storage.keyval_storage.writeval(self.name, confval=value)
         self._value = Keyval_storage.keyval_storage.readval(self.name)
 
     @Getsetitem.value.setter
     def value(self, value):
-     try:
-        Getsetitem.value.setter(self)
-        if value != self._value:
-            self.setter(self.name, value)
-            Keyval_storage.keyval_storage.writeval(self.name, value)
-            self._value = value
-     except Exception, e:
-        print e
-        raise
+        print 'setter'
+        try:
+            with self.lock:
+                self.setter(self.name, value)
+                if value != self._value:
+                    Keyval_storage.keyval_storage.writeval(self.name, value)
+                    self._value = value
+                Getsetitem.value.setter(self)
+        except Exception, e:
+           print e
 
 class Database(WeakValueDictionary):
     def __init__(self):
         WeakValueDictionary.__init__(self)
-    
+
     def insert(self, item):
         self[item.name] = item
 
@@ -106,7 +108,7 @@ class Database(WeakValueDictionary):
         try:
             self[name].value = value
             return 'OK'
-        except Exception, e:
+        except:
             return 'error'
 
 class Keyval_storage(object):
@@ -142,6 +144,7 @@ class Keyval_storage(object):
                 conn = sqlite3.connect(self.dbfile)
                 cursor = conn.cursor()
                 if confval is None:
+                    print 'writeval', value
                     cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
                                             ?,?,(select confvalue from keyval where id =    ?
                                     ))""", (item, value, item))
@@ -158,5 +161,5 @@ class Keyval_storage(object):
                         conn.commit()
                 conn.close()
             except Exception as e:
-                     e
                 raise
+
