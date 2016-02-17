@@ -142,7 +142,19 @@ class Keyval_storage(object):
                 return 'error'
 
     def writeval(self, item, value=None, confval=None):
-        value = unicode(value)
+
+        if type(confval) is str:
+            confval = confval.decode('utf-8')
+        else:
+            if confval is not None and type(confval) is not unicode:
+                confval = unicode(confval)
+
+        if type(value) is str:
+            value = value.decode('utf-8')
+        else:
+            if value is not None and type(value) is not unicode:
+                value = unicode(value)
+
         with self.lock:
             try:
                 conn = sqlite3.connect(self.dbfile)

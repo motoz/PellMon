@@ -35,11 +35,8 @@ itemValues={}
 Menutags = ['Calculate']
 gstore = {}
 
-transstring = maketrans('\t', ' ')
-
 class Calc():
     def __init__(self, prog, db, stack=None):
-        #prog = prog.translate(transstring)
         calc = []
         for row in prog.splitlines():
           calc += row.split(' ')
@@ -252,7 +249,9 @@ class calculateplugin(protocols):
 
                     if calc_data == 'prog':
                         itemList[self.calc2index[calc_name]]['name'] = key 
-                        itemList[self.calc2index[calc_name]]['value'] = value 
+                        value = value.decode('utf-8')
+                        value = value.translate({ord(u'\t'):u' ', ord(u'\n'):u' '})
+                        itemList[self.calc2index[calc_name]]['value'] = value
                         #itemList[self.calc2index[calc_name]]['type'] = 'R/W' 
                         self.name2index[key] = self.calc2index[calc_name]
                         itemTags[key] = ['All', 'Calculate']
@@ -378,14 +377,14 @@ class calcthread(Thread):
         Thread.__init__(self)
         self.cycle = cycle
         self.setDaemon(True)
-        self.start()
         self.progitem = progitem
         self.plugin_object = plugin_object
+        self.start()
     def run(self):
         while True:
             try:
                 prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.db)
                 prog.run()
-            except:
-                pass
+            except Exception, e:
+                logger.info(self.progitem + ' error: '+str(e))
             sleep(self.cycle)

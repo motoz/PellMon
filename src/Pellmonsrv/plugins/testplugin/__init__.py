@@ -80,7 +80,7 @@ class testplugin(protocols):
 
     def setItem(self, item, value):
         self.itemvalues[item] = value
-        logger.debug('testplugin: Set %s=%s'%(item,str(value)))
+        logger.debug('testplugin: Set %s=%s'%(item,unicode(value)))
 
     def getMenutags(self):
         return ['testplugin', 'Overview']
