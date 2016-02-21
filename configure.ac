@@ -41,6 +41,7 @@ src/Pellmonsrv/plugins/pelletcalc/Makefile \
 src/Pellmonsrv/plugins/consumption/Makefile \
 src/Pellmonsrv/plugins/cleaning/Makefile \
 src/Pellmonsrv/plugins/onewire/Makefile \
+src/Pellmonsrv/plugins/heatingcircuit/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 
