@@ -78,6 +78,12 @@ class Cacheditem(Getsetitem):
             self.cached_value = self.getter(self.name)
             self.update_time = time.time()
 
+    def update_cache(self, value, t=None):
+        self.cached_value = value
+        if t == None:
+            t = time.time()
+        self.update_time = t
+
 class Storeditem(Getsetitem):
     def __init__(self, name, value=None, getter=None, setter=None):
         super(Storeditem, self).__init__(name, value, getter, setter)
