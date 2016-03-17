@@ -5,6 +5,7 @@ This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 ## [unreleased]
 ### Changed
 - Plugin interface to the database redesigned
+- New plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection
 
 ## [0.6.1] - 2016-01-22
 ### Added
