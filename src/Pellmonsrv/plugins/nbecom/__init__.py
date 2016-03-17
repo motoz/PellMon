@@ -123,6 +123,19 @@ class nbecomplugin(protocols):
                 self.menutags.append('sw_versions')
                 self.itemrefs.append(item)
                 self.db.insert(item)
+                item = Getsetitem('feeder_capacity', None, getter=lambda i:self.db['auger-auger_capacity'].value)
+                self.itemrefs.append(item)
+                self.db.insert(item)
+
+                def get_feeder_time(i):
+                    ac = float(self.db['auger-auger_capacity'].value)
+                    counter = float(self.db['consumption_data-counter'].value)
+                    return str(int(counter * 100 / ac * 360))
+
+                item = Getsetitem('feeder_time', None, getter=get_feeder_time)
+                self.itemrefs.append(item)
+                self.db.insert(item)
+                
                 
         items = self.dir_recursive('settings/')
         additems(items, 'settings', 'R/W')

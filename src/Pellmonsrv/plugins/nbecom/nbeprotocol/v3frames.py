@@ -139,9 +139,7 @@ class V3_response_frame(object):
         self.function = int(record[i:i+2])
         i += 2
         self.sequencenumber = int(record[i:i+2])
-        #print self.sequencenumber, self.request.sequencenumber
         if self.sequencenumber != self.request.sequencenumber:
-            print self.sequencenumber, self.request.sequencenumber
             raise IOError('seqnum, res:%u req:%u'%(self.sequencenumber, self.request.sequencenumber))
         i += 2
         self.status = int(record[i:i+1])
@@ -151,7 +149,6 @@ class V3_response_frame(object):
         if not len(record) == self.size + self.RESPONSE_HEADER_SIZE:
             raise IOError('wrong length')
         self.payload = (record[i:i+self.size]).decode('ascii')
-        #print self.payload
         i += self.size
         if not record[i] == END[0]:
             raise IOError('end missing')
