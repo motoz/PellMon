@@ -235,7 +235,9 @@ class Poller(threading.Thread):
                                 except:
                                     pass
                     except IOError as e:
-                        logger.info('IOError: %s,  Trying Z01...'%e.strerror)
+                        #logger.info('IOError: %s,  Trying Z01...'%str(e))
+#                        import traceback
+#                        traceback.print_exc()
                         try:
                             # Strange fix for stange problem with some scotte burners
                             conf.database['oxygen_regulation'].value

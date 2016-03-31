@@ -96,7 +96,10 @@ class nbecomplugin(protocols):
 
                 def get_value(name):
                     item = self.db[name]
-                    value = self.proxy.get(item.path)[0]
+                    try:
+                        value = self.proxy.get(item.path)[0]
+                    except:
+                        value = 'error'
                     value = value.split('=')[1]
                     return value
 
@@ -126,11 +129,15 @@ class nbecomplugin(protocols):
                 item = Getsetitem('feeder_capacity', None, getter=lambda i:self.db['auger-auger_capacity'].value)
                 self.itemrefs.append(item)
                 self.db.insert(item)
-
+                self.feeder_time = 0
+                self.counter = None
                 def get_feeder_time(i):
                     ac = float(self.db['auger-auger_capacity'].value)
                     counter = float(self.db['consumption_data-counter'].value)
-                    return str(int(counter * 100 / ac * 360))
+                    counterdiff = 0 if self.counter is None else counter - self.counter
+                    self.counter = counter
+                    self.feeder_time += counterdiff * 1000 / ac * 360
+                    return str(int(self.feeder_time))    
 
                 item = Getsetitem('feeder_time', None, getter=get_feeder_time)
                 self.itemrefs.append(item)

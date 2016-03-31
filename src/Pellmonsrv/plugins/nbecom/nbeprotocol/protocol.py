@@ -27,6 +27,8 @@ import errno
 from v3frames import V3_request_frame, V3_response_frame
 from v2frames import V2_request_frame, V2_response_frame
 from v1frames import V1_request_frame, V1_response_frame
+from os import urandom
+import xtea
 
 class Proxy:
     root = ('settings', 'operating_data', 'advanced_data', 'consumption_data', 'event_log','sw_versions','info')
@@ -86,6 +88,9 @@ class Proxy:
                 request.public_key = None
             request.pincode = self.password
             self.request = request
+        xtea_key = base64.b64encode(urandom(10))
+        self.set('settings/misc/xtea_key', xtea_key)
+        self.request.xtea_key = xtea.new(xtea_key, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
 
     def get(self, d=None):
         d = d.rstrip('/').split('/')

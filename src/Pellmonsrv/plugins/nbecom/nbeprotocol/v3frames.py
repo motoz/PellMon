@@ -41,7 +41,10 @@ class V3_request_frame(object):
         self.framedata += ('%6s'%self.controllerid[:6]).encode('ascii')
 
         if self.encrypted:
-            self.framedata += ('%1s'%'*').encode('ascii')
+            if hasattr(self, 'xtea_key'):
+                self.framedata += ('%1s'%'-').encode('ascii')
+            else:
+                self.framedata += ('%1s'%'*').encode('ascii')
         else:
             self.framedata += ('%1s'%' ').encode('ascii')
 
@@ -60,12 +63,18 @@ class V3_request_frame(object):
         h += ('%03u'%len(self.payload)).encode('ascii')
         if len(self.payload) > 495:
             raise IOError
-        h += self.payload.encode('ascii')
+        try:
+            h += self.payload.encode('ascii')
+        except UnicodeError:
+            h += self.payload
         h += END;
         pad = b'0'*(64-len(h))
         h+=pad
         if self.encrypted: 
-            h = self.public_key.encrypt(h, None)[0]
+            if hasattr(self, 'xtea_key'):
+                h = self.xtea_key.encrypt(h)
+            else:
+                h = self.public_key.encrypt(h, None)[0]
         self.framedata += h
         return self.framedata
 
