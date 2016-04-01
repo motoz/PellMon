@@ -27,7 +27,7 @@ FUNCTION_CODES = (0,1,2,3,4,5,6,7,8,9,10,11)
 class V3_request_frame(object):
     def __init__(self, version = 'V1'):
         self.REQUEST_HEADER_SIZE = 52
-        self.appid = 'nbetest'
+        self.appid = 'pellmon'
         self.controllerid = 'id'
         self.encrypted = False
         self.sequencenumber = 0
