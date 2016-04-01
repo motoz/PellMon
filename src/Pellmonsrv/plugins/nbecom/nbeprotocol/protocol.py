@@ -18,7 +18,7 @@
 """
 
 import socket
-from random import randrange
+from random import randrange, SystemRandom
 import time
 from Crypto.PublicKey import RSA
 import base64
@@ -27,7 +27,6 @@ import errno
 from v3frames import V3_request_frame, V3_response_frame
 from v2frames import V2_request_frame, V2_response_frame
 from v1frames import V1_request_frame, V1_response_frame
-from os import urandom
 import xtea
 
 class Proxy:
@@ -88,7 +87,8 @@ class Proxy:
                 request.public_key = None
             request.pincode = self.password
             self.request = request
-        xtea_key = base64.b64encode(urandom(10))
+        xtea_key = ''.join([chr(SystemRandom().randrange(128)) for x in range(16)])
+        print xtea_key
         self.set('settings/misc/xtea_key', xtea_key)
         self.request.xtea_key = xtea.new(xtea_key, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
 
@@ -197,6 +197,7 @@ class Proxy:
             try:
                 data, server = self.s.recvfrom(4096)
             except socket.error as e:
+                print str(e)
                 if e.errno != errno.EINTR:
                     raise
             else:
