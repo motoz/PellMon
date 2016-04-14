@@ -54,104 +54,98 @@ class nbecomplugin(protocols):
             self.password = self.conf['password']
         except:
             self.password = '-'
-        self.proxy = Proxy.discover(self.password, 1900, version='3')
+        self.proxy = Proxy.discover(self.password, 8483, version='3')
 
-        def additems(items, group, itemtype, itemtag=None):
-            for i in items:
-                i = i.encode('ascii')
-                fullpath = i
-                value = ''
-                try:
-                    fullpath, value = fullpath.split('=',1)
-                except:
-                    pass
-                if itemtag is None:
-                    tag = os.path.dirname(os.path.relpath(fullpath, group))
-                    name = os.path.basename(fullpath)
-                    id = '-'.join((tag, name))
-                    #print tag, name
-                else:
-                    name = os.path.relpath(fullpath, group)
-                    tag = itemtag
-                    id = '-'.join((tag, name))
+        dirlist = self.proxy.dir()
 
-                def get_group(name):
-                    item = self.db[name]
-                    try:
-                        items = self.proxy.get(item.grouppath)
-                    except Exception as e:
-                        raise
-                    try:
-                        for i in items:
-                            path, value = i.split('=')
-                            name = os.path.basename(path)
-                            p = os.path.basename(os.path.dirname(path))
-                            n = '-'.join((p,name))
-                            i = self.db[n]
-                            i.update_cache(value)
-                        return item.cached_value
-                    except Exception as e:
-                        print 'err', e, i
-                        return 'error'
+        def get_group(name):
+            try:
+              with self.proxy.lock:
+                item = self.db[name]
+                pdata = item.protocoldata
+                items = self.proxy.make_request(int(pdata['function']), pdata['grouppath']).payload
+                if pdata['group'] == 'operating_data':
+                    pass #print items
+                items = items.encode('ascii').split(';')
+            except Exception as e:
+                print e, 'exc'
+                import traceback
+                traceback.print_exc()
+                raise
+            try:
+                for i in items:
+                    path, value = i.split('=')
+                    name = os.path.basename(path)
+                    p = os.path.basename(os.path.dirname(path))
+                    n = '-'.join((pdata['group'], name))
+                    i = self.db[n]
+                    i.update_cache(value)
+                return item.cached_value
+            except Exception as e:
+                print 'err', e, i
+                import traceback
+                traceback.print_exc()
+                return 'error'
 
-                def get_value(name):
-                    item = self.db[name]
-                    try:
-                        value = self.proxy.get(item.path)[0]
-                    except:
-                        value = 'error'
-                    value = value.split('=')[1]
-                    return value
+        def get_value(name):
+            item = self.db[name]
+            pdata = item.protocoldata
+            try:
+                with self.proxy.lock:
+                    value = self.proxy.make_request(int(pdata['function']), pdata['path']).payload
+            except:
+                value = 'error'
+            value = value.split('=', 1)[1]
+            return value
 
-                if '=' in i:
-                    item = Cacheditem(id, value, getter=get_group, setter=lambda i,v:self.proxy.set(self.db[i].path, v), timeout=1)
-                else:
-                    item = Cacheditem(id, value, getter=get_value, setter=lambda i,v:self.proxy.set(self.db[i].path, v), timeout=10)
-                item.path =  i.split('=',1)[0]
-                item.longname = name
-                
-                item.grouppath = os.path.dirname(item.path)
-                item.type = itemtype
+        def set_value(name, value):
+            item = self.db[name]
+            pdata = item.protocoldata
+            try:
+                r = self.proxy.make_request(2, pdata['path']+'='+value, encrypt=True)
+                return r
+            except:
+                return 'error'
 
-                if tag not in self.menutags:
-                    self.menutags.append(tag)
-                item.tags = ['All', 'Basic']
-                item.tags.append(tag)
+        for i in dirlist:
+            i_id = i['group'] + '-' + i['name']
+            if 'grouppath' in i:
+                item = Cacheditem(i_id, i['value'], getter=get_group, setter=set_value, timeout=1)
+            else:
+                item = Cacheditem(i_id, i['value'], getter=get_value, setter=lambda i,v:self.proxy.set(self.db[i].path, v), timeout=10)
+            item.protocoldata =  i
+            item.longname = i['name']
+            item.type = i['type']
+            try:
+                item.min = i['min']
+                item.max = i['max']
+            except KeyError:
+               pass
+            if i['group'] not in self.menutags:
+                self.menutags.append(i['group'])
+            item.tags = ['All', 'Basic', i['group']]
+            #item.tags.append(tag)
 
-                self.itemrefs.append(item)
-                self.db.insert(item)
-                item = Cacheditem('sw_versions', None, getter=lambda i:' /   '.join(self.proxy.get('sw_versions')), timeout=10)
-                item.type = 'R'
-                item.tags = ['All', 'Basic', 'sw_versions']
-                self.menutags.append('sw_versions')
-                self.itemrefs.append(item)
-                self.db.insert(item)
-                item = Getsetitem('feeder_capacity', None, getter=lambda i:self.db['auger-auger_capacity'].value)
-                self.itemrefs.append(item)
-                self.db.insert(item)
-                self.feeder_time = 0
-                self.counter = None
-                def get_feeder_time(i):
-                    ac = float(self.db['auger-auger_capacity'].value)
-                    counter = float(self.db['consumption_data-counter'].value)
-                    counterdiff = 0 if self.counter is None else counter - self.counter
-                    self.counter = counter
-                    self.feeder_time += counterdiff * 1000 / ac * 360
-                    return str(int(self.feeder_time))    
+            self.itemrefs.append(item)
+            self.db.insert(item)
 
-                item = Getsetitem('feeder_time', None, getter=get_feeder_time)
-                self.itemrefs.append(item)
-                self.db.insert(item)
-                
-                
-        items = self.dir_recursive('settings/')
-        additems(items, 'settings', 'R/W')
-        items = self.dir_recursive('operating_data/')
-        additems(items, 'operating_data', 'R', 'operating_data')
-        items = self.dir_recursive('advanced_data/')
-        additems(items, 'advanced_data', 'R', 'advanced_data')
-        items = self.dir_recursive('consumption_data/')
-        additems(items, 'consumption_data', 'R', 'consumption_data')
-        
+        item = Getsetitem('feeder_capacity', None, getter=lambda i:self.db['auger-auger_capacity'].value)
+        self.itemrefs.append(item)
+        self.db.insert(item)
+        self.feeder_time = 0
+        self.counter = None
+        def get_feeder_time(i):
+            ac = float(self.db['auger-auger_capacity'].value)
+            counter = float(self.db['consumption_data-counter'].value)
+            counterdiff = 0 if self.counter is None else counter - self.counter
+            self.counter = counter
+            self.feeder_time += counterdiff * 1000 / ac * 360
+            return str(int(self.feeder_time))    
+
+        item = Getsetitem('feeder_time', None, getter=get_feeder_time)
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
+
     def getMenutags(self):
         return self.menutags

@@ -18,11 +18,13 @@
 """
 
 import time
+from exceptions import *
 
 START = b'\x02'
 END = b'\x04'
 STATUS_CODES = (0,1,2,3)
 FUNCTION_CODES = (0,1,2,3,4,5,6,7,8,9,10,11)
+
 
 class V3_request_frame(object):
     def __init__(self, version = 'V1'):
@@ -57,7 +59,7 @@ class V3_request_frame(object):
         if self.encrypted:
             h += ('%10s'%self.pincode[:10]).encode('ascii')
         else:
-            h += ('%10s'%'-').encode('ascii')
+            h += ('-'*10).encode('ascii')
         h += ('%10s'%int(time.time())).encode('ascii')
         h += ('%4s'%'extr').encode('ascii')
         h += ('%03u'%len(self.payload)).encode('ascii')
@@ -120,14 +122,14 @@ class V3_response_frame(object):
         self.framedata += ('%6s'%self.request.controllerid).encode('ascii')
         self.framedata += START;
         if int(self.function) > 13:
-            raise IOError
+            raise protocol_error
         self.framedata += ('%02u'%self.function).encode('ascii')
         if self.status not in STATUS_CODES:
-            raise IOError
+            raise protocol_error
         self.framedata += ('%2d'%self.request.sequencenumber).encode('ascii')
         self.framedata += ('%1s'%self.status).encode('ascii')
         if len(self.payload) > 1007:
-            raise IOError
+            raise protocol_error
         self.framedata += ('%03u'%len(self.payload)).encode('ascii')
         self.framedata += self.payload.encode('ascii')
         self.framedata += END;
@@ -141,26 +143,32 @@ class V3_response_frame(object):
         self.controllerid = record[i:i+6]
         i+=6
         if not record[i] == START[0]:
-            raise IOError('start missing')
+            raise protocol_error('start missing')
         if len(record) < self.RESPONSE_HEADER_SIZE:
-            raise IOError('too long length')
+            raise protocol_error('too long length')
         i += 1
-        self.function = int(record[i:i+2])
+        try:
+            self.function = int(record[i:i+2])
+        except:
+            self.function = None
         i += 2
-        self.sequencenumber = int(record[i:i+2])
-        if self.sequencenumber != self.request.sequencenumber:
-            raise IOError('seqnum, res:%u req:%u'%(self.sequencenumber, self.request.sequencenumber))
+        try:
+            self.sequencenumber = int(record[i:i+2])
+        except:
+            self.sequencenumber = None
         i += 2
         self.status = int(record[i:i+1])
         i += 1
         self.size = int(record[i:i+3])
         i += 3
         if not len(record) == self.size + self.RESPONSE_HEADER_SIZE:
-            raise IOError('wrong length')
+            raise protocol_error('wrong length')
         self.payload = (record[i:i+self.size]).decode('ascii')
         i += self.size
         if not record[i] == END[0]:
-            raise IOError('end missing')
+            raise protocol_error('end missing')
+        if self.sequencenumber != self.request.sequencenumber:
+            raise seqnum_error('---seqnum, res:%u req:%u'%(self.sequencenumber, self.request.sequencenumber))
 
     def parse_payload(self):
         frame = self.payload

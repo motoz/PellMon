@@ -28,6 +28,7 @@ from v3frames import V3_request_frame, V3_response_frame
 from v2frames import V2_request_frame, V2_response_frame
 from v1frames import V1_request_frame, V1_response_frame
 import xtea
+from exceptions import *
 
 class Proxy:
     root = ('settings', 'operating_data', 'advanced_data', 'consumption_data', 'event_log','sw_versions','info')
@@ -35,7 +36,7 @@ class Proxy:
         'sun', 'vacuum', 'misc', 'alarm', 'manual')
     consumption_data = ('total_hours', 'total_days', 'total_months', 'total_years', 'dhw_hours', 'dhw_days', 'dhw_months', 'dhw_years', 'counter')
 
-    def __init__(self, password, port=1900, addr=None, version='V3'):
+    def __init__(self, password, port=1920, addr=None, version='V3'):
         self.password = password
         self.addr = (addr, port)
         self.lock = threading.Lock()
@@ -44,53 +45,120 @@ class Proxy:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if addr == '<broadcast>':
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.settimeout(2)
+        s.settimeout(0.4)
         self.s = s
         if version == '3':
-            request = V3_request_frame()
-            self.response = V3_response_frame(request)
+            self.request = V3_request_frame()
+            self.response = V3_response_frame(self.request)
         elif version == '2':
-            request = V2_request_frame()
-            self.response = V2_response_frame(request)
+            self.request = V2_request_frame()
+            self.response = V2_response_frame(self.request)
         elif version == '1':
-            request = V1_request_frame()
-            self.response = V1_response_frame(request)
+            self.request = V1_request_frame()
+            self.response = V1_response_frame(self. request)
+        self.request.pincode = self.password
 
-        request.function = 0
-        request.payload = 'NBE_DISCOVERY'
-        request.sequencenumber = randrange(0,100)
-        with self.lock:
-            self.s.sendto(request.encode() , (addr, port))
-            data, server = self.s.recvfrom(4096)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-            self.addr = server
-            self.response.decode(data)
-            res = self.response.parse_payload()
-        if 'Serial' in res:
-            self.serial = res['Serial']
-        if 'IP' in res:
-            self.ip = res['IP']
+        if not self.find_controller():
+            logger.info('Controller not found')
+            raise Exception
+        self.get_rsakey()
+        self.set_xteakey()
+        self.t = threading.Thread(target=lambda:self.xtea_refresh_thread())
+        self.t.setDaemon(True)
+        self.t.start()
+        self.dir()
 
+    def get_rsakey(self):
         with self.lock:
+            request = self.request
             request.payload = 'misc.rsa_key'
             request.function = 1
             request.sequencenumber += 1
-            self.s.sendto(request.encode() , self.addr)
-            data, server = self.s.recvfrom(4096)
-            self.response.decode(data)
-            try:
-                key = self.response.payload.split('rsa_key=')[1]
-                key = base64.b64decode(key)
-                request.public_key = RSA.importKey(key)
-            except Exception as e:
-                print (e)
-                request.public_key = None
-            request.pincode = self.password
-            self.request = request
+            for retry in range(3):
+                try:
+                    self.s.sendto(request.encode() , self.addr)
+                    while True:
+                        try:
+                            data, server = self.s.recvfrom(4096)
+                            self.response.decode(data)
+                        except seqnum_error as e:
+                            print (e)
+                            request.public_key = None
+                            time.sleep(1)
+                        else:
+                            break
+                    key = self.response.payload.split('rsa_key=')[1]
+                    key = base64.b64decode(key)
+                    request.public_key = RSA.importKey(key)
+                except socket.timeout:
+                    print 'timout'
+                    time.sleep(1)
+                else:
+                    return True 
+        return False
+    
+    def set_xteakey(self):
+        #print 'xxsend'
         xtea_key = ''.join([chr(SystemRandom().randrange(128)) for x in range(16)])
-        print xtea_key
-        self.set('settings/misc/xtea_key', xtea_key)
+        r = self.set('settings/misc/xtea_key', xtea_key)
+        if not r== ('ok',):
+            print 'xtea set failed'
         self.request.xtea_key = xtea.new(xtea_key, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
+
+    def find_controller(self):
+        with self.lock:
+            request = self.request
+            request.function = 0
+            request.payload = 'NBE_DISCOVERY'
+            request.sequencenumber = randrange(0,100)
+            self.s.sendto(request.encode(), self.addr)
+            for retry in range(5):
+                try:
+                    request.sequencenumber = randrange(0,100)
+                    self.s.sendto(request.encode(), self.addr)
+                    while True:
+                        try:
+                            data, server = self.s.recvfrom(4096)
+                            self.response.decode(data)
+                        except seqnum_error:
+                            pass
+                        else:
+                            break
+                    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
+                    self.addr = server
+                    res = self.response.parse_payload()
+                    if 'Serial' in res:
+                        self.serial = res['Serial']
+                    if 'IP' in res:
+                        self.ip = res['IP']
+                except socket.timeout:
+                    print 'timeout'
+                    time.sleep(1)
+                else:
+                    return True
+            return False
+
+    def dir(self):
+        dirlist = []
+        for s in self.settings:
+            dl = self.make_request(3, s+'.*').payload.encode('ascii').split(';')
+            for d in dl:
+                d_name, d = d.split('=')
+                d_min, d_max, d_default, d_decimals = d.split(',')
+                dirlist.append({'path':s+'.'+d_name, 'name':d_name, 'function':1, 'grouppath':s+'.*', 'group':s, 'min':d_min, 'max':d_max, 'decimals':d_decimals, 'type':'R/W', 'value':'-'})
+        dl = self.make_request(5, '*').payload.encode('ascii').split(';')
+        for d in dl:
+            d_name, d_value = d.split('=')
+            dirlist.append({'path':d_name, 'name':d_name, 'function':5, 'grouppath':'*', 'group':'advanced_data', 'type':'R', 'value':d_value})
+        dl = self.make_request(4, '*').payload.encode('ascii').split(';')
+        for d in dl:
+            d_name, d_value = d.split('=')
+            dirlist.append({'path':d_name, 'name':d_name, 'function':4, 'grouppath':'*', 'group':'operating_data', 'type':'R', 'value':d_value})
+        #dl = self.make_request(6, 'counter').payload
+        #d_name, d_value = dl.split('=')
+        d_name = 'counter'
+        dirlist.append({'path':d_name, 'name':d_name, 'function':6, 'group':'consumption_data', 'type':'R', 'value':d_value})
+        return dirlist
 
     def get(self, d=None):
         d = d.rstrip('/').split('/')
@@ -169,9 +237,11 @@ class Proxy:
             return ('settings',)
         elif len(d) == 3 and d[1] in self.settings and value is not None :
             with self.lock:
+                #self.request.xtea_key = xtea.new(' '*16, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
                 self.s.settimeout(5)
                 response = self.make_request(2, '.'.join(d[1:3]) + '=' + value, encrypt=True)
-                self.s.settimeout(2)
+                #print 'set response', response.status
+                self.s.settimeout(0.4)
                 if response.status == 0:
                     return ('ok',)
                 else:
@@ -180,30 +250,60 @@ class Proxy:
             return self.get(path)
 
     @classmethod
-    def discover(cls, password, port, version='V1'):
+    def discover(cls, password, port, version='V3'):
         return cls(password, port, addr='<broadcast>', version=version)
 
     def make_request(self, function, payload, encrypt=False, key=None):
-        #print(' '.join([hex(ord(ch)) for ch in c.framedata]))
-        self.request.sequencenumber += 1
-        if self.request.sequencenumber > 99:
-            self.request.sequencenumber = 0
-        self.request.payload = payload
-        self.request.function = function
-        self.request.encrypted = encrypt
-        self.request.pincode = self.password
-        self.s.sendto(self.request.encode(), self.addr)
-        while True:
+        for retry in range(3):
             try:
-                data, server = self.s.recvfrom(4096)
-            except socket.error as e:
-                print str(e)
-                if e.errno != errno.EINTR:
-                    raise
-            else:
-                break
-        self.response.decode(data)
-        return self.response
+                self.request.sequencenumber += 1
+                if self.request.sequencenumber > 99:
+                    self.request.sequencenumber = 0
+                self.request.payload = payload
+                self.request.function = function
+                self.request.encrypted = encrypt
+                #print 'encrypt flag', self.request.encrypted
+                self.request.pincode = self.password
+                self.s.sendto(self.request.encode(), self.addr)
+                #print(' '.join([hex(ord(ch)) for ch in c.framedata]))
+                #print 'sent:', self.request.encode()
+                while True:
+                    try:
+                        while True:
+                            try:
+                                data, server = self.s.recvfrom(4096)
+                            except socket.error as e:
+                                if e.errno != errno.EINTR:
+                                    raise
+                            else:
+                                break
+                        self.response.decode(data)
+                        #print 'received:', data, len(data)
+                        return self.response
+                    except seqnum_error as e:
+                        print 'seqnum error, reread', payload, str(function)
+                        pass #just read again on seqnum error
+                    else:
+                        break
+            except socket.timeout:
+                print 'timeout, retry', retry
+                if retry == 2:
+                    raise socket.timeout
+
+    def xtea_refresh_thread(self):
+        while True:
+            time.sleep(5)
+            try:
+                self.set_xteakey()
+            except Exception as e:
+                del self.request.xtea_key
+                #print 'error setting xtea, try with rsa', str(e), str(time.ctime())
+                try:
+                    self.set_xteakey()
+                except Exception as e:
+                    #print 'failed, try again in 5 s'
+                    pass
+
 
 class Controller:
     def __init__(self, host, password, port=1900, seqnums=True):

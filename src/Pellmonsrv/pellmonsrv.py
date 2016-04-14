@@ -244,7 +244,7 @@ class Poller(threading.Thread):
                         except Exception as e:
                             logger.info('error in retry %s'%str(e) )
                     except Exception as e:
-                        logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
+                        logger.debug('error polling %s: %s'%(data['name'], str(e)) )
                         
                     itemlist.append(value)
                     lastupdate[data['name']] = value
