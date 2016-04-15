@@ -36,10 +36,11 @@ class Proxy:
         'sun', 'vacuum', 'misc', 'alarm', 'manual')
     consumption_data = ('total_hours', 'total_days', 'total_months', 'total_years', 'dhw_hours', 'dhw_days', 'dhw_months', 'dhw_years', 'counter')
 
-    def __init__(self, password, port=1920, addr=None, version='V3'):
+    def __init__(self, password, port=1920, addr=None, version='V3', serial=None):
         self.password = password
         self.addr = (addr, port)
         self.lock = threading.Lock()
+        self.serial = serial
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -111,7 +112,8 @@ class Proxy:
             request.function = 0
             request.payload = 'NBE_DISCOVERY'
             request.sequencenumber = randrange(0,100)
-            self.s.sendto(request.encode(), self.addr)
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
             for retry in range(5):
                 try:
                     request.sequencenumber = randrange(0,100)
@@ -119,18 +121,21 @@ class Proxy:
                     while True:
                         try:
                             data, server = self.s.recvfrom(4096)
+                            print data, server
                             self.response.decode(data)
+                            self.addr = server
+                            res = self.response.parse_payload()
+                            if self.serial:
+                                if 'Serial' in res and res['Serial'] == self.serial:
+                                    self.ip = res['IP']
+                                    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
+                                    break
+                            else:
+                                self.ip = res['IP']
+                                self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
+                                break
                         except seqnum_error:
                             pass
-                        else:
-                            break
-                    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-                    self.addr = server
-                    res = self.response.parse_payload()
-                    if 'Serial' in res:
-                        self.serial = res['Serial']
-                    if 'IP' in res:
-                        self.ip = res['IP']
                 except socket.timeout:
                     print 'timeout'
                     time.sleep(1)
@@ -250,8 +255,8 @@ class Proxy:
             return self.get(path)
 
     @classmethod
-    def discover(cls, password, port, version='V3'):
-        return cls(password, port, addr='<broadcast>', version=version)
+    def discover(cls, password, port, version='V3', serial=None):
+        return cls(password, port, addr='<broadcast>', version=version, serial=serial)
 
     def make_request(self, function, payload, encrypt=False, key=None):
         for retry in range(3):

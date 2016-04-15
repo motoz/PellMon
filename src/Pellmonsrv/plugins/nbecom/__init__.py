@@ -54,7 +54,12 @@ class nbecomplugin(protocols):
             self.password = self.conf['password']
         except:
             self.password = '-'
-        self.proxy = Proxy.discover(self.password, 8483, version='3')
+        try:
+            self.serial = self.conf['serial']
+        except:
+            self.serial = None
+
+        self.proxy = Proxy.discover(self.password, 8483, version='3', serial = self.serial)
 
         dirlist = self.proxy.dir()
 
