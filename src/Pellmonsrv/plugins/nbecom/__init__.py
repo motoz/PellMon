@@ -22,6 +22,8 @@ from Pellmonsrv.database import Item, Getsetitem, Storeditem, Cacheditem
 from logging import getLogger
 
 import os, sys, time
+import threading
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from nbeprotocol.protocol import Proxy
 
@@ -45,6 +47,29 @@ class nbecomplugin(protocols):
         except:
             self.serial = None
 
+        item = Getsetitem('controller_online', None, getter=lambda i:1 if self.proxy.controller_online else 0)
+        item.tags = ['All','Basic','advanced_data']
+        item.type = 'R'
+        item.longname = 'Controller online'
+        item.description = 'Controller communication status'
+        self.itemrefs.append(item)
+        self.db.insert(item)
+        self.menutags.append('advanced_data')
+
+        item = Getsetitem('controller_IP', None, getter=lambda i:self.proxy.addr[0] if self.proxy.controller_online else '')
+        item.tags = ['All','Basic','advanced_data']
+        item.type = 'R'
+        item.longname = 'Controller IP'
+        item.description = 'Controller IP address'
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
+        self.startthread = threading.Thread(target=lambda:self.start())
+        self.startthread.setDaemon(True)
+        self.startthread.start()
+
+
+    def start(self):
         self.proxy = Proxy.discover(self.password, 8483, version='3', serial = self.serial)
         while not self.proxy.controller_online:
             time.sleep(1)
@@ -55,38 +80,6 @@ class nbecomplugin(protocols):
                 break
             except Exception as e:
                 time.sleep(1)
-
-        def get_group(name):
-            if not self.proxy.controller_online:
-                raise protocol_offline
-            try:
-              with self.proxy.lock:
-                item = self.db[name]
-                pdata = item.protocoldata
-                items = self.proxy.make_request(int(pdata['function']), pdata['grouppath']).payload
-                if pdata['group'] == 'operating_data':
-                    pass
-                items = items.encode('ascii').split(';')
-            except Exception as e:
-                print e, 'exc'
-                #import traceback
-                #traceback.print_exc()
-                raise
-            try:
-                for i in items:
-                    path, value = i.split('=')
-                    name = os.path.basename(path)
-                    p = os.path.basename(os.path.dirname(path))
-                    n = '-'.join((pdata['group'], name))
-                    i = self.db[n]
-                    i.update_cache(value)
-                return item.cached_value
-            except Exception as e:
-                print 'err', e, i
-                #import traceback
-                #traceback.print_exc()
-                return 'error'
-
         def get_value(name):
             item = self.db[name]
             pdata = item.protocoldata
@@ -97,12 +90,31 @@ class nbecomplugin(protocols):
             pdata = item.protocoldata
             return self.proxy.set(pdata['path'], value)
 
+        def get_group(name):
+            if not self.proxy.controller_online:
+                raise protocol_offline
+            try:
+                item = self.db[name]
+                pdata = item.protocoldata
+                items = self.proxy.get(int(pdata['function']), pdata['grouppath'], group=True)
+                for i in items:
+                    path, value = i.split('=')
+                    name = os.path.basename(path)
+                    p = os.path.basename(os.path.dirname(path))
+                    n = '-'.join((pdata['group'], name))
+                    i = self.db[n]
+                    i.update_cache(value)
+                return item.cached_value
+            except Exception as e:
+                print repr(e), 'exc in getgroup', name, time.time()
+                raise
+
         for i in dirlist:
             i_id = i['group'] + '-' + i['name']
             if 'grouppath' in i:
-                item = Cacheditem(i_id, i['value'], getter=get_group, setter=set_value, timeout=1)
+                item = Cacheditem(i_id, i['value'], getter=get_group, setter=set_value, timeout=2)
             else:
-                item = Cacheditem(i_id, i['value'], getter=get_value, setter=lambda i,v:self.proxy.set(self.db[i].path, v), timeout=10)
+                item = Cacheditem(i_id, i['value'], getter=get_value, setter=lambda i,v:self.proxy.set(self.db[i].path, v), timeout=2)
             item.protocoldata =  i
             item.longname = i['name']
             item.type = i['type']
@@ -114,8 +126,6 @@ class nbecomplugin(protocols):
             if i['group'] not in self.menutags:
                 self.menutags.append(i['group'])
             item.tags = ['All', 'Basic', i['group']]
-            #item.tags.append(tag)
-
             self.itemrefs.append(item)
             self.db.insert(item)
 
@@ -135,24 +145,6 @@ class nbecomplugin(protocols):
         item = Getsetitem('feeder_time', None, getter=get_feeder_time)
         self.itemrefs.append(item)
         self.db.insert(item)
-
-        item = Getsetitem('controller_online', None, getter=lambda i:1 if self.proxy.controller_online else 0)
-        item.tags = ['All','Basic','advanced_data']
-        item.type = 'R'
-        item.longname = 'Controller online'
-        item.description = 'Controller communication status'
-        self.itemrefs.append(item)
-        self.db.insert(item)
-
-        item = Getsetitem('controller_IP', None, getter=lambda i:self.proxy.addr[0] if self.proxy.controller_online else '')
-        item.tags = ['All','Basic','advanced_data']
-        item.type = 'R'
-        item.longname = 'Controller IP'
-        item.description = 'Controller IP address'
-        self.itemrefs.append(item)
-        self.db.insert(item)
-
-
 
     def getMenutags(self):
         return self.menutags
