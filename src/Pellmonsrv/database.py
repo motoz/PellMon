@@ -85,8 +85,8 @@ class Cacheditem(Getsetitem):
         self.update_time = t
 
 class Storeditem(Getsetitem):
-    def __init__(self, name, value=None, getter=None, setter=None):
-        super(Storeditem, self).__init__(name, value, getter, setter)
+    def __init__(self, name, value=None, setter=None):
+        super(Storeditem, self).__init__(name, value, None, setter)
         Keyval_storage.keyval_storage.writeval(self.name, confval=value)
         self._value = Keyval_storage.keyval_storage.readval(self.name)
 
@@ -97,7 +97,8 @@ class Storeditem(Getsetitem):
                 if value != self._value:
                     Keyval_storage.keyval_storage.writeval(self.name, value)
                     self._value = value
-                self.setter(self.name, value)
+                if self.setter:
+                    self.setter(self.name, value)
         except Exception, e:
            print e
 

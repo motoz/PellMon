@@ -64,7 +64,15 @@ class nbecomplugin(protocols):
         self.itemrefs.append(item)
         self.db.insert(item)
 
+        item = Storeditem('logged_event_id_list', '')
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
         self.startthread = threading.Thread(target=lambda:self.start())
+        self.startthread.setDaemon(True)
+        self.startthread.start()
+
+        self.startthread = threading.Thread(target=lambda:self.eventlogger())
         self.startthread.setDaemon(True)
         self.startthread.start()
 
@@ -145,6 +153,27 @@ class nbecomplugin(protocols):
         item = Getsetitem('feeder_time', None, getter=get_feeder_time)
         self.itemrefs.append(item)
         self.db.insert(item)
+
+        def get_event_list(i):
+            timedata = time.strftime('%y%m%d,%H%M%S;', time.localtime())
+            events = self.proxy.get(8, timedata, group=True)
+            return ';'.join(events)
+        item = Cacheditem('event_id_list', None, getter=get_event_list, timeout = 5)
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
+    def eventlogger(self):
+        while True:
+            try:
+                logged_events = self.db['logged_event_id_list'].value.split(';')
+                events = self.db['event_id_list'].value.split(';')
+                for event in events:
+                    if event not in logged_events:
+                        logger.info(event)
+                self.db['logged_event_id_list'].value = ';'.join(events)
+            except Exception as e:
+                pass
+            time.sleep(1)
 
     def getMenutags(self):
         return self.menutags

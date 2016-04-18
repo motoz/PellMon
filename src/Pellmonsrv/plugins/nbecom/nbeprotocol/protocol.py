@@ -113,7 +113,6 @@ class Proxy:
         r = self.set('misc.xtea_key', xtea_key)
         if r== 'ok':
             self.request.xtea_key = xtea.new(xtea_key, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
-            #print 'new xtea ok', time.time()
         else:
             try:
                 print 'xtea_set fail, del key', time.time()
