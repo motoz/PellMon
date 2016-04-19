@@ -81,7 +81,7 @@ class nbecomplugin(protocols):
         self.proxy = Proxy.discover(self.password, 8483, version='3', serial = self.serial)
         while not self.proxy.controller_online:
             time.sleep(1)
-        logger.info('Controller %s found at ip %s'%(self.serial, self.proxy.addr[0]))
+        logger.info('Connected to S/N %s on %s'%(self.serial, self.proxy.addr[0]))
         while True:
             try:
                 dirlist = self.proxy.dir()

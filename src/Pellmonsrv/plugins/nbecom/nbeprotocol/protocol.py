@@ -29,6 +29,9 @@ from v2frames import V2_request_frame, V2_response_frame
 from v1frames import V1_request_frame, V1_response_frame
 import xtea
 from exceptions import *
+from logging import getLogger
+
+logger = getLogger('pellMon')
 
 class Proxy:
     settings = ('boiler', 'hot_water', 'regulation', 'weather', 'oxygen', 'cleaning', 'hopper', 'fan', 'auger', 'ignition', 'pump', 
@@ -41,7 +44,7 @@ class Proxy:
         self.lock = threading.Lock()
         self.serial = serial
         self.controller_online = False
-        
+        self.connected = False
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -71,59 +74,35 @@ class Proxy:
 
 
     def get_rsakey(self):
+        if hasattr(self.request, 'public_key'):
+            return True
         if not self.controller_online:
             return False
         for retry in range(3):
-            with self.lock:
-                request = self.request
-                request.payload = 'misc.rsa_key'
-                request.function = 1
-                request.sequencenumber += 1
-                request.public_key = None
-                try:
-                    self.s.sendto(request.encode() , self.addr)
-                    while True:
-                        try:
-                            while True:
-                                try:
-                                    data, server = self.s.recvfrom(4096)
-                                except socket.error as e:
-                                    if e.errno != errno.EINTR:
-                                        raise
-                                else:
-                                    break
-                            self.response.decode(data)
-                            break
-                        except seqnum_error as e:
-                            print 'seqnum error get_rsakey', str(e), time.time()
-                            pass
-                    if self.response.status == 0:
-                        key = self.response.payload.split('rsa_key=')[1]
-                        key = base64.b64decode(key)
-                        request.public_key = RSA.importKey(key)
-                        return True 
-                except Exception as e:
-                    print 'other except, get_rsakey', str(e), time.time()
-                    pass # retry 3 times
+            try:
+                print 'get rsa', retry
+                r = self.get(1, 'misc.rsa_key')
+                key = base64.b64decode(r)
+                self.request.public_key = RSA.importKey(key)
+                return True 
+            except Exception as e:
+                print 'other except, get_rsakey', repr(e), time.time()
+                pass # retry 3 times
             time.sleep(1)
         return False
+
     
     def set_xteakey(self):
         xtea_key = ''.join([chr(SystemRandom().randrange(128)) for x in range(16)])
-        r = self.set('misc.xtea_key', xtea_key)
-        if r== 'ok':
-            self.request.xtea_key = xtea.new(xtea_key, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
-        else:
-            try:
-                print 'xtea_set fail, del key', time.time()
-                del self.request.xtea_key
-            except AttributeError:
-                pass
+        try:
+            self.set('misc.xtea_key', xtea_key)
+        except protocol_error:
+            logger.info('Key exchange failed, wrong password?')
 
     def set(self, path, value):
         if not self.controller_online:
             raise protocol_offline
-        for retry in range(5):
+        for retry in range(7):
             try:
                 with self.lock:
                     if not hasattr(self.request, 'xtea_key'):
@@ -132,21 +111,30 @@ class Proxy:
                         use_rsa = False
                     if use_rsa:
                         self.s.settimeout(5)
-                        print 'use rsa for xtea set', time.time()
+                        print 'use rsa for xtea set', int(time.time()%3600)
                     response = self.make_request(2, path+'='+value, encrypt=True)
                     if use_rsa:
                         self.s.settimeout(0.5)
                     if response.status == 0:
+                        if path == 'misc.xtea_key':
+                            self.request.xtea_key = xtea.new(value, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
                         return 'ok'
+                    elif path == 'misc.xtea_key':
+                        try:
+                            print 'xtea_set fail, del key', time.time()
+                            del self.request.xtea_key
+                        except AttributeError:
+                            pass
             except protocol_error:
-                print 'set retry', retry
+                if retry >= 1:
+                    print 'set retry', retry, int(time.time()%3600)
         print 'no more set retry'
-        raise protocol_error
+        raise protocol_error('set %s failed'%path)
 
     def get(self, function, path, group=False):
         if not self.controller_online:
             raise protocol_offline
-        for retry in range(5):
+        for retry in range(7):
             try:
                 with self.lock:
                     response = self.make_request(function, path)
@@ -156,7 +144,8 @@ class Proxy:
                         else:
                             return response.payload.encode('ascii').split(';')
             except: #protocol_error:
-                print 'get retry', retry, time.time()
+                if retry >= 1:
+                    print 'get retry', retry, int(time.time()%3600)
         print 'no more get retry'
         raise protocol_error
 
@@ -201,13 +190,19 @@ class Proxy:
                             self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
 
                 if controller_online and not self.controller_online:
+                    if self.connected:
+                        logger.info('Reconnected to controller on %s'%self.addr[0])
                     self.controller_online = controller_online
-                    self.get_rsakey()
-                    self.set_xteakey()
+                    self.connected = True
+                    if self.get_rsakey():
+                        self.set_xteakey()
 
                 if not hasattr(self.request, 'xtea_key'):
-                    self.get_rsakey()
-                    self.set_xteakey()
+                    if self.get_rsakey():
+                        self.set_xteakey()
+
+                if self.controller_online and not controller_online:
+                    logger.info('Lost connection to controller')
 
                 self.controller_online = controller_online
 
@@ -268,30 +263,33 @@ class Proxy:
                     self.response.decode(data)
                     return self.response
                 except seqnum_error as e:
-                    print 'seqnum error, reread', payload, function, str(e), time.time()
+                    print 'seqnum error, reread', payload, function, str(e), int(time.time()%3600)
                     pass #just read again on seqnum error
                 else:
                     break
         except socket.timeout as e:
-            print 'timeout, func:', function, 'missed seqnum:', self.request.sequencenumber, time.time()
+            print 'timeout, func:', function, 'missed seqnum:', self.request.sequencenumber, int(time.time()%3600)
             raise protocol_timeout(str(e))
         except Exception as e:
-            print 'other exc', self.request.sequencenumber, time.time(), str(e)
+            print 'other exc', self.request.sequencenumber, int(time.time()%3600), str(e)
             raise protocol_error(str(e))
 
     def xtea_refresh_thread(self):
         while True:
-            time.sleep(15)
             if self.controller_online:
                 try:
-                    self.set_xteakey()
+                    if self.get_rsakey():
+                        self.set_xteakey()
                 except Exception as e:
                     del self.request.xtea_key
+                    del self.request.public_key
                     try:
-                        self.set_xteakey()
+                        if self.get_rsakey():
+                            self.set_xteakey()
                         print 'xtea set'
                     except Exception as e:
                         pass
+            time.sleep(15)
 
 
 class Controller:
