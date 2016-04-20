@@ -72,6 +72,16 @@ class Cacheditem(Getsetitem):
                 self.update_time = time.time()
                 return self.cached_value
 
+    @value.setter
+    def value(self, value):
+        with self.lock:
+            if self.setter:
+                self.setter(self.name, value)
+                self.cached_value = self._value
+            self._value = value
+            #invalidate cache when writing
+            self.update_time = 0
+
     @property
     def uncached_value(self):
         if self.getter:
