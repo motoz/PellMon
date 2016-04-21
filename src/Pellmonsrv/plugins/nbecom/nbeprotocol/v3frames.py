@@ -155,7 +155,7 @@ class V3_response_frame(object):
         try:
             self.sequencenumber = int(record[i:i+2])
         except:
-            self.sequencenumber = None
+            self.sequencenumber = '-'
         i += 2
         self.status = int(record[i:i+1])
         i += 1
@@ -168,7 +168,7 @@ class V3_response_frame(object):
         if not record[i] == END[0]:
             raise protocol_error('end missing')
         if self.sequencenumber != self.request.sequencenumber:
-            raise seqnum_error('---seqnum, res:%u req:%u'%(self.sequencenumber, self.request.sequencenumber))
+            raise seqnum_error('---seqnum, res:%s req:%s'%(str(self.sequencenumber), str(self.request.sequencenumber)))
 
     def parse_payload(self):
         frame = self.payload

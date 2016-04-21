@@ -112,22 +112,26 @@ class Proxy:
                     if use_rsa:
                         self.s.settimeout(5)
                         print 'use rsa for xtea set', int(time.time()%3600)
+                    else:
+                        self.s.settimeout(1.5)
                     response = self.make_request(2, path+'='+value, encrypt=True)
-                    if use_rsa:
-                        self.s.settimeout(0.5)
+                    self.s.settimeout(0.5)
                     if response.status == 0:
                         if path == 'misc.xtea_key':
                             self.request.xtea_key = xtea.new(value, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
                         return 'ok'
-                    elif path == 'misc.xtea_key':
-                        try:
-                            print 'xtea_set fail, del key', time.time()
-                            del self.request.xtea_key
-                        except AttributeError:
-                            pass
+                    print 'set error:', response.status
+                    raise protocol_error
             except protocol_error:
                 if retry >= 1:
                     print 'set retry', retry, int(time.time()%3600)
+                if path == 'misc.xtea_key':
+                    try:
+                        print 'xtea_set uncertain, del key and use rsa', time.time()
+                        del self.request.xtea_key
+                    except AttributeError:
+                        pass
+
         print 'no more set retry'
         raise protocol_error('set %s failed'%path)
 
@@ -153,7 +157,7 @@ class Proxy:
         while True:
             try:
                 controller_online = False
-                for retry in range(3):
+                for retry in range(5):
                     with self.lock:
                         request = self.request
                         request.function = 0
@@ -163,32 +167,41 @@ class Proxy:
                            request.sequencenumber = 0
                         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                         try:
-                            request.sequencenumber = randrange(0,100)
                             self.s.sendto(request.encode(), self.discover_addr)
                             while True:
                                 try:
-                                    data, server = self.s.recvfrom(4096)
+                                    while True:
+                                        try:
+                                            data, server = self.s.recvfrom(4096)
+                                        except socket.error as e:
+                                            if e.errno != errno.EINTR:
+                                                raise
+                                        else:
+                                            break
                                     self.response.decode(data)
-                                    self.addr = server
                                     res = self.response.parse_payload()
-                                    if self.serial:
+                                    if self.serial: 
                                         if 'Serial' in res and res['Serial'] == self.serial:
                                             self.ip = res['IP']
                                             controller_online = True
+                                            self.addr = server
                                             break
                                     else:
                                         self.ip = res['IP']
                                         controller_online = True
+                                        self.addr = server
                                         break
                                 except seqnum_error:
+                                    print 'find controller error', repr(e)
                                     pass
                         except Exception as e:
-                            time.sleep(1)
+                            print 'find controller retry', retry, repr(e)
+                            pass
                         else:
                             break
                         finally:
                             self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-
+                    time.sleep(2)
                 if controller_online and not self.controller_online:
                     if self.connected:
                         logger.info('Reconnected to controller on %s'%self.addr[0])
@@ -263,7 +276,7 @@ class Proxy:
                     self.response.decode(data)
                     return self.response
                 except seqnum_error as e:
-                    print 'seqnum error, reread', payload, function, str(e), int(time.time()%3600)
+                    print 'seqnum error', function, repr(e), int(time.time()%3600)
                     pass #just read again on seqnum error
                 else:
                     break
