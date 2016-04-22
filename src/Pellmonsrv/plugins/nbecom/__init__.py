@@ -26,6 +26,7 @@ import threading
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from nbeprotocol.protocol import Proxy
+from nbeprotocol.language import resolve_event
 
 logger = getLogger('pellMon')
 
@@ -169,7 +170,15 @@ class nbecomplugin(protocols):
                 events = self.db['event_id_list'].value.split(';')
                 for event in events:
                     if event not in logged_events:
-                        logger.info(event)
+                        edate,etime,etype,eid,val1,val2,unit = event.split(',')
+                        if etype == '0':
+                            try:
+                                ename = resolve_event(eid)
+                                print ename, 'sdf'
+                                logger.info('"%s" changed from %s%s to %s%s'%(ename, val1, unit, val2, unit))
+                            except Exception as e:
+                                print repr(e)
+                                logger.info(event)
                 self.db['logged_event_id_list'].value = ';'.join(events)
             except Exception as e:
                 pass
