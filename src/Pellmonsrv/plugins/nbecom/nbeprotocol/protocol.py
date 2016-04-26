@@ -28,7 +28,7 @@ from v3frames import V3_request_frame, V3_response_frame
 from v2frames import V2_request_frame, V2_response_frame
 from v1frames import V1_request_frame, V1_response_frame
 import xtea
-from exceptions import *
+from protocolexceptions import *
 from logging import getLogger
 
 logger = getLogger('pellMon')
@@ -101,7 +101,7 @@ class Proxy:
 
     def set(self, path, value):
         if not self.controller_online:
-            raise protocol_offline
+            raise protocol_offline('controller offline')
         for retry in range(7):
             try:
                 with self.lock:
@@ -115,7 +115,6 @@ class Proxy:
                     else:
                         self.s.settimeout(1.5)
                     response = self.make_request(2, path+'='+value, encrypt=True)
-                    self.s.settimeout(0.5)
                     if response.status == 0:
                         if path == 'misc.xtea_key':
                             self.request.xtea_key = xtea.new(value, mode=xtea.MODE_ECB, IV='\00'*8, rounds=64, endian='!')
@@ -131,13 +130,18 @@ class Proxy:
                         del self.request.xtea_key
                     except AttributeError:
                         pass
-
+            finally:
+                self.s.settimeout(0.5)
+            if path == 'misc.xtea_key':
+                time.sleep(2)
+            else:
+                time.sleep(0.2)
         print 'no more set retry'
         raise protocol_error('set %s failed'%path)
 
     def get(self, function, path, group=False):
         if not self.controller_online:
-            raise protocol_offline
+            raise protocol_offline('controller offline')
         for retry in range(7):
             try:
                 with self.lock:
@@ -150,6 +154,7 @@ class Proxy:
             except: #protocol_error:
                 if retry >= 1:
                     print 'get retry', retry, int(time.time()%3600)
+            time.sleep(0.2)
         print 'no more get retry'
         raise protocol_error
 
@@ -157,7 +162,7 @@ class Proxy:
         while True:
             try:
                 controller_online = False
-                for retry in range(5):
+                for retry in range(3):
                     with self.lock:
                         request = self.request
                         request.function = 0
@@ -165,8 +170,8 @@ class Proxy:
                         request.sequencenumber += 1
                         if request.sequencenumber >= 99:
                            request.sequencenumber = 0
-                        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                         try:
+                            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                             self.s.sendto(request.encode(), self.discover_addr)
                             while True:
                                 try:
@@ -191,7 +196,7 @@ class Proxy:
                                         controller_online = True
                                         self.addr = server
                                         break
-                                except seqnum_error:
+                                except seqnum_error as e:
                                     print 'find controller error', repr(e)
                                     pass
                         except Exception as e:
@@ -202,6 +207,7 @@ class Proxy:
                         finally:
                             self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
                     time.sleep(2)
+
                 if controller_online and not self.controller_online:
                     if self.connected:
                         logger.info('Reconnected to controller on %s'%self.addr[0])
@@ -210,20 +216,22 @@ class Proxy:
                     if self.get_rsakey():
                         self.set_xteakey()
 
-                if not hasattr(self.request, 'xtea_key'):
-                    if self.get_rsakey():
-                        self.set_xteakey()
-
                 if self.controller_online and not controller_online:
+                    print '-------------------lost conn'
                     logger.info('Lost connection to controller')
 
                 self.controller_online = controller_online
 
-                if self.controller_online:
+                if controller_online and not hasattr(self.request, 'xtea_key'):
+                    if self.get_rsakey():
+                        self.set_xteakey()
+
+                if controller_online:
                     time.sleep(5)
                 else:
                     time.sleep(1)
             except Exception as e:
+                print 'FC -------------------', repr(e)
                 pass #don't ever die in this thread
 
     def dir(self):
@@ -302,7 +310,7 @@ class Proxy:
                         print 'xtea set'
                     except Exception as e:
                         pass
-            time.sleep(15)
+            time.sleep(5)
 
 
 class Controller:

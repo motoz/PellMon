@@ -27,6 +27,7 @@ import threading
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from nbeprotocol.protocol import Proxy
 from nbeprotocol.language import resolve_event
+from nbeprotocol.exceptions import *
 
 logger = getLogger('pellMon')
 
@@ -101,7 +102,7 @@ class nbecomplugin(protocols):
 
         def get_group(name):
             if not self.proxy.controller_online:
-                raise protocol_offline
+                raise protocol_offline('controller offline')
             try:
                 item = self.db[name]
                 pdata = item.protocoldata
@@ -172,15 +173,19 @@ class nbecomplugin(protocols):
                     if event not in logged_events:
                         edate,etime,etype,eid,val1,val2,unit = event.split(',')
                         if etype == '0':
-                            try:
-                                ename = resolve_event(eid)
-                                print ename, 'sdf'
-                                logger.info('"%s" changed from %s%s to %s%s'%(ename, val1, unit, val2, unit))
-                            except Exception as e:
-                                print repr(e)
-                                logger.info(event)
+                            if etype == '0':
+                                try:
+                                    ename = resolve_event(eid)
+                                    logger.info('"%s" changed from %s%s to %s%s'%(ename, val1, unit, val2, unit))
+                                except Exception as e:
+                                    logger.info(event)
+                        elif etype == '1':
+                            logger.info('mode changed from %s to %s'%(val1, val2))
+                        else:
+                            logger.info('type: %s, id: %s, v1: %s, v2: %s'%(etype, eid, val1, val2))
                 self.db['logged_event_id_list'].value = ';'.join(events)
             except Exception as e:
+                print repr(e)
                 pass
             time.sleep(1)
 

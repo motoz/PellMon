@@ -126,11 +126,8 @@ class Database(WeakValueDictionary):
         return self[name].value
 
     def set_value(self, name, value):
-        try:
-            self[name].value = value
-            return 'OK'
-        except:
-            return 'error'
+        self[name].value = value
+        return 'OK'
 
 class Keyval_storage(object):
     def __init__(self, dbfile):

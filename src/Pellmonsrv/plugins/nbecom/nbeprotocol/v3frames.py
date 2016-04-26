@@ -18,7 +18,7 @@
 """
 
 import time
-from exceptions import *
+from protocolexceptions import *
 
 START = b'\x02'
 END = b'\x04'
