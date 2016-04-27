@@ -101,7 +101,10 @@ class Database(threading.Thread, _Database):
             changed_params = []
             for item_name, item in self.items():
                 try:
-                    value = item.value
+                    try:
+                        value = item.get_text(item.value)
+                    except AttributeError:
+                        value = item.value
                     if item_name in self.values:
                         if value != self.values[item_name]:
                             changed_params.append({'name':item_name, 'value':value})
@@ -137,7 +140,7 @@ class MyDBUSService(dbus.service.Object):
         if param == 'pellmonsrv_version':
             return __version__
         else:
-            return conf.database.get_value(param)
+            return conf.database.get_text(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):

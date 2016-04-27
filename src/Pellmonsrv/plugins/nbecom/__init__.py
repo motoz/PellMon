@@ -26,7 +26,7 @@ import threading
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from nbeprotocol.protocol import Proxy
-from nbeprotocol.language import resolve_event
+from nbeprotocol.language import event_text, state_text
 from nbeprotocol.exceptions import *
 
 logger = getLogger('pellMon')
@@ -83,12 +83,14 @@ class nbecomplugin(protocols):
         self.proxy = Proxy.discover(self.password, 8483, version='3', serial = self.serial)
         while not self.proxy.controller_online:
             time.sleep(1)
+            print 'wait controller'
         logger.info('Connected to S/N %s on %s'%(self.serial, self.proxy.addr[0]))
         while True:
             try:
                 dirlist = self.proxy.dir()
                 break
             except Exception as e:
+                print repr(e), 'direrror'
                 time.sleep(1)
         def get_value(name):
             item = self.db[name]
@@ -136,6 +138,11 @@ class nbecomplugin(protocols):
             if i['group'] not in self.menutags:
                 self.menutags.append(i['group'])
             item.tags = ['All', 'Basic', i['group']]
+            try:
+                item.get_text = i['get_text']
+                print i['name'], 'has get_text'
+            except KeyError:
+                pass
             self.itemrefs.append(item)
             self.db.insert(item)
 
@@ -175,12 +182,12 @@ class nbecomplugin(protocols):
                         if etype == '0':
                             if etype == '0':
                                 try:
-                                    ename = resolve_event(eid)
+                                    ename = event_text(eid)
                                     logger.info('"%s" changed from %s%s to %s%s'%(ename, val1, unit, val2, unit))
                                 except Exception as e:
                                     logger.info(event)
                         elif etype == '1':
-                            logger.info('mode changed from %s to %s'%(val1, val2))
+                            logger.info('state changed from %s to %s'%(state_text(val1), state_text(val2)))
                         else:
                             logger.info('type: %s, id: %s, v1: %s, v2: %s'%(etype, eid, val1, val2))
                 self.db['logged_event_id_list'].value = ';'.join(events)

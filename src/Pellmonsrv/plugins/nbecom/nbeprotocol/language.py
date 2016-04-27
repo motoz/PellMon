@@ -24,6 +24,23 @@ langfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'language',
 
 lang = dict([l.split('=') for l in open(langfile)])
 
-def resolve_event(code):
-    return lang[lang['setup_%s'%code].rstrip()].rstrip()
+def event_text(code):
+    try:
+        return lang[lang['setup_%s'%code].rstrip()].rstrip()
+    except KeyError:
+        return code
 
+def state_text(code):
+    try:
+        return lang['state_%s'%code].rstrip()
+    except KeyError:
+        return code
+
+def substate_text(code):
+    try:
+        return lang['lng_substate_%s'%code].rstrip()
+    except KeyError:
+        return code
+
+customtexts = {'off_on_alarm' : lambda x:{'0':'Off', '1':'On', '2':'Alarm'}[x]
+              }

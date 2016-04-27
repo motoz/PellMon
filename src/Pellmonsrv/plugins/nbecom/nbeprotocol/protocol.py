@@ -30,6 +30,7 @@ from v1frames import V1_request_frame, V1_response_frame
 import xtea
 from protocolexceptions import *
 from logging import getLogger
+import language
 
 logger = getLogger('pellMon')
 
@@ -251,8 +252,18 @@ class Proxy:
         dl = self.get(4, s+'.*', group=True)
         for d in dl:
             d_name, d_value = d.split('=')
-            dirlist.append({'path':d_name, 'name':d_name, 'function':4, 'grouppath':'*', 'group':'operating_data', 'type':'R', 'value':d_value})
-
+            print d_name, type(d_name)
+            dd = {'path':d_name, 'name':d_name, 'function':4, 'grouppath':'*', 'group':'operating_data', 'type':'R', 'value':d_value}
+            if d_name == 'state':
+                print 'match state'
+                dd['get_text'] = language.state_text
+            if d_name == 'substate':
+                dd['get_text'] = language.substate_text
+            dirlist.append(dd)
+            try:
+                dd['get_text'] = language.customtexts[d_name]
+            except KeyError:
+                pass
         d_name = 'counter'
         dirlist.append({'path':d_name, 'name':d_name, 'function':6, 'group':'consumption_data', 'type':'R', 'value':d_value})
         return dirlist

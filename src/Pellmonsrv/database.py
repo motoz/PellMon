@@ -125,6 +125,14 @@ class Database(WeakValueDictionary):
     def get_value(self, name):
         return self[name].value
 
+    def get_text(self, name):
+        item = self[name]
+        try:
+            return item.get_text(item.value)
+        except AttributeError as e:
+            print repr(e)
+            return item.value
+
     def set_value(self, name, value):
         self[name].value = value
         return 'OK'
