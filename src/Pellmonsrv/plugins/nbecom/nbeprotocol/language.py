@@ -18,7 +18,7 @@
 """
 
 import os
-
+from langmap import langmap
 
 langfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'language', 'lang.uk.prop')
 
@@ -44,3 +44,10 @@ def substate_text(code):
 
 customtexts = {'off_on_alarm' : lambda x:{'0':'Off', '1':'On', '2':'Alarm'}[x]
               }
+
+def lang_longname(i_id):
+    return lang[langmap[i_id]]
+
+def lang_description(i_id):
+    return lang[langmap[i_id]+'_TP']
+

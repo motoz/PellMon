@@ -26,8 +26,7 @@ import threading
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from nbeprotocol.protocol import Proxy
-from nbeprotocol.language import event_text, state_text
-from nbeprotocol.exceptions import *
+from nbeprotocol.language import event_text, state_text, lang_longname, lang_description
 
 logger = getLogger('pellMon')
 
@@ -141,6 +140,11 @@ class nbecomplugin(protocols):
             try:
                 item.get_text = i['get_text']
                 print i['name'], 'has get_text'
+            except KeyError:
+                pass
+            try:
+                item.longname = lang_longname(i_id)
+                item.description = lang_description(i_id)
             except KeyError:
                 pass
             self.itemrefs.append(item)
