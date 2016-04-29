@@ -191,5 +191,7 @@ langmap = {
 'oxygen-pellets_gain_p':'lng_settings_oxygen_pellets_gain_p',
 'oxygen-pellets_gain_i':'lng_settings_oxygen_pellets_gain_i',
 'oxygen-lambda_expansion_module':'lng_settings_oxygen_lambda_expansion_module',
+'boiler-reduction':'LNG_SETUP_NATSAENKNING',
+
 }
 
