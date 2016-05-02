@@ -130,12 +130,19 @@ class Database(WeakValueDictionary):
         try:
             return item.get_text(item.value)
         except AttributeError as e:
-            print repr(e)
             return item.value
 
     def set_value(self, name, value):
         self[name].value = value
         return 'OK'
+
+    def set_text(self, name, value):
+        try:
+            item = self[name]
+            value = item.get_text(value, reverse=True)
+        except AttributeError as e:
+            pass
+        self[name].value = value
 
 class Keyval_storage(object):
     def __init__(self, dbfile):

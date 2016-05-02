@@ -145,7 +145,7 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return conf.database.set_value(param, value)
+        return conf.database.set_text(param, value)
 
     @dbus.service.method('org.pellmon.int', out_signature='as')
     def GetDB(self):

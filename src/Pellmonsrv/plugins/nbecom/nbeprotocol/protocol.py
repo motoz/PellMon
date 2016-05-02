@@ -115,6 +115,7 @@ class Proxy:
                         print 'use rsa for xtea set', int(time.time()%3600)
                     else:
                         self.s.settimeout(1.5)
+                    #print 'set value', value
                     response = self.make_request(2, path+'='+value, encrypt=True)
                     if response.status == 0:
                         if path == 'misc.xtea_key':
@@ -242,14 +243,24 @@ class Proxy:
             for d in dl:
                 d_name, d = d.split('=')
                 d_min, d_max, d_default, d_decimals = d.split(',')
-                dirlist.append({'path':s+'.'+d_name, 'name':d_name, 'function':1, 'grouppath':s+'.*', 'group':s, 'min':d_min, 'max':d_max, 'decimals':d_decimals, 'type':'R/W', 'value':'-'})
+                dd = {'path':s+'.'+d_name, 'name':d_name, 'function':1, 'grouppath':s+'.*', 'group':s, 'min':d_min, 'max':d_max, 'decimals':d_decimals, 'type':'R/W', 'value':'-'}
+                try:
+                    dd['get_text'] = language.get_enumeration_function('-'.join((s, d_name)))
+                except KeyError:
+                    pass
+                dirlist.append(dd)
 
-        dl = self.get(5, s+'.*', group=True)
+        dl = self.get(5, '*', group=True)
         for d in dl:
             d_name, d_value = d.split('=')
-            dirlist.append({'path':d_name, 'name':d_name, 'function':5, 'grouppath':'*', 'group':'advanced_data', 'type':'R', 'value':d_value})
+            dd = {'path':d_name, 'name':d_name, 'function':5, 'grouppath':'*', 'group':'advanced_data', 'type':'R', 'value':d_value}
+            try:
+                dd['get_text'] = language.get_enumeration_function('advanced_data-'+d_name)
+            except KeyError:
+                pass
+            dirlist.append(dd)
 
-        dl = self.get(4, s+'.*', group=True)
+        dl = self.get(4, '*', group=True)
         for d in dl:
             d_name, d_value = d.split('=')
             print d_name, type(d_name)
@@ -259,11 +270,11 @@ class Proxy:
                 dd['get_text'] = language.state_text
             if d_name == 'substate':
                 dd['get_text'] = language.substate_text
-            dirlist.append(dd)
             try:
-                dd['get_text'] = language.customtexts[d_name]
+                dd['get_text'] = language.get_enumeration_function('operating_data-'+d_name)
             except KeyError:
                 pass
+            dirlist.append(dd)
         d_name = 'counter'
         dirlist.append({'path':d_name, 'name':d_name, 'function':6, 'group':'consumption_data', 'type':'R', 'value':d_value})
         return dirlist
