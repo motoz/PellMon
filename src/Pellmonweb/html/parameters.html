@@ -68,7 +68,7 @@
 
 	<div class="row">
         %if len(data)>0:
-            <div class="col-md-6">
+            <div class="col-md-5">
                 <h3>Data</h3>
 		<dl class="dl dl-horizontal">
                 %for key in data:
@@ -87,27 +87,27 @@
         %endif
 
         %if len(params)>0:
-            <div class="col-md-6">
+            <div class="col-md-5">
                 <h3>Settings</h3>
 		<dl class="dl dl-horizontal">
                 %for key in params:
-                        <dt class="editable">${key['longname']}</dt>
-			<dd> 
-				<span id="${key['name']}-value" data-name="${key['name']}" class="editable param value" ></span> ${key['unit'].decode('utf-8')}
-				<div style="z-index: 10000" class="details hidden">
-					%if key['description']:
-						<i>${key['description'].decode('utf-8')}</i><br>
-					%endif
-					ID: ${key['name']}<br>
-					%if 'min' in key and 'max' in key:
-						Valid values: ${key['min']} - ${key['max']}<br>
-					%endif
-					<form class="save form-inline">
-						<input type="text" id="${key['name']}-form" class="form-control" name="${key['name']}"/>
-						<input type="submit" class="btn btn-primary" value="Set" data-loading-text="Saving..." />
-					</form>
-				</div>
-			</dd>
+                    <dt class="editable">${key['longname']}</dt>
+			        <dd> 
+				        <span id="${key['name']}-value" data-name="${key['name']}" class="editable param value" ></span> ${key['unit'].decode('utf-8')}
+				        <div style="z-index: 10000" class="details hidden">
+					        %if key['description']:
+						        <i>${key['description'].decode('utf-8')}</i><br>
+					        %endif
+					        ID: ${key['name']}<br>
+					        %if 'min' in key and 'max' in key:
+						        Valid values: ${key['min']} - ${key['max']}<br>
+					        %endif
+					        <form class="save form-inline">
+						        <input type="text" id="${key['name']}-form" class="form-control" name="${key['name']}"/>
+						        <input type="submit" class="btn btn-primary" value="Set" data-loading-text="Saving..." />
+					        </form>
+				        </div>
+			        </dd>
 	
                 %endfor
 		</dl>
