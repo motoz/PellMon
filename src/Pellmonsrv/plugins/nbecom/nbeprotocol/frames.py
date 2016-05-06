@@ -26,7 +26,7 @@ STATUS_CODES = (0,1,2,3)
 FUNCTION_CODES = (0,1,2,3,4,5,6,7,8,9,10,11)
 
 
-class V3_request_frame(object):
+class Request_frame(object):
     def __init__(self, version = 'V1'):
         self.REQUEST_HEADER_SIZE = 52
         self.appid = 'pellmon'
@@ -112,7 +112,7 @@ class V3_request_frame(object):
         if not record[i] == END[0]:
             raise IOError
 
-class V3_response_frame(object):
+class Response_frame(object):
     def __init__(self, request):
         self.RESPONSE_HEADER_SIZE = 28
         self.request = request

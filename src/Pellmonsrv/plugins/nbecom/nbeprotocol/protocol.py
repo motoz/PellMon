@@ -24,9 +24,7 @@ from Crypto.PublicKey import RSA
 import base64
 import threading
 import errno
-from v3frames import V3_request_frame, V3_response_frame
-from v2frames import V2_request_frame, V2_response_frame
-from v1frames import V1_request_frame, V1_response_frame
+from frames import Request_frame, Response_frame
 import xtea
 from protocolexceptions import *
 from logging import getLogger
@@ -39,7 +37,7 @@ class Proxy:
         'sun', 'vacuum', 'misc', 'alarm', 'manual')
 #    consumption_data = ('total_hours', 'total_days', 'total_months', 'total_years', 'dhw_hours', 'dhw_days', 'dhw_months', 'dhw_years', 'counter')
 
-    def __init__(self, password, port=1920, addr=None, version='V3', serial=None):
+    def __init__(self, password, port=1920, addr=None, serial=None):
         self.password = password
         self.discover_addr = (addr, port)
         self.lock = threading.Lock()
@@ -53,15 +51,8 @@ class Proxy:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         s.settimeout(0.5)
         self.s = s
-        if version == '3':
-            self.request = V3_request_frame()
-            self.response = V3_response_frame(self.request)
-        elif version == '2':
-            self.request = V2_request_frame()
-            self.response = V2_response_frame(self.request)
-        elif version == '1':
-            self.request = V1_request_frame()
-            self.response = V1_response_frame(self. request)
+        self.request = Request_frame()
+        self.response = Response_frame(self.request)
         self.request.pincode = self.password
         self.request.sequencenumber = randrange(0,100)
 
@@ -283,8 +274,8 @@ class Proxy:
         return dirlist
 
     @classmethod
-    def discover(cls, password, port, version='V3', serial=None):
-        return cls(password, port, addr='<broadcast>', version=version, serial=serial)
+    def discover(cls, password, port, serial=None):
+        return cls(password, port, addr='<broadcast>', serial=serial)
 
     def make_request(self, function, payload, encrypt=False):
         try:

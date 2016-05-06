@@ -79,7 +79,7 @@ class nbecomplugin(protocols):
 
 
     def start(self):
-        self.proxy = Proxy.discover(self.password, 8483, version='3', serial = self.serial)
+        self.proxy = Proxy.discover(self.password, 8483, serial = self.serial)
         while not self.proxy.controller_online:
             time.sleep(1)
             print 'wait controller'
