@@ -26,7 +26,7 @@ import threading
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from nbeprotocol.protocol import Proxy
-from nbeprotocol.language import event_text, state_text, lang_longname, lang_description
+from nbeprotocol.language import event_text, state_text, lang_longname, lang_description, set_langfile_location
 
 logger = getLogger('pellMon')
 
@@ -34,11 +34,12 @@ class nbecomplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, db):
-        protocols.activate(self, conf, glob, db)
+    def activate(self, conf, glob, db, datadir, **kwargs):
+        protocols.activate(self, conf, glob, db, datadir, **kwargs)
         self.itemrefs = []
         self.menutags = []
         self.conf = conf
+        self.datadir = datadir
         try:
             self.password = self.conf['password']
         except:
@@ -47,6 +48,7 @@ class nbecomplugin(protocols):
             self.serial = self.conf['serial']
         except:
             self.serial = None
+        set_langfile_location(datadir)
 
         item = Getsetitem('controller_online', None, getter=lambda i:1 if self.proxy.controller_online else 0)
         item.tags = ['All','Basic','advanced_data']

@@ -26,11 +26,12 @@ logger = getLogger('pellMon')
 
 class protocols(IPlugin):
     """This is the interface for plugins of class protocols"""
-    def activate(self, conf, glob, db):
+    def activate(self, conf, glob, db, datadir):
         # Save globals for plugin access to everything
         self.glob = glob
         self.conf = conf
         self.db = db
+        self.datadir = datadir
         self.templates = {}
         IPlugin.activate(self)
 

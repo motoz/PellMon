@@ -80,7 +80,7 @@ class Database(threading.Thread, _Database):
             if plugin_name in plugins:
                 try:
                     plugin = plugins[plugin_name]
-                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self)
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self, datadir=conf.plugin_datadir)
                     self.protocols.append(plugin)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
@@ -756,7 +756,7 @@ def mkdir_p(path):
 
 
 
-def run():
+def run(DATADIR = '.'):
     daemon = MyDaemon()
     commands = {
         'start':daemon.start,
@@ -793,6 +793,8 @@ def run():
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
     conf.old_plugin_dir = args.OLDPLUGINDIR
+    conf.datadir = DATADIR
+    conf.plugin_datadir = os.path.join(DATADIR, 'plugins')
 
     if args.USER:
         conf.USER = args.USER
