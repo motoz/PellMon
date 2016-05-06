@@ -31,6 +31,31 @@ $('.editable').on('click', function(e) {
 	
 });
 
+
+$(".select_enum").on('change', function(e) {                                                                                                                         
+        e.preventDefault();
+
+        var form = $(this),
+        value = form.prop('selectedIndex'),
+	name = form.attr('name');
+
+        $.post(
+                webroot + '/setparam/' + name,
+                {
+                        data: value
+                },
+                function(data) {
+                        btn.button('reset');
+                        if(data.value === 'OK') {
+                                setParam(name, value);
+                                //textfield.val('');
+                        } else {
+                                textfield.addClass('error');
+                        }
+                });
+});
+
+
 $(".save").on('submit', function(e) {
 	e.preventDefault();
 
@@ -99,7 +124,12 @@ function getParams() {
                 if(container.length > 0) {
                     container.val(data[param]);
                 }
-            }
+                $('[name='+param+'] option').filter(function() { 
+                    return ($(this).text() == data[param]);
+                }).prop('selected', true); 
+
+             }
+           
 
 		if (count > 0) {
 				getParams();
@@ -108,5 +138,8 @@ function getParams() {
 	);
 }
 
-getParams();
+
+$(function() {
+    getParams();
+});
 

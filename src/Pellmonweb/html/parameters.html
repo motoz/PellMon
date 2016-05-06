@@ -102,10 +102,22 @@
 					        %if 'min' in key and 'max' in key:
 						        Valid values: ${key['min']} - ${key['max']}<br>
 					        %endif
-					        <form class="save form-inline">
-						        <input type="text" id="${key['name']}-form" class="form-control" name="${key['name']}"/>
-						        <input type="submit" class="btn btn-primary" value="Set" data-loading-text="Saving..." />
-					        </form>
+                            %if 'get_enum_list' in key:
+				            <div class=" form-inline">
+                                <select class="select_enum form-control" name=${key['name']} id="${key['name']}-selectbox">
+                                %for enum in key['get_enum_list']:
+                                <option value="${enum[0]}">${enum[1]}</option>
+                                %endfor
+                              </select>
+                            </div>
+                            %else:
+
+                                                <form class="save form-inline">
+                                                        <input type="text" id="${key['name']}-form" class="form-control" name="${key['name']}"/>
+                                                        <input type="submit" class="btn btn-primary" value="Set" data-loading-text="Saving..." />
+                                                </form>
+                            %endif
+
 				        </div>
 			        </dd>
 	

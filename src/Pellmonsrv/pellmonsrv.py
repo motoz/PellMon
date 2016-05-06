@@ -145,7 +145,7 @@ class MyDBUSService(dbus.service.Object):
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return conf.database.set_text(param, value)
+        return conf.database.set_value(param, value)
 
     @dbus.service.method('org.pellmon.int', out_signature='as')
     def GetDB(self):
@@ -161,7 +161,7 @@ class MyDBUSService(dbus.service.Object):
                     return False
             return True
 
-        return sorted([ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name'])
+        return sorted([ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str) or isinstance(atype, list)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name'])
 
     @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):

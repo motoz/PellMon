@@ -245,7 +245,12 @@ class Proxy:
                 d_min, d_max, d_default, d_decimals = d.split(',')
                 dd = {'path':s+'.'+d_name, 'name':d_name, 'function':1, 'grouppath':s+'.*', 'group':s, 'min':d_min, 'max':d_max, 'decimals':d_decimals, 'type':'R/W', 'value':'-'}
                 try:
-                    dd['get_text'] = language.get_enumeration_function('-'.join((s, d_name)))
+                    dd['get_text'] = language.get_enumeration_function('-'.join((s, d_name)) )
+                except KeyError:
+                    pass
+                try:
+                    dd['get_enum_list'] = language.get_enumeration_list('-'.join((s, d_name)) )
+                    #print 'added get_enum_list', dd['name'], dd['get_enum_list']
                 except KeyError:
                     pass
                 dirlist.append(dd)
@@ -263,10 +268,8 @@ class Proxy:
         dl = self.get(4, '*', group=True)
         for d in dl:
             d_name, d_value = d.split('=')
-            print d_name, type(d_name)
             dd = {'path':d_name, 'name':d_name, 'function':4, 'grouppath':'*', 'group':'operating_data', 'type':'R', 'value':d_value}
             if d_name == 'state':
-                print 'match state'
                 dd['get_text'] = language.state_text
             if d_name == 'substate':
                 dd['get_text'] = language.substate_text

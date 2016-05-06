@@ -139,7 +139,10 @@ class nbecomplugin(protocols):
             item.tags = ['All', 'Basic', i['group']]
             try:
                 item.get_text = i['get_text']
-                print i['name'], 'has get_text'
+            except KeyError:
+                pass
+            try:
+                item.get_enum_list = i['get_enum_list']
             except KeyError:
                 pass
             try:
