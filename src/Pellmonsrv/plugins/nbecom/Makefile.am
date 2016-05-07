@@ -11,5 +11,5 @@ nbecomdir = $(pythondir)/Pellmonsrv/plugins/nbecom
 
 nobase_dist_nbecomdata_DATA = nbeprotocol/language/lang.uk.prop
 
-nbecomdatadir = $(datadir)/plugins/nbecom/
+nbecomdatadir = $(datadir)/Pellmonsrv/plugins/nbecom/
 
