@@ -4,6 +4,7 @@ nobase_nbecom_PYTHON = \
 	nbeprotocol/langmap.py \
 	nbeprotocol/language.py \
 	nbeprotocol/protocol.py \
+	nbeprotocol/protocolexceptions.py \
 	nbeprotocol/frames.py
 
 nbecomdir = $(pythondir)/Pellmonsrv/plugins/nbecom
