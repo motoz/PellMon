@@ -88,7 +88,7 @@ class Database(threading.Thread, _Database):
                     if conf.command == 'debug':
                         raise
                     else:
-                        logger.debug('Plugin error:%s'%str(e)   )
+                        logger.info('%s plugin error: %s'%(plugin_name, str(e))   )
         if activated_plugins:
             logger.info('Activated plugins: %s'%', '.join(activated_plugins))
         if failed_plugins:

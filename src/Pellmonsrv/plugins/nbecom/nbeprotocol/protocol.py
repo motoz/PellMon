@@ -25,10 +25,10 @@ import base64
 import threading
 import errno
 from frames import Request_frame, Response_frame
-import xtea
 from protocolexceptions import *
 from logging import getLogger
 import language
+import xtea
 
 logger = getLogger('pellMon')
 

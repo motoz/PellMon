@@ -24,9 +24,8 @@ from logging import getLogger
 import os, sys, time
 import threading
 
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from nbeprotocol.protocol import Proxy
-from nbeprotocol.language import event_text, state_text, lang_longname, lang_description, set_langfile_location
 
 logger = getLogger('pellMon')
 
@@ -35,6 +34,11 @@ class nbecomplugin(protocols):
         protocols.__init__(self)
 
     def activate(self, conf, glob, db, datadir, **kwargs):
+        global Proxy
+        from nbeprotocol.protocol import Proxy
+        global event_text, state_text, lang_longname, lang_description, set_langfile_location
+        from nbeprotocol.language import event_text, state_text, lang_longname, lang_description, set_langfile_location
+
         protocols.activate(self, conf, glob, db, datadir, **kwargs)
         self.itemrefs = []
         self.menutags = []
