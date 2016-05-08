@@ -5,11 +5,26 @@ nobase_nbecom_PYTHON = \
 	nbeprotocol/language.py \
 	nbeprotocol/protocol.py \
 	nbeprotocol/protocolexceptions.py \
-	nbeprotocol/frames.py
+	nbeprotocol/frames.py \
+	nbeprotocol/directories.py
 
 nbecomdir = $(pythondir)/Pellmonsrv/plugins/nbecom
 
-nobase_dist_nbecomdata_DATA = nbeprotocol/language/lang.uk.prop
+dist_nbecomdata_DATA = nbeprotocol/language/lang.uk.prop
 
 nbecomdatadir = $(datadir)/Pellmonsrv/plugins/nbecom/
+
+do_substitution = $(SED) -e 's,[@]datadir[@],$(datadir),g' \
+	-e 's,[@]localstatedir[@],$(localstatedir),g'
+
+nbeprotocol/directories.py: nbeprotocol/directories.py.in Makefile
+	mkdir -p $(builddir)/nbeprotocol
+	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+
+EXTRA_DIST = \
+	nbeprotocol/directories.py.in
+
+CLEANFILES = \
+	nbeprotocol/directories.py
+
 

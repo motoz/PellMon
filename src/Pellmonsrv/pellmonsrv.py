@@ -80,7 +80,7 @@ class Database(threading.Thread, _Database):
             if plugin_name in plugins:
                 try:
                     plugin = plugins[plugin_name]
-                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self, datadir=conf.plugin_datadir)
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self)
                     self.protocols.append(plugin)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
