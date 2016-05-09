@@ -19,4 +19,4 @@
 
 from Pellmonsrv import pellmonsrv
 
-pellmonsrv.run('./Pellmonsrv/')
+pellmonsrv.run()

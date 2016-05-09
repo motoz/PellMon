@@ -756,7 +756,7 @@ def mkdir_p(path):
 
 
 
-def run(DATADIR = '.'):
+def run():
     daemon = MyDaemon()
     commands = {
         'start':daemon.start,
@@ -783,9 +783,6 @@ def run(DATADIR = '.'):
         config_file = '/etc/pellmon.conf'
     if not os.path.isfile(config_file):
         config_file = '/usr/local/etc/pellmon.conf'
-#    if not os.path.isfile(config_file):
-#        sys.stderr.write('Configuration file not found, exiting\n')
-#        sys.exit(1)
 
     # Init global configuration from the conf file
     global conf
@@ -793,8 +790,8 @@ def run(DATADIR = '.'):
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
     conf.old_plugin_dir = args.OLDPLUGINDIR
-    conf.datadir = DATADIR
-    conf.plugin_datadir = os.path.join(DATADIR, 'plugins')
+    #conf.datadir = DATADIR
+    #conf.plugin_datadir = os.path.join(DATADIR, 'plugins')
 
     if args.USER:
         conf.USER = args.USER

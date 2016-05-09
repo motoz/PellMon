@@ -6,7 +6,6 @@ CLEANFILES = \
 	pellmon.conf \
 	pellmonconf \
 	pellmoncli \
-	pellmonsrv \
 	pellmonweb
 
 confdir = $(sysconfdir)/pellmon
@@ -17,8 +16,8 @@ EXTRA_DIST = \
 	pellmon.conf.in \
 	pellmoncli.in \
 	pellmonweb.in \
-	pellmonsrv.in \
-	pellmonconf.in
+	pellmonconf.in \
+	pellmonsrv
 
 do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
@@ -32,10 +31,6 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
 
 pellmonweb: pellmonweb.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
-	chmod +x $@
-
-pellmonsrv: pellmonsrv.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
 	chmod +x $@
 
