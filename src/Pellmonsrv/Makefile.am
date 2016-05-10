@@ -30,7 +30,7 @@ do_substitution = $(SED) -e 's,[@]VERSION[@],$(VERSION),g' \
 	-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
 	-e 's,[@]confdir[@],$(confdir),g' \
 	-e 's,[@]datadir[@],$(datadir),g' \
-	-e 's,[@]localstatedir[@],$(localstatedir),g'
+	-e 's,[@]localstatedir[@],$(pellmonlocalstatedir),g'
 
 %: %.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@

@@ -10,10 +10,13 @@ CLEANFILES = \
 
 if DEBUG
 confdir = $(CURDIR)/conf.d.dev
+export confdir = $(CURDIR)/pellmon
 export pellmonconfdir = $(CURDIR)/conf.d.dev
 export pellmonlocalstatedir = $(CURDIR)/dev_var
 else
 confdir = $(sysconfdir)/pellmon
+export pellmonconfdir = $(sysconfdir)/pellmon/conf.d
+export confdir = $(sysconfdir)/pellmon
 export pellmonconfdir = $(sysconfdir)/pellmon/conf.d
 export pellmonlocalstatedir = $(localstatedir)
 endif

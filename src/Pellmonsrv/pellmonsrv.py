@@ -54,7 +54,6 @@ except ImportError:
     CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
     LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 
-print CONFDIR
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
     def __init__(self, dbus_service):
@@ -813,7 +812,7 @@ def run():
         dbfile = conf.db
         dbdir = os.path.dirname(dbfile)
         mkdir_p(dbdir)
-
+        logdir = os.path.dirname(conf.logfile)
         if args.USER:
             uid = pwd.getpwnam(args.USER).pw_uid
             gid = grp.getgrnam(args.GROUP).gr_gid

@@ -723,8 +723,7 @@ def walk_config_dir(config_dir, parser):
                     cherrypy.log("can not parse config file %s"%f)
 
 try:
-    from directories import DATADIR, CONFDIR, LOCALSTATEDIR
-    CONFDIR = os.path.join(CONFDIR, 'pellmon')
+    from Pellmonsrv.directories import DATADIR, CONFDIR, LOCALSTATEDIR
 except ImportError:
     DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
     CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
