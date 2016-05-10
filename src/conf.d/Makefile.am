@@ -28,10 +28,16 @@ EXTRA_DIST = \
 do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' \
-	-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
-	-e 's,[@]confdir[@],$(confdir),g' \
-	-e 's,[@]localstatedir[@],$(localstatedir),g'
+	-e 's,[@]sysconfdir[@],$(pellmonsysconfdir),g' \
+	-e 's,[@]confdir[@],$(pellmonconfdir),g' \
+	-e 's,[@]localstatedir[@],$(pellmonlocalstatedir),g'
 
 %.conf: %.conf.in Makefile
 	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+
+all: all-am ../conf.d.dev
+
+../conf.d.dev:
+	@echo "************ Copy conf.d to conf.d.dev ************************"
+	mkdir ../conf.d.dev &&	cp -r * ../conf.d.dev
 

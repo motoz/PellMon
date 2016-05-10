@@ -5,7 +5,9 @@ nobase_nbecom_PYTHON = \
 	nbeprotocol/language.py \
 	nbeprotocol/protocol.py \
 	nbeprotocol/protocolexceptions.py \
-	nbeprotocol/frames.py \
+	nbeprotocol/frames.py
+
+nobase_nodist_nbecom_PYTHON = \
 	nbeprotocol/directories.py
 
 nbecomdir = $(pythondir)/Pellmonsrv/plugins/nbecom
@@ -25,6 +27,8 @@ EXTRA_DIST = \
 	nbeprotocol/directories.py.in
 
 CLEANFILES = \
-	nbeprotocol/directories.py
+	nbeprotocol/directories.py \
+	nbeprotocol/directories.pyc \
+	nbeprotocol/directories.pyo
 
 

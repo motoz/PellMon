@@ -19,4 +19,4 @@
 
 from Pellmonweb import pellmonweb
 
-pellmonweb.run('/home/anders/Documents/PellMon/src/Pellmonweb')
+pellmonweb.run()

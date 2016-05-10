@@ -21,6 +21,17 @@ AC_ARG_WITH([user_web],
 
 AC_SUBST([user_web], [$with_user_web])
 
+
+dnl This options sets paths to point to source directory
+AC_ARG_ENABLE([debug],
+[  --enable-debug    Turn on debugging],
+[case "${enableval}" in
+  yes) debug=true ;;
+  no)  debug=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+esac],[debug=false])
+AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+
 AC_CONFIG_FILES([ \
 Makefile \
 initscript/Makefile \

@@ -722,9 +722,16 @@ def walk_config_dir(config_dir, parser):
                 except:
                     cherrypy.log("can not parse config file %s"%f)
 
+try:
+    from directories import DATADIR, CONFDIR, LOCALSTATEDIR
+    CONFDIR = os.path.join(CONFDIR, 'pellmon')
+except ImportError:
+    DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 
-def run(DATADIR):
-    MEDIA_DIR = os.path.join(DATADIR, 'media')
+def run():
+    MEDIA_DIR = os.path.join(DATADIR, 'Pellmonweb', 'media')
     argparser = argparse.ArgumentParser(prog='pellmonweb')
     argparser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
     argparser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
@@ -740,7 +747,7 @@ def run(DATADIR):
 
     #Look for temlates in this directory
     global lookup
-    lookup = myLookup(directories=[os.path.join(DATADIR, 'html')], dbus=dbus)
+    lookup = myLookup(directories=[os.path.join(DATADIR, 'Pellmonweb', 'html')], dbus=dbus)
 
     config_file = args.CONFIG
 
@@ -749,14 +756,9 @@ def run(DATADIR):
         plugins.PIDFile(cherrypy.engine, pidfile).subscribe()
 
     if args.USER:
-        # Load the configuration file
-        if not os.path.isfile(config_file):
-            config_file = '/etc/pellmon.conf'
-        if not os.path.isfile(config_file):
-            config_file = '/usr/local/etc/pellmon.conf'
-#        if not os.path.isfile(config_file):
-#            cherrypy.log("config file not found")
-#            sys.exit(1)
+
+        config_file = os.path.join(CONFDIR, 'pellmon.conf')
+
         try:
             parser.read(config_file)
         except:
@@ -797,13 +799,6 @@ def run(DATADIR):
         plugins.DropPrivileges(cherrypy.engine, uid=uid, gid=gid, umask=033).subscribe()
 
     # Load the configuration file
-    if not os.path.isfile(config_file):
-        config_file = '/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        config_file = '/usr/local/etc/pellmon.conf'
-#    if not os.path.isfile(config_file):
-#        cherrypy.log("config file not found")
-#        sys.exit(1)
     try:
         parser.read(config_file)
         config_dir = parser.get('conf', 'config_dir')

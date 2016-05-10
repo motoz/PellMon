@@ -42,12 +42,19 @@ import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
 from database import Database as _Database
 from database import init_keyval_storage
-
 try:
     from version import __version__
-except:
-    __version__ = '@VERSION@'
+except ImportError:
+    __version__ = '_dev_'
 
+try:
+    from directories import DATADIR, CONFDIR, LOCALSTATEDIR
+except ImportError:
+    DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
+
+print CONFDIR
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
     def __init__(self, dbus_service):
@@ -769,7 +776,7 @@ def run():
     parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonsrv.pid', help='Full path to pidfile')
     parser.add_argument('-U', '--USER', help='Run as USER')
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
-    parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    parser.add_argument('-C', '--CONFIG', default=None, help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
     parser.add_argument('-O', '--OLDPLUGINDIR', default='-', help='Transfer settings from the old plugin directory if exists')
@@ -778,12 +785,10 @@ def run():
     if args.PLUGINDIR == '-':
         args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')
 
-    config_file = args.CONFIG
-    if not os.path.isfile(config_file):
-        config_file = '/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        config_file = '/usr/local/etc/pellmon.conf'
-
+    if args.CONFIG is not None:
+        config_file = args.CONFIG
+    else:
+        config_file = os.path.join(CONFDIR, 'pellmon.conf')
     # Init global configuration from the conf file
     global conf
     conf = config(config_file)
