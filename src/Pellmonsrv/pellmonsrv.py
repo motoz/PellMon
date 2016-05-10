@@ -544,9 +544,15 @@ class config:
         # create file handler for logger
         try:
             self.logfile = parser.get('conf', 'logfile')
+            try:
+                logdir = os.path.dirname(self.logfile)
+                mkdir_p(logdir)
+            except:
+                pass
             fh = logging.handlers.WatchedFileHandler(self.logfile)
         except:
             fh = logging.StreamHandler()
+
         # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
@@ -802,12 +808,6 @@ def run():
         conf.USER = args.USER
     if args.GROUP:
         conf.GROUP = args.GROUP
-
-    try:
-        logdir = os.path.dirname(conf.logfile)
-        mkdir_p(logdir)
-    except:
-        pass
 
     if conf.polling:
         dbfile = conf.db
