@@ -369,8 +369,8 @@ class raspberry_gpio(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, db):
-        protocols.activate(self, conf, glob, db)
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.power = 0
         self.lock = Lock()
         self.pin2index={}

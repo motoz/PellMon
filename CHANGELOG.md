@@ -8,6 +8,7 @@ This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 - New plugin Heatingcircuit, that adjusts the heating circuit mixing valve according to outside temperature
+- New plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection
 
 ## [0.6.1] - 2016-01-22
 ### Added

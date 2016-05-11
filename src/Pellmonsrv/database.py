@@ -72,15 +72,31 @@ class Cacheditem(Getsetitem):
                 self.update_time = time.time()
                 return self.cached_value
 
+    @value.setter
+    def value(self, value):
+        with self.lock:
+            if self.setter:
+                self.setter(self.name, value)
+                self.cached_value = self._value
+            self._value = value
+            #invalidate cache when writing
+            self.update_time = 0
+
     @property
     def uncached_value(self):
         if self.getter:
             self.cached_value = self.getter(self.name)
             self.update_time = time.time()
 
+    def update_cache(self, value, t=None):
+        self.cached_value = value
+        if t == None:
+            t = time.time()
+        self.update_time = t
+
 class Storeditem(Getsetitem):
-    def __init__(self, name, value=None, getter=None, setter=None):
-        super(Storeditem, self).__init__(name, value, getter, setter)
+    def __init__(self, name, value=None, setter=None):
+        super(Storeditem, self).__init__(name, value, None, setter)
         Keyval_storage.keyval_storage.writeval(self.name, confval=value)
         self._value = Keyval_storage.keyval_storage.readval(self.name)
 
@@ -91,7 +107,8 @@ class Storeditem(Getsetitem):
                 if value != self._value:
                     Keyval_storage.keyval_storage.writeval(self.name, value)
                     self._value = value
-                self.setter(self.name, value)
+                if self.setter:
+                    self.setter(self.name, value)
         except Exception, e:
            print e
 
@@ -108,12 +125,24 @@ class Database(WeakValueDictionary):
     def get_value(self, name):
         return self[name].value
 
-    def set_value(self, name, value):
+    def get_text(self, name):
+        item = self[name]
         try:
-            self[name].value = value
-            return 'OK'
-        except:
-            return 'error'
+            return item.get_text(item.value)
+        except AttributeError as e:
+            return item.value
+
+    def set_value(self, name, value):
+        self[name].value = value
+        return 'OK'
+
+    def set_text(self, name, value):
+        try:
+            item = self[name]
+            value = item.get_text(value, reverse=True)
+        except AttributeError as e:
+            pass
+        self[name].value = value
 
 class Keyval_storage(object):
     def __init__(self, dbfile):

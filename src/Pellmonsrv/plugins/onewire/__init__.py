@@ -31,7 +31,7 @@ class onewireplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, db):
+    def activate(self, conf, glob, db, *args, **kwargs):
         """ Create the items described in the configuration file and activate the plugin """
         self.itemList=[]
         self.items = {}
@@ -39,7 +39,7 @@ class onewireplugin(protocols):
         self.Menutags = ['Onewire']
         self.w1_therm_temperature = re.compile(r't=([0-9]+)')
         self.itemrefs = []
-        protocols.activate(self, conf, glob, db)
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         try:
             itemconfigs = {}
 

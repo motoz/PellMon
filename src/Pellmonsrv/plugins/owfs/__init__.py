@@ -37,13 +37,13 @@ class owfsplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, db):
+    def activate(self, conf, glob, db, *args, **kwargs):
         try:
             self.protocol = __import__('pyownet.protocol').protocol
         except ImportError:
             logger.info('OWFS: python module pyownet is missing')
             raise
-        protocols.activate(self, conf, glob, db)
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.ow2index={}
         self.name2index={}
         self.sensors={}

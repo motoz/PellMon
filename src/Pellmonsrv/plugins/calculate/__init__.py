@@ -218,9 +218,9 @@ class Calc():
                 return self.stack[-1]
             except IndexError:
                 raise IndexError('No return value, stack is empty')
-        except Exception,e:
+        except Exception as e:
             if self.IP < len(self.calc):
-                raise ValueError('\'%s\' at %u: %s '%(self.calc[self.IP], self.IP, str(e)))
+                raise ValueError("'%s' at %u: %s "%(self.calc[self.IP], self.IP, str(e)))
             else:
                 if stop_on != ('STOP',):
                      raise ValueError('missing %s'%('|').join(stop_on)) 
@@ -231,8 +231,8 @@ class calculateplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, db):
-        protocols.activate(self, conf, glob, db)
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.calc2index={}
         self.name2index={}
         self.tasks = {}
@@ -329,7 +329,7 @@ class calculateplugin(protocols):
                         calc = Calc(prog, self.db)
                         return calc.run()
                     except Exception, e:
-                        logger.info(calc_item+' error: '+str(e))
+                        logger.info(calc_item+' error: '+repr(e))
                         return 'error'
             except:
                 if item['type'] == 'R':
@@ -385,6 +385,6 @@ class calcthread(Thread):
             try:
                 prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.db)
                 prog.run()
-            except Exception, e:
-                logger.info(self.progitem + ' error: '+str(e))
+            except Exception as e:
+                logger.info('error in ' + self.progitem +str(e))
             sleep(self.cycle)

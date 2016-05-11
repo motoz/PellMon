@@ -1,0 +1,9 @@
+[Core]
+Name = NBEcom
+Module = nbecom
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = Connect to a NBE V7/V13 pellet burner over ethernet

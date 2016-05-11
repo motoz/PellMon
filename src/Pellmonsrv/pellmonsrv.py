@@ -42,11 +42,17 @@ import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
 from database import Database as _Database
 from database import init_keyval_storage
-
 try:
     from version import __version__
-except:
-    __version__ = '@VERSION@'
+except ImportError:
+    __version__ = '_dev_'
+
+try:
+    from directories import DATADIR, CONFDIR, LOCALSTATEDIR
+except ImportError:
+    DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
@@ -88,7 +94,7 @@ class Database(threading.Thread, _Database):
                     if conf.command == 'debug':
                         raise
                     else:
-                        logger.debug('Plugin error:%s'%str(e)   )
+                        logger.info('%s plugin error: %s'%(plugin_name, str(e))   )
         if activated_plugins:
             logger.info('Activated plugins: %s'%', '.join(activated_plugins))
         if failed_plugins:
@@ -101,7 +107,10 @@ class Database(threading.Thread, _Database):
             changed_params = []
             for item_name, item in self.items():
                 try:
-                    value = item.value
+                    try:
+                        value = item.get_text(item.value)
+                    except AttributeError:
+                        value = item.value
                     if item_name in self.values:
                         if value != self.values[item_name]:
                             changed_params.append({'name':item_name, 'value':value})
@@ -137,7 +146,7 @@ class MyDBUSService(dbus.service.Object):
         if param == 'pellmonsrv_version':
             return __version__
         else:
-            return conf.database.get_value(param)
+            return conf.database.get_text(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
@@ -158,7 +167,7 @@ class MyDBUSService(dbus.service.Object):
                     return False
             return True
 
-        return sorted([ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name'])
+        return sorted([ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str) or isinstance(atype, list)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name'])
 
     @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):
@@ -235,14 +244,16 @@ class Poller(threading.Thread):
                                 except:
                                     pass
                     except IOError as e:
-                        logger.info('IOError: %s,  Trying Z01...'%e.strerror)
+                        #logger.info('IOError: %s,  Trying Z01...'%str(e))
+#                        import traceback
+#                        traceback.print_exc()
                         try:
                             # Strange fix for stange problem with some scotte burners
                             conf.database['oxygen_regulation'].value
                         except Exception as e:
                             logger.info('error in retry %s'%str(e) )
                     except Exception as e:
-                        logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
+                        logger.debug('error polling %s: %s'%(data['name'], str(e)) )
                         
                     itemlist.append(value)
                     lastupdate[data['name']] = value
@@ -532,9 +543,15 @@ class config:
         # create file handler for logger
         try:
             self.logfile = parser.get('conf', 'logfile')
+            try:
+                logdir = os.path.dirname(self.logfile)
+                mkdir_p(logdir)
+            except:
+                pass
             fh = logging.handlers.WatchedFileHandler(self.logfile)
         except:
             fh = logging.StreamHandler()
+
         # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
@@ -637,10 +654,10 @@ class config:
             self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
             for item in self.pollData:
                 self.RrdCreateString += item['ds_type'] % (item['ds_name'], self.poll_interval*4) + ' ' 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:1:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:10:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:100:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:1000:20000" 
 
         # dict to hold known recent values of db items
         self.dbvalues = {} 
@@ -764,7 +781,7 @@ def run():
     parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonsrv.pid', help='Full path to pidfile')
     parser.add_argument('-U', '--USER', help='Run as USER')
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
-    parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    parser.add_argument('-C', '--CONFIG', default=None, help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
     parser.add_argument('-O', '--OLDPLUGINDIR', default='-', help='Transfer settings from the old plugin directory if exists')
@@ -773,38 +790,29 @@ def run():
     if args.PLUGINDIR == '-':
         args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')
 
-    config_file = args.CONFIG
-    if not os.path.isfile(config_file):
-        config_file = '/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        config_file = '/usr/local/etc/pellmon.conf'
-#    if not os.path.isfile(config_file):
-#        sys.stderr.write('Configuration file not found, exiting\n')
-#        sys.exit(1)
-
+    if args.CONFIG is not None:
+        config_file = args.CONFIG
+    else:
+        config_file = os.path.join(CONFDIR, 'pellmon.conf')
     # Init global configuration from the conf file
     global conf
     conf = config(config_file)
     conf.dbus = args.DBUS
     conf.plugin_dir = args.PLUGINDIR
     conf.old_plugin_dir = args.OLDPLUGINDIR
+    #conf.datadir = DATADIR
+    #conf.plugin_datadir = os.path.join(DATADIR, 'plugins')
 
     if args.USER:
         conf.USER = args.USER
     if args.GROUP:
         conf.GROUP = args.GROUP
 
-    try:
-        logdir = os.path.dirname(conf.logfile)
-        mkdir_p(logdir)
-    except:
-        pass
-
     if conf.polling:
         dbfile = conf.db
         dbdir = os.path.dirname(dbfile)
         mkdir_p(dbdir)
-
+        logdir = os.path.dirname(conf.logfile)
         if args.USER:
             uid = pwd.getpwnam(args.USER).pw_uid
             gid = grp.getgrnam(args.GROUP).gr_gid

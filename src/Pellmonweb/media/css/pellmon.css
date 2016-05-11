@@ -33,6 +33,19 @@ a:link {text-decoration:none; outline: none;}
     text-align: left"
 }
 
+
+@media (min-width: 768px) {
+    .dl-horizontal dt {
+        width:250px;
+        white-space: normal;
+        /*margin-bottom: 5px;*/
+    }
+    .dl-horizontal dd {
+        margin-left:30px;
+    }
+}
+
+
 /* fix for IE system image svg scaling error */
 object {
     width: 100%;

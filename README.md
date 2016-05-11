@@ -36,6 +36,8 @@ onewire input (ds2460 based) to count feeder auger revolutions for use with the 
 
 **Onewire** Read onewire sensor data using the kernel driver interface /sys/bus/w1/
 
+**NBEcom** Connect to an NBE V7/V13 pellet burner over ethernet
+
 Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
 ####Contains:

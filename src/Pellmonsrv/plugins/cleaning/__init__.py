@@ -32,8 +32,8 @@ class cleaningplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob, db):
-        protocols.activate(self, conf, glob, db)
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
 
         self.rrdfile = self.glob['conf'].db
         self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
