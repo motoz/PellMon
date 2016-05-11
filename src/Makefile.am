@@ -40,14 +40,14 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]localstatedir[@],$(pellmonlocalstatedir),g'
 
 %.conf: %.conf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	$(do_substitution) < $< > $@
 
 pellmoncli: pellmoncli.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	$(do_substitution) < $< > $@
 	chmod +x $@
 
 pellmonconf: pellmonconf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	$(do_substitution) < $< > $@
 	chmod +x $@
 
 install-data-local:

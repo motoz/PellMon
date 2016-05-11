@@ -20,8 +20,8 @@ do_substitution = $(SED) -e 's,[@]datadir[@],$(datadir),g' \
 	-e 's,[@]localstatedir[@],$(localstatedir),g'
 
 nbeprotocol/directories.py: nbeprotocol/directories.py.in Makefile
-	mkdir -p $(builddir)/nbeprotocol
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	mkdir -p nbeprotocol
+	$(do_substitution) < $< > $@
 
 EXTRA_DIST = \
 	nbeprotocol/directories.py.in

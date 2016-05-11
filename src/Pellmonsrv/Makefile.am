@@ -33,6 +33,6 @@ do_substitution = $(SED) -e 's,[@]VERSION[@],$(VERSION),g' \
 	-e 's,[@]localstatedir[@],$(pellmonlocalstatedir),g'
 
 %: %.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	$(do_substitution) < $< > $@
 
 

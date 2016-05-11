@@ -33,7 +33,7 @@ do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]localstatedir[@],$(pellmonlocalstatedir),g'
 
 %.conf: %.conf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	$(do_substitution) < $< > $@
 
 all: all-am ../conf.d.dev
 
