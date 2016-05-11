@@ -236,7 +236,7 @@ class Consumption_plugin(protocols):
                     #print str(e)
                     total = None
         if total:
-            return total
+            return total.replace(',', '.')
         else:
             return None
 

@@ -654,10 +654,10 @@ class config:
             self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
             for item in self.pollData:
                 self.RrdCreateString += item['ds_type'] % (item['ds_name'], self.poll_interval*4) + ' ' 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:1:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:10:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:100:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:1000:20000" 
 
         # dict to hold known recent values of db items
         self.dbvalues = {} 
