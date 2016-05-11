@@ -1,4 +1,15 @@
-SUBDIRS = scottecom raspberrygpio testplugin customalarms calculate owfs silolevel pelletcalc consumption cleaning onewire
+SUBDIRS = scottecom \
+	raspberrygpio \
+	testplugin \
+	customalarms \
+	calculate \
+	owfs \
+	silolevel \
+	pelletcalc \
+	consumption \
+	cleaning \
+	onewire \
+	heatingcircuit
 
 nobase_dist_plugins_DATA = \
 	scottecom.pellmon-plugin \
@@ -11,6 +22,7 @@ nobase_dist_plugins_DATA = \
 	pelletcalc.pellmon-plugin \
 	cleaning.pellmon-plugin \
 	onewire.pellmon-plugin \
-	consumption.pellmon-plugin
+	consumption.pellmon-plugin \
+	heatingcircuit.pellmon-plugin
 
 pluginsdir = $(pythondir)/Pellmonsrv/plugins

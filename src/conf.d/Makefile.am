@@ -18,7 +18,8 @@ nobase_dist_conf_DATA = \
 	plugins/scottecom.conf \
 	plugins/testplugin.conf \
 	plugins/onewire.conf \
-	plugins/pelletcalc.conf
+	plugins/pelletcalc.conf \
+	plugins/heatingcircuit.conf
 
 EXTRA_DIST = \
 	database.conf.in \

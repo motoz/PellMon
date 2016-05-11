@@ -6,6 +6,9 @@ This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Plugin interface to the database redesigned
 
+### Added
+- New plugin Heatingcircuit, that adjusts the heating circuit mixing valve according to outside temperature
+
 ## [0.6.1] - 2016-01-22
 ### Added
 - Shell command line completion for pellmoncli
