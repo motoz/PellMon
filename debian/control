@@ -26,7 +26,9 @@ Depends: ${misc:Depends},
 	python-gobject,
 	python-simplejson,
 	python-dateutil,
-	python-argcomplete
+	python-argcomplete,
+	python-ws4py,
+	python-crypto
 Description: pellet burner logger
  Pellet burner logger with cli and web frontends
 
