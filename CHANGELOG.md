@@ -2,13 +2,14 @@
 All notable changes to this project will be documented in this file.
 This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
-## [unreleased]
+## [0.7.0~beta1] - 2016-05-12
+### Added
+- Plugin Heatingcircuit. Controls the heating circuit mixing valve according to outside temperature
+- Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
+- Configure option --enable-debug makes it easy to set up the project to run directly from source
+
 ### Changed
 - Plugin interface to the database redesigned
-
-### Added
-- New plugin Heatingcircuit, that adjusts the heating circuit mixing valve according to outside temperature
-- New plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection
 
 ## [0.6.1] - 2016-01-22
 ### Added
