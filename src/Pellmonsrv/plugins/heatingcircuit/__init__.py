@@ -74,8 +74,6 @@ class Heatingcircuitplugin(protocols):
 
         self.controllerthread = Thread(target = lambda:self.controller())
         self.controllerthread.setDaemon(True)
-        self.controllerthread.start()
-
 
     def getMenutags(self):
         return Menutags
@@ -129,6 +127,7 @@ class Heatingcircuitplugin(protocols):
 
     def feedforward(self):
         """Handle outside temperature compensation"""
+        firstrun = True
         while True:
             try:
                 outside_temp = float(self.db[self.outside_temp].value)
@@ -142,6 +141,9 @@ class Heatingcircuitplugin(protocols):
                 self.desired_temp = (outside_temp - temp_x1) / (temp_x2 - temp_x1) * (temp_y2 - temp_y1) + temp_y1
                 self.db['desired_hctemp'].value = unicode(self.desired_temp)
 
+                if firstrun:
+                    self.controllerthread.start()
+                    firstrun = False
             except Exception, e:
                 if  self.glob['conf'].command == 'debug':
                     raise
