@@ -5,24 +5,18 @@ srv_PYTHON = \
 	pellmonsrv.py \
 	plugin_categories.py \
 	database.py \
-	__init__.py
-
-nodist_srv_PYTHON = \
+	__init__.py \
 	version.py \
 	directories.py
 
-CLEANFILES = \
-	version.py \
-	version.pyc \
-	version.pyo \
-	directories.py \
-	directories.pyc \
-	directories.pyo
 
 EXTRA_DIST = \
 	version.py.in \
 	directories.py.in
 
+CLEANFILES = \
+	version.py \
+	directories.py
 
 srvdir = $(pythondir)/Pellmonsrv
 
@@ -35,4 +29,8 @@ do_substitution = $(SED) -e 's,[@]VERSION[@],$(VERSION),g' \
 %: %.in Makefile
 	$(do_substitution) < $< > $@
 
-
+uninstall-hook:
+	rm -f version.py
+	rm -f version.pyc
+	rm -f directories.py
+	rm -f directories.pyc

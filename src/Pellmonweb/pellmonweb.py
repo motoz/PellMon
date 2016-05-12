@@ -52,7 +52,7 @@ import re
 import math
 
 try:
-    from version import __version__
+    from Pellmonsrv.version import __version__
 except:
     __version__ = '@VERSION@'
 

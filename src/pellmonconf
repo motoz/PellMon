@@ -19,4 +19,4 @@
 
 from Pellmonweb import pellmonconf
 
-pellmonconf.run('@confdir@/pellmon.conf', '@datadir@/Pellmonweb')
+pellmonconf.run()

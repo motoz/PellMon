@@ -111,11 +111,18 @@ class Pellmonconf:
             error = {'msg':'only POST'}
             return json.dumps({'success':False, 'error':error})
 
+try:
+    from Pellmonsrv.directories import DATADIR, CONFDIR, LOCALSTATEDIR
+except ImportError:
+    DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 
-def run(config_file, datadir):
-    MEDIA_DIR = os.path.join(datadir, 'media')
-    lookup = TemplateLookup(directories=[os.path.join(datadir, 'html_conf')])
-
+def run():
+    MEDIA_DIR = os.path.join(DATADIR, 'Pellmonweb', 'media')
+    lookup = TemplateLookup(directories=[os.path.join(DATADIR, 'Pellmonweb', 'html_conf')])
+    config_file = os.path.join(CONFDIR, 'pellmon.conf')
+    print config_file
     argparser = argparse.ArgumentParser(prog='pellmonconf')
 
     argparser.add_argument('-P', '--port', default=8083, help='Port number for webinterface, default 8083')

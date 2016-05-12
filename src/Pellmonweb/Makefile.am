@@ -4,16 +4,7 @@ web_PYTHON = \
 	auth.py \
 	consumption.py \
 	logview.py \
-	__init__.py 
-
-nodist_web_PYTHON = \
-	version.py
-
-CLEANFILES = \
-	version.py
-
-EXTRA_DIST = \
-	version.py.in
+	__init__.py
 
 webdir = $(pythondir)/Pellmonweb
 
@@ -98,10 +89,4 @@ nobase_dist_foohtml_DATA = \
 	html/about.html
 
 foohtmldir = $(datadir)/Pellmonweb
-
-do_substitution = $(SED) -e 's,[@]VERSION[@],$(VERSION),g'
-
-%: %.in Makefile
-	$(do_substitution) < $< > $@
-
 
