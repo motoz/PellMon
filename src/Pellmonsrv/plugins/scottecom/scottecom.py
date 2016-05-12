@@ -20,6 +20,7 @@ from Scotteprotocol import Protocol
 import logging
 import threading
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 import menus
 from descriptions import dataDescriptions
 
@@ -27,10 +28,11 @@ class scottecom(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.logger = logging.getLogger('pellMon')
         self.dbvalues={}
+        self.itemrefs = []
 
         # Initialize protocol and setup the database according to version_string
         try:
@@ -41,8 +43,30 @@ class scottecom(protocols):
                 self.protocol = Protocol(None, '')
             self.allparameters = self.protocol.getDataBase()
 
+            """Get list of all data/parameter/command items"""
+            params = self.protocol.getDataBase()
+            for item in params:
+                dbitem = Getsetitem(item, None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                if hasattr(params[item], 'max'): 
+                    dbitem.max = str(params[item].max)
+                if hasattr(params[item], 'min'): 
+                    dbitem.min = str(params[item].min)
+                if hasattr(params[item], 'frame'): 
+                    if hasattr(params[item], 'address'): 
+                        dbitem.type = 'R/W'
+                    else:
+                        dbitem.type = 'R'
+                else:
+                    dbitem.type = 'W'
+                dbitem.longname = dataDescriptions[item][0]
+                dbitem.unit = dataDescriptions[item][1]
+                dbitem.description = dataDescriptions[item][2]
+                dbitem.tags = menus.itemtags(item)
+                self.db.insert(dbitem)
+                self.itemrefs.append(dbitem)
+
             # Create and start settings_pollthread to log settings changed locally
-            settings = menus.getDbWithTags(('Settings',))
+            settings = [item for item in params if 'Settings' in menus.itemtags(item)]
             ht = threading.Timer(3, self.settings_pollthread, args=(settings,))
             ht.setDaemon(True)
             ht.start()
@@ -66,49 +90,8 @@ class scottecom(protocols):
         db = self.protocol.getDataBase()
         return db.keys()
 
-    def getDbWithTags(self, tags):
-        """Get the menutags for param"""
-        allparameters = self.getDataBase()
-        filteredParams = menus.getDbWithTags(tags)            
-        params = []
-        for param in filteredParams:
-            if param in allparameters:
-                params.append(param)
-        params.sort()
-        return params
-
     def getMenutags(self):
         return menus.getMenutags()
-
-    def GetFullDB(self, tags):
-        """Get list of all data/parameter/command items"""
-        l=[]
-        allparameters = self.protocol.getDataBase()
-        filteredParams = self.getDbWithTags(tags)
-        params = []
-        for param in filteredParams:
-            if param in allparameters:
-                params.append(param)
-        params.sort()
-        for item in params:
-            data={}
-            data['name']=item
-            if hasattr(allparameters[item], 'max'): 
-                data['max']=(allparameters[item].max)
-            if hasattr(allparameters[item], 'min'): 
-                data['min']=(allparameters[item].min)
-            if hasattr(allparameters[item], 'frame'): 
-                if hasattr(allparameters[item], 'address'): 
-                    data['type']=('R/W')
-                else:
-                    data['type']=('R')
-            else:
-                data['type']=('W')
-            data['longname'] = dataDescriptions[item][0]
-            data['unit'] = dataDescriptions[item][1]
-            data['description'] = dataDescriptions[item][2]
-            l.append(data)
-        return l
 
     def settings_pollthread(self, settings):
         """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""

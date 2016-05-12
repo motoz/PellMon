@@ -82,6 +82,7 @@ def cli(args):
     # Sets up readline for tab completion
     readline.parse_and_bind("tab: complete")
     readline.set_completer(complete)
+    readline.set_completer_delims(readline.get_completer_delims().replace('-', ''))
 
     run=True
     while run:

@@ -18,7 +18,9 @@ nobase_dist_conf_DATA = \
 	plugins/scottecom.conf \
 	plugins/testplugin.conf \
 	plugins/onewire.conf \
-	plugins/pelletcalc.conf
+	plugins/pelletcalc.conf \
+	plugins/heatingcircuit.conf \
+	plugins/nbecom.conf
 
 EXTRA_DIST = \
 	database.conf.in \
@@ -27,10 +29,16 @@ EXTRA_DIST = \
 do_substitution = $(SED) -e 's,[@]pythondir[@],$(pythondir),g' \
 	-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 	-e 's,[@]VERSION[@],$(VERSION),g' \
-	-e 's,[@]sysconfdir[@],$(sysconfdir),g' \
-	-e 's,[@]confdir[@],$(confdir),g' \
-	-e 's,[@]localstatedir[@],$(localstatedir),g'
+	-e 's,[@]sysconfdir[@],$(pellmonsysconfdir),g' \
+	-e 's,[@]confdir[@],$(pellmonconfdir),g' \
+	-e 's,[@]localstatedir[@],$(pellmonlocalstatedir),g'
 
 %.conf: %.conf.in Makefile
-	$(do_substitution) < $(srcdir)/$< > $(builddir)/$@
+	$(do_substitution) < $< > $@
+
+all: all-am ../conf.d.dev
+
+../conf.d.dev:
+	@echo "************ Copy conf.d to conf.d.dev ************************"
+	mkdir ../conf.d.dev &&	cp -r * ../conf.d.dev
 

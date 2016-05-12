@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from threading import Thread, Timer
 from os import path
 import os, grp, pwd
@@ -34,11 +35,8 @@ itemValues={}
 Menutags = ['Calculate']
 gstore = {}
 
-transstring = maketrans('\t', ' ')
-
 class Calc():
-    def __init__(self, prog, glob, stack=None):
-        prog = prog.translate(transstring)
+    def __init__(self, prog, db, stack=None):
         calc = []
         for row in prog.splitlines():
           calc += row.split(' ')
@@ -48,7 +46,7 @@ class Calc():
             self.stack = []
         else:
             self.stack = stack
-        self.glob = glob
+        self.db = db
         self.store = {}
 
     def execute(self):
@@ -59,44 +57,44 @@ class Calc():
         if c=='/':
             q = float(self.stack.pop())
             d = float(self.stack.pop())
-            self.stack.append(str(d/q))
+            self.stack.append(unicode(d/q))
         elif c == '*':
             d = float(self.stack.pop())
             q = float(self.stack.pop())
-            self.stack.append(str(d*q))
+            self.stack.append(unicode(d*q))
         elif c=='+':
             d = float(self.stack.pop())
             q = float(self.stack.pop())
-            self.stack.append(str(d+q))
+            self.stack.append(unicode(d+q))
         elif c=='-':
             d = float(self.stack.pop())
             q = float(self.stack.pop())
-            self.stack.append(str(q-d))
+            self.stack.append(unicode(q-d))
         elif c=='get':
             item = self.stack.pop()
-            value = self.glob['conf'].database.items[item].getItem()
+            value = self.db.get_value(item)
             self.stack.append(value)
         elif c=='set':
             item = self.stack.pop()
             value = self.stack.pop()
-            result = self.glob['conf'].database.items[item].setItem(value)
+            result = self.db.set_value(item, value)
             self.stack.append(result)
         elif c=='>':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) > float(item2))))
+            self.stack.append(unicode(int(float(item1) > float(item2))))
         elif c=='<':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) < float(item2))))
+            self.stack.append(unicode(int(float(item1) < float(item2))))
         elif c=='==':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) == float(item2))))
+            self.stack.append(unicode(int(float(item1) == float(item2))))
         elif c=='!=':
             item2 = self.stack.pop()
             item1 = self.stack.pop()
-            self.stack.append(str(int(float(item1) != float(item2))))
+            self.stack.append(unicode(int(float(item1) != float(item2))))
         elif c=='?':
             itemFalse = self.stack.pop()
             itemTrue = self.stack.pop()
@@ -107,8 +105,8 @@ class Calc():
                 self.stack.append(itemFalse)
         elif c=='exec':
             name = self.stack.pop()
-            calc = self.glob['conf'].database.items[name].getItem()
-            prog = Calc(calc, self.glob, stack=self.stack)
+            calc = self.db.get_value(name)
+            prog = Calc(calc, self.db, stack=self.stack)
             prog.run()
         elif c=='pop':
             self.stack.pop()
@@ -136,38 +134,38 @@ class Calc():
             else:
                 self.stack.append(item2)
         elif c == 'sto':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             self.store[var] = self.stack.pop()
         elif c == 'del':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             if self.store.has_key(var):
                 del gstore[var]
         elif c == 'def':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             value = self.stack.pop()
             if not self.store.has_key(var):
                 self.store[var] = value
         elif c == 'rcl':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             try:
                 self.stack.append(self.store[var])
             except:
                 raise ValueError('no variable named %s'%var)
         elif c == 'gsto':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             gstore[var] = self.stack.pop()
         elif c == 'gdef':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             value = self.stack.pop()
             if not gstore.has_key(var):
                 gstore[var] = value
         elif c == 'gdel':
-            var = str(self.stack.pop())
+            var = unicode(self.stack.pop())
             if gstore.has_key(var):
                 del gstore[var]
         elif c == 'grcl':
             try:
-                var = str(self.stack.pop())
+                var = unicode(self.stack.pop())
                 self.stack.append(gstore[var])
             except:
                 raise ValueError('no global named %s'%var)
@@ -220,9 +218,9 @@ class Calc():
                 return self.stack[-1]
             except IndexError:
                 raise IndexError('No return value, stack is empty')
-        except Exception,e:
+        except Exception as e:
             if self.IP < len(self.calc):
-                raise ValueError('\'%s\' at %u: %s '%(self.calc[self.IP], self.IP, str(e)))
+                raise ValueError("'%s' at %u: %s "%(self.calc[self.IP], self.IP, str(e)))
             else:
                 if stop_on != ('STOP',):
                      raise ValueError('missing %s'%('|').join(stop_on)) 
@@ -233,11 +231,12 @@ class calculateplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.calc2index={}
         self.name2index={}
         self.tasks = {}
+        self.itemrefs = []
         try:
             for key, value in self.conf.iteritems():
                 try:
@@ -250,7 +249,9 @@ class calculateplugin(protocols):
 
                     if calc_data == 'prog':
                         itemList[self.calc2index[calc_name]]['name'] = key 
-                        itemList[self.calc2index[calc_name]]['value'] = value 
+                        value = value.decode('utf-8')
+                        value = value.translate({ord(u'\t'):u' ', ord(u'\n'):u' '})
+                        itemList[self.calc2index[calc_name]]['value'] = value
                         #itemList[self.calc2index[calc_name]]['type'] = 'R/W' 
                         self.name2index[key] = self.calc2index[calc_name]
                         itemTags[key] = ['All', 'Calculate']
@@ -280,7 +281,7 @@ class calculateplugin(protocols):
                         self.name2index[key]=len(itemList)-1
 
                     elif calc_data == 'progtype':
-                        if value in ['R','R/W']:                                                                                                            
+                        if value in ['R','R/W']:
                             itemList[self.calc2index[calc_name]]['type'] = value
                         else:
                            raise ValueError('unknown type %s in %s'%(value, key)) 
@@ -300,7 +301,19 @@ class calculateplugin(protocols):
                     self.store_setting(item['name'], confval = item['value'])
                 else:
                     itemValues[item['name']] = item['value']
+
             self.migrate_settings('calculate')
+
+            for item in itemList:
+                dbitem = Getsetitem(item['name'], None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                for key, value in item.iteritems():
+                    if key != 'value':
+                        dbitem.__setattr__(key, value)
+                if dbitem.name in itemTags:
+                    dbitem.__setattr__('tags', itemTags[dbitem.name])
+                self.db.insert(dbitem)
+                self.itemrefs.append(dbitem)
+
         except Exception, e:
             logger.info( str(e))
             raise
@@ -313,11 +326,10 @@ class calculateplugin(protocols):
                 if item['type'] in ['R','R/W']:
                     prog = self.getItem(calc_item)
                     try:
-                        calc = Calc(prog, self.glob)
+                        calc = Calc(prog, self.db)
                         return calc.run()
                     except Exception, e:
-                        #calc = Calc(prog, self.glob)
-                        logger.info(calc_item+' error: '+str(e))
+                        logger.info(calc_item+' error: '+repr(e))
                         return 'error'
             except:
                 if item['type'] == 'R':
@@ -337,41 +349,23 @@ class calculateplugin(protocols):
             calc_item = item['calc_item']
             prog = self.getItem(calc_item)
             try:
-                stack = [str(value)]
-                calc = Calc(prog, self.glob, stack=stack)
+                stack = [unicode(value)]
+                calc = Calc(prog, self.db, stack=stack)
                 calc.run()
                 return 'OK'
             except Exception, e:
-                calc = Calc(prog, self.glob)
+                calc = Calc(prog, self.db)
                 logger.info(calc_item+' error: '+str(e))
                 return 'error'
         except:  
             try:
                 item = itemList[self.name2index[itemname]]
                 if item['type'] == 'R/W':
-                    self.store_setting(item['name'], str(value))
+                    self.store_setting(item['name'], value)
                     return 'OK'
             except Exception,e:
                 return 'error'
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        return items
-        
     def getMenutags(self):
         return Menutags
         t = Timer(5, self.poll_thread)
@@ -383,14 +377,14 @@ class calcthread(Thread):
         Thread.__init__(self)
         self.cycle = cycle
         self.setDaemon(True)
-        self.start()
         self.progitem = progitem
         self.plugin_object = plugin_object
+        self.start()
     def run(self):
         while True:
             try:
-                prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.glob)
+                prog = Calc(self.plugin_object.getItem(self.progitem), self.plugin_object.db)
                 prog.run()
-            except:
-                pass
+            except Exception as e:
+                logger.info('error in ' + self.progitem +str(e))
             sleep(self.cycle)

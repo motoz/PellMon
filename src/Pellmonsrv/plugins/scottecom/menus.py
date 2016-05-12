@@ -22,20 +22,8 @@ Menutags = ['Overview', 'Blower', 'Ignition', 'Feeder', 'Oxygen', 'Timer', 'Clea
 Tags = ['Basic', 'All', 'Settings', 'Measurements']
 Alltags = Tags+Menutags
 
-def getDbWithTags(wantedtags):
-    params=[]
-    for param, tags in dataBaseTags.iteritems():
-        paramtags=[]
-        for i in range(0,len(tags)):
-            if tags[i]=='X':
-                paramtags.append(Alltags[i])
-        accepted=True
-        for tag in wantedtags:
-            if tag != '' and not tag in paramtags:
-                accepted=False
-        if accepted:
-            params.append(param)
-    return params
+def itemtags(item):
+    return [Alltags[i] for i in range(len(dataBaseTags[item])) if dataBaseTags[item][i] == 'X']
 
 def getMenutags():
     return Menutags + ['All']

@@ -18,11 +18,15 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem, Storeditem
 from logging import getLogger
 
 logger = getLogger('pellMon')
 
-itemList = [{'name':'testitem1', 'longname':'test item 1', 'type':'W'}, {'name':'testitem2', 'type':'R', 'unit':'m/s'}, {'name':'testitem3', 'type':'R/W',  'min':'0', 'max':'100', 'unit':'HP'}]
+itemList = [
+    {'name':'testitem1', 'value':'0', 'longname':'test button', 'min':'0', 'max':'100', 'type':'W'},
+    {'name':'testitem2', 'value':'0', 'type':'R', 'min':'0', 'max':'100', 'unit':'m/s'}, 
+    {'name':'testitem3', 'value':'0', 'type':'R/W',  'min':'0', 'max':'100', 'unit':'HP'}]
 
 itemTags = {'testitem1' :     ['All', 'testplugin', 'Basic'],
             'testitem2' :     ['All', 'testplugin', 'Basic', 'Overview'],
@@ -36,52 +40,47 @@ class testplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
-        for i in itemList:
-            try:
-                i['value'] = i['min']
-            except:
-                i['value'] = '1234'
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
+        self.itemrefs = []
+        self.itemvalues = {}
+
         for key, value in self.conf.iteritems():
-            itemList.append({'name':key, 'value':value, 'min':0, 'max':100, 'unit':'W', 'type':'R/W'})
+            itemList.append({'name':key, 'value':value, 'min':'0', 'max':'100', 'unit':'km', 'type':'R/W'})
             itemTags[key] = ['All', 'testplugin', 'Basic']
-        logger.info('testplugin activated...')
+
+        for item in itemList:
+            self.itemvalues[item['name']] = item['value']
+
+            dbitem = Getsetitem(item['name'], item['value'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
+            if dbitem.name in itemTags:
+                dbitem.__setattr__('tags', itemTags[dbitem.name])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
+            def mysetter(name, value):
+                print 'testplugin set: ', name, value
+            i = Storeditem('stored', 'defaultvalue', setter=mysetter)
+            i.tags = ['All', 'testplugin', 'Basic'] 
+            i.type = 'R/W'
+            i.min = '0'
+            i.max = '120'
+            i.unit = 'm'
+            i.description = "this is a test item"
+            i.longname = "stored item"
+            self.db.insert(i)
+            self.itemrefs.append(i)
 
     def getItem(self, item):
-        for i in itemList:
-            if i['name'] == item:
-                logger.debug('testplugin: Get %s=%s'%(item,i['value']))
-                return i['value']
+        v = self.itemvalues[item]
+        logger.debug('testplugin: Get %s=%s'%(item, v))
+        return v
 
     def setItem(self, item, value):
-        for i in itemList:
-            if i['name'] == item:
-                i['value'] = value
-                logger.debug('testplugin: Set %s=%s'%(item,str(value)))
-                return 'OK'
-        return['error']
-
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        for item in items:
-            try:
-                item['description'] = itemDescriptions[item['name']]
-            except:
-                item['description'] = ''
-        return items
+        self.itemvalues[item] = value
+        logger.debug('testplugin: Set %s=%s'%(item,unicode(value)))
 
     def getMenutags(self):
         return ['testplugin', 'Overview']

@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 import traceback
 from threading import Thread, Timer
 from time import time, sleep
@@ -29,15 +30,16 @@ logger = getLogger('pellMon')
 class onewireplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
+
+    def activate(self, conf, glob, db, *args, **kwargs):
+        """ Create the items described in the configuration file and activate the plugin """
         self.itemList=[]
         self.items = {}
         self.itemTags={}
         self.Menutags = ['Onewire']
         self.w1_therm_temperature = re.compile(r't=([0-9]+)')
-
-    def activate(self, conf, glob):
-        """ Create the items described in the configuration file and activate the plugin """
-        protocols.activate(self, conf, glob)
+        self.itemrefs = []
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         try:
             itemconfigs = {}
 
@@ -64,8 +66,17 @@ class onewireplugin(protocols):
                 # Put the item in the items dictionary also where it's accessible by name
                 name = item['name']
                 self.items[name] = item
-                # And give it some default tags so it's visibla in the web interface
-                self.itemTags[name] = ['Basic', 'All', 'Onewire']
+
+            # Create dbitems from the list and insert into the database
+            for item in self.itemList:
+                dbitem = Getsetitem(item['name'], item['value'], lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+                for key, value in item.iteritems():
+                    if key is not 'value':
+                        dbitem.__setattr__(key, value)
+                # Give it some default tags so it's visible in the web interface
+                dbitem.__setattr__('tags', ['Basic', 'All', 'Onewire'])
+                self.db.insert(dbitem)
+                self.itemrefs.append(dbitem)
 
             t = Timer(0.1, self.background_polling_thread)
             t.setDaemon(True)
@@ -75,7 +86,7 @@ class onewireplugin(protocols):
             print e
 
     def getItem(self, itemName, background_poll=False):
-        """ Return the cached item value, or return a frech value when background_poll=True """
+        """ Return the cached item value, or return a fresh value when background_poll=True """
         item = self.items[itemName]
         if item['family'] == 'w1_therm':
             if background_poll:
@@ -114,22 +125,6 @@ class onewireplugin(protocols):
             except Exception, e:
                 logger.debug('onewire background poll error: '+str(e))
             sleep(5)
-
-    def getDataBase(self):
-        """ Return a list of the item names added by this plugin """
-        return [item['name'] for item in self.itemList]
-
-    def GetFullDB(self, tags):
-        """ Return a list of the items that have matching tags """
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in self.itemList if match(tags, self.itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        return items
 
     def getMenutags(self):
         """ Return a list of the menus addded by this plugin """

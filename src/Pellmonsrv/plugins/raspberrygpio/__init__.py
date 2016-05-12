@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from multiprocessing import Process, Queue
 from threading import Thread, Timer, Event, Lock
 import RPi.GPIO as GPIO
@@ -367,13 +368,14 @@ class root(Process):
 class raspberry_gpio(protocols):
     def __init__(self):
         protocols.__init__(self)
+
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.power = 0
         self.lock = Lock()
-
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
         self.pin2index={}
         self.name2index={}
+        self.itemrefs = []
         for key,value in self.conf.iteritems():
             try:
                 pin_name = key.split('_')[0]
@@ -387,7 +389,6 @@ class raspberry_gpio(protocols):
                         itemList[self.pin2index[pin_name]]['type'] = 'R/W'
                 elif pin_data == 'item':
                     itemList[self.pin2index[pin_name]]['name'] = value
-                    itemTags[value] = ['All', 'raspberryGPIO', 'Basic']
                     self.name2index[value]=self.pin2index[pin_name]
                 elif pin_data == 'pin':
                     itemList[self.pin2index[pin_name]]['pin'] = int(value)
@@ -395,11 +396,22 @@ class raspberry_gpio(protocols):
                     itemList[self.pin2index[pin_name]]['active'] = int(value)
             except Exception,e:
                 logger.info(str(e))
+
         signal.signal(signal.SIGINT, signal_handler)
         self.request = Queue()
         self.response = Queue()
         self.root = root(self.request, self.response, itemList)
         self.root.start()
+
+        # Create dbitems from the list and insert into the database
+        for item in itemList:
+            dbitem = Getsetitem(item['name'], 0, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                dbitem.__setattr__(key, value)
+            # Give it some default tags so it's visible in the web interface
+            dbitem.__setattr__('tags', ['All', 'raspberryGPIO', 'Basic'])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
 
     def deactivate(self):
         protocols.deactivate(self)
@@ -438,23 +450,6 @@ class raspberry_gpio(protocols):
         else:
             return['error']
 
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        return l
-
-    def GetFullDB(self, tags):
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        for item in items:
-            item['description'] = ''
-        return items
-        
     def getMenutags(self):
         return Menutags
 

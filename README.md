@@ -36,6 +36,8 @@ onewire input (ds2460 based) to count feeder auger revolutions for use with the 
 
 **Onewire** Read onewire sensor data using the kernel driver interface /sys/bus/w1/
 
+**NBEcom** Connect to an NBE V7/V13 pellet burner over ethernet
+
 Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
 ####Contains:
@@ -104,6 +106,16 @@ optional arguments:
 ###pellmon.conf
 The default configuration is split up in several files in the conf.d directory using the directive `config_dir = /etc/pellmon/conf.d` in pellmon.conf.
 
+##Run from source:
+    # This prepares the project to run directly from the working directory
+    ./autogen.sh
+    ./configure --enable-debug
+    make
+    cd src
+    ./pellmonsrv debug
+    # Run pellmonweb in another terminal
+    ./pellmonweb
+
 ##System installation:
     # Add system users
     sudo adduser --system --group --no-create-home pellmonsrv
@@ -132,31 +144,19 @@ The default configuration is split up in several files in the conf.d directory u
     sudo update-rc.d pellmonsrv remove
     sudo update-rc.d pellmonweb remove
 
-##User installation:
-    # Generate configure script
-    ./autogen.sh
-    # Configure for installation in home directory
-    ./configure --prefix=/home/<user>/.local
-    make
-    make install
-    # Start the daemons manually
-    /home/<user>/.local/bin/pellmonsrv.py -C /home/<user>/.local/etc/pellmon/pellmon.conf --PLUGINDIR /home/<user>/.local/lib/Pellmonsrv/plugins/ start
-    /home/<user>/.local/bin/pellmonweb.py -C /home/<user>/.local/etc/pellmon/pellmon.conf -D
-    # Stop the daemons manually
-    kill $(cat /tmp/pellmonsrv.pid)
-    kill $(cat /tmp/pellmonweb.pid)
-###Uninstall
-    make uninstall
-
 ##Dependencies:
     rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil python-argcomplete
 
 ##Optional dependencies:
     python-ws4py
-##Dependencies for plugins
+
+##Additional dependencies for plugins
 ###OWFS:
     pyownet
 
-##Build dependencies:
+###NBEcom:
+    python-crypto xtea
+
+##Additional dependencies for building:
     autoconf
 
