@@ -164,8 +164,12 @@ class Proxy:
                         if request.sequencenumber >= 99:
                            request.sequencenumber = 0
                         try:
-                            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-                            self.s.sendto(request.encode(), self.discover_addr)
+                            if not self.controller_online:
+                                self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                                self.s.settimeout(3)
+                                self.s.sendto(request.encode(), self.discover_addr)
+                            else:
+                                self.s.sendto(request.encode(), self.addr)
                             while True:
                                 try:
                                     while True:
@@ -198,7 +202,9 @@ class Proxy:
                         else:
                             break
                         finally:
-                            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
+                            if not self.controller_online:
+                                self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
+                                self.s.settimeout(0.5)
                     time.sleep(2)
 
                 if controller_online and not self.controller_online:
