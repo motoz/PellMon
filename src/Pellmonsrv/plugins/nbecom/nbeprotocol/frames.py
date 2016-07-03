@@ -39,46 +39,53 @@ class Request_frame(object):
         self.function = 0
 
     def encode(self):
-        self.framedata = ('%12s'%self.appid[:12]).encode('ascii')
-        self.framedata += ('%6s'%self.controllerid[:6]).encode('ascii')
+        while True:
+            success = True
+            self.framedata = ('%12s'%self.appid[:12]).encode('ascii')
+            self.framedata += ('%6s'%self.controllerid[:6]).encode('ascii')
 
-        if self.encrypted:
-            if hasattr(self, 'xtea_key'):
-                self.framedata += ('%1s'%'-').encode('ascii')
+            if self.encrypted:
+                if hasattr(self, 'xtea_key'):
+                    self.framedata += ('%1s'%'-').encode('ascii')
+                else:
+                    self.framedata += ('%1s'%'*').encode('ascii')
             else:
-                self.framedata += ('%1s'%'*').encode('ascii')
-        else:
-            self.framedata += ('%1s'%' ').encode('ascii')
+                self.framedata += ('%1s'%' ').encode('ascii')
 
-        h = START;
-        if self.function not in FUNCTION_CODES:
-            raise IOError
-        h += ('%02u'%self.function).encode('ascii')
-        h += ('%02d'%self.sequencenumber).encode('ascii')
+            h = START;
+            if self.function not in FUNCTION_CODES:
+                raise IOError
+            h += ('%02u'%self.function).encode('ascii')
+            h += ('%02d'%self.sequencenumber).encode('ascii')
 
-        if self.encrypted:
-            h += ('%10s'%self.pincode[:10]).encode('ascii')
-        else:
-            h += ('-'*10).encode('ascii')
-        h += ('%10s'%int(time.time())).encode('ascii')
-        h += ('%4s'%'extr').encode('ascii')
-        h += ('%03u'%len(self.payload)).encode('ascii')
-        if len(self.payload) > 495:
-            raise IOError
-        try:
-            h += self.payload.encode('ascii')
-        except UnicodeError:
-            h += self.payload
-        h += END;
-        pad = b'0'*(64-len(h))
-        h+=pad
-        if self.encrypted: 
-            if hasattr(self, 'xtea_key'):
-                h = self.xtea_key.encrypt(h)
+            if self.encrypted:
+                h += ('%10s'%self.pincode[:10]).encode('ascii')
             else:
-                h = self.public_key.encrypt(h, None)[0]
-        self.framedata += h
-        return self.framedata
+                h += ('-'*10).encode('ascii')
+            h += ('%10s'%int(time.time())).encode('ascii')
+            h += ('%4s'%'extr').encode('ascii')
+            h += ('%03u'%len(self.payload)).encode('ascii')
+            if len(self.payload) > 495:
+                raise IOError
+            try:
+                h += self.payload.encode('ascii')
+            except UnicodeError:
+                h += self.payload
+
+            h += END;
+            if self.encrypted: 
+                pad = ''.join([chr(SystemRandom().randrange(128)) for x in range(64-len(h))])
+                h+=pad
+                if hasattr(self, 'xtea_key'):
+                    h = self.xtea_key.encrypt(h)
+                else:
+                    h = self.public_key.encrypt(h, None)[0]
+                    if len(h) != 64:
+                        success = False           
+            self.framedata += h
+            if success:
+                return self.framedata
+            print 'ERRROR chiphertext too short', len(h)
 
     def decode(self, record):
         i = 0
