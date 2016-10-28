@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.7.0~beta1] - 2016-05-12
+## [0.7.0~beta3] - 2016-10-28
 ### Added
 - Plugin Heatingcircuit. Controls the heating circuit mixing valve according to outside temperature
 - Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
@@ -10,6 +10,9 @@ This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - Plugin interface to the database redesigned
+
+### Fixed
+- Issue 71 fixed. Power calculated by the pelletcalc plugin could be > 0 while the burner is off if timer mode was used.
 
 ## [0.6.1] - 2016-01-22
 ### Added
