@@ -276,6 +276,7 @@ class gpio_timer(Thread):
         self.timervalue = 0
         self.mutex = Lock()
         self.activestate = activestate
+        self.last_read = 0
         if GPIO.input(self.pin) == self.activestate:
             self.running = True
         else:
@@ -286,9 +287,14 @@ class gpio_timer(Thread):
     def read(self):
         with self.mutex:
             if self.running:
-                return self.timervalue + (monotonic_time() - self.timerstart)
+                read =  self.timervalue + (monotonic_time() - self.timerstart - 0.05)
             else:
-                return self.timervalue
+                read = self.timervalue
+            if read < self.last_read: # Make sure the timer never decreases
+                read = self.last_read
+            else:
+                self.last_read = read
+        return self.last_read
 
     def write(self, timervalue):
         with self.mutex:
