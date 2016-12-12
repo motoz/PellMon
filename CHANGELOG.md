@@ -2,10 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.7.0~beta3] - 2016-10-28
+## [0.7.0~beta4] - 2016-12-12
 ### Added
 - Plugin Heatingcircuit. Controls the heating circuit mixing valve according to outside temperature
 - Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
+- Plugin Openweathermap. Read current temperature at your location from openweathermap.com
 - Configure option --enable-debug makes it easy to set up the project to run directly from source
 
 ### Changed

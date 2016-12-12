@@ -38,6 +38,10 @@ onewire input (ds2460 based) to count feeder auger revolutions for use with the 
 
 **NBEcom** Connect to an NBE V7/V13 pellet burner over ethernet
 
+**Heatingcircuit** Automatically set the heating circuit mixing valve according to current outside temperature
+
+**Openweathermap** Read current temperature at your location from openweathermap.com
+
 Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
 ####Contains:
@@ -156,6 +160,9 @@ The default configuration is split up in several files in the conf.d directory u
 
 ###NBEcom:
     python-crypto xtea
+
+###Openweathermap:
+    pyowm
 
 ##Additional dependencies for building:
     autoconf
