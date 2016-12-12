@@ -20,6 +20,7 @@ nobase_dist_conf_DATA = \
 	plugins/onewire.conf \
 	plugins/pelletcalc.conf \
 	plugins/heatingcircuit.conf \
+	plugins/openweathermap.conf \
 	plugins/nbecom.conf
 
 EXTRA_DIST = \
