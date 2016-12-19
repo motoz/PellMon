@@ -18,7 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
-from Pellmonsrv.database import Plainitem, Storeditem
+from Pellmonsrv.database import Getsetitem, Storeditem
 from logging import getLogger
 from threading import Timer
 from time import sleep
@@ -38,7 +38,6 @@ class owmplugin(protocols):
             raise
         protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.itemrefs = []
-        self.itemvalues = {}
 
         try:
             self.owm = pyowm.OWM(self.conf['apikey'])
@@ -54,13 +53,22 @@ class owmplugin(protocols):
             self.db.insert(i)
             self.itemrefs.append(i)
 
-        i = Storeditem('location', 'copenhagen,dk')
+        def update_location(*args, **kwargs):
+            self.update_interval = 1
+            self.store_interval = 10
+
+        i = Storeditem('location', 'copenhagen,dk', setter=update_location)
         i.description = 'Set your location: town,countrycode or zipcode,countrycode'
         additem(i, 'R/W')
 
-        i = Plainitem('outside_temp', '-')
+        i = Getsetitem('outside_temp', '-', getter=lambda item:self.temperature)
         i.description = 'Current temperature at your location from openweathermap.com'
         additem(i)
+
+        self.storedtemp = Storeditem('owm_storedtemperature', '0')
+        self.db.insert(self.storedtemp)
+        self.temperature = self.storedtemp.value
+        self.update_interval = 5
 
         t = Timer(0, self.update_thread)
         t.setDaemon(True)
@@ -70,13 +78,24 @@ class owmplugin(protocols):
         return ['Openweathermap']
 
     def update_thread(self):
+        self.store_interval = 10
         while True:
-            try:
-                observation = self.owm.weather_at_place(self.db['location'].value.encode('utf-8'))
-                weather = observation.get_weather()
-                temperature = weather.get_temperature(self.conf['unit'])
-                self.db['outside_temp'].value = unicode(temperature['temp'])
-            except Exception as e:
-                logger.info('Openweathermap update error: '+str(e))
-            sleep (1800);
+            sleep(1)
+            self.update_interval -= 1
+            self.store_interval -=1
+            if self.update_interval <= 0:
+                try:
+                    observation = self.owm.weather_at_place(self.db['location'].value.encode('utf-8'))
+                    weather = observation.get_weather()
+                    temperature = weather.get_temperature(self.conf['unit'])
+                    self.temperature = unicode(temperature['temp'])
+                except Exception as e:
+                    logger.info('Openweathermap update error')
+                    self.update_interval = 300
+                else:
+                    self.update_interval = 1800
+            if self.store_interval <= 0:
+                self.storedtemp.value = self.temperature
+                self.store_interval = 7200
+
 
