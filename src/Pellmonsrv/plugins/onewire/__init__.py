@@ -58,7 +58,7 @@ class onewireplugin(protocols):
             # Add the configuration values to itemList
             for lvalue, itemconfig in itemconfigs.items():
                 # First add the defaults
-                item = {'min':'', 'max':'', 'unit':'', 'type':'R', 'description':'', 'family':'w1_therm'}
+                item = {'min':'', 'max':'', 'unit':'', 'type':'R', 'description':'', 'family':'w1_therm', 'value':'0'}
                 # Then update with the data from the configuration file
                 item.update(itemconfig)
                 # And add the item to the list
