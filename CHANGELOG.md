@@ -2,11 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.7.0~beta4] - 2016-12-12
+## [0.7.0~beta6] - 2017-01-09
 ### Added
 - Plugin Heatingcircuit. Controls the heating circuit mixing valve according to outside temperature
 - Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
-- Plugin Openweathermap. Read current temperature at your location from openweathermap.com
+- Plugin Openweathermap. Read current temperature, wind speed, wind direction and humidity at your location from openweathermap.com and calculate apparent temperature from those.
 - Configure option --enable-debug makes it easy to set up the project to run directly from source
 
 ### Changed
@@ -14,6 +14,7 @@ This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 - Issue 71 fixed. Power calculated by the pelletcalc plugin could be > 0 while the burner is off if timer mode was used.
+- Onewire plugin fixed, was broken since 0.7.0~beta1
 
 ## [0.6.1] - 2016-01-22
 ### Added
