@@ -38,6 +38,8 @@ class owmplugin(protocols):
             raise
         protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.itemrefs = []
+        self.storeditems = {}
+        self.itemvalues = {}
 
         try:
             self.owm = pyowm.OWM(self.conf['apikey'])
@@ -57,17 +59,39 @@ class owmplugin(protocols):
             self.update_interval = 1
             self.store_interval = 10
 
+        config = {}
+        for index_key, value in self.conf.items():
+            if '_' in index_key:
+                index, key = index_key.split('_')
+                try:
+                    config[index][key] = value
+                except KeyError:
+                    config[index] = {key:value}
+
+        for index, itemconf in config.items():
+            try:
+                itemname = itemconf.pop('item')
+                itemvalue = itemconf.pop('value', '0')
+                itemdata = itemconf.pop('data');
+
+                storeditem = Storeditem('owm_stored_'+itemdata, itemvalue)
+                self.db.insert(storeditem)
+                self.storeditems[itemdata] = storeditem
+                self.itemvalues[itemdata] = storeditem.value
+
+                i = Getsetitem(itemname, itemvalue, getter=lambda item, d=itemdata:self.itemvalues[d])
+
+                for key, value in itemconf.items():
+                    setattr(i, key, value)
+                additem(i)
+
+            except KeyError:
+                pass
+
         i = Storeditem('location', 'copenhagen,dk', setter=update_location)
         i.description = 'Set your location: town,countrycode or zipcode,countrycode'
         additem(i, 'R/W')
 
-        i = Getsetitem('outside_temp', '-', getter=lambda item:self.temperature)
-        i.description = 'Current temperature at your location from openweathermap.com'
-        additem(i)
-
-        self.storedtemp = Storeditem('owm_storedtemperature', '0')
-        self.db.insert(self.storedtemp)
-        self.temperature = self.storedtemp.value
         self.update_interval = 5
 
         t = Timer(0, self.update_thread)
@@ -88,14 +112,28 @@ class owmplugin(protocols):
                     observation = self.owm.weather_at_place(self.db['location'].value.encode('utf-8'))
                     weather = observation.get_weather()
                     temperature = weather.get_temperature(self.conf['unit'])
-                    self.temperature = unicode(temperature['temp'])
+                    wind = weather.get_wind()
+                    humidity = weather.get_humidity()
+                    print wind
+                    self.itemvalues['wind_speed'] = unicode(wind['speed'])
+                    self.itemvalues['wind_direction'] = unicode(wind['deg']) 
+                    self.itemvalues['temperature'] = unicode(temperature['temp'])
+                    self.itemvalues['humidity'] = unicode(humidity)
+                    t = float(self.itemvalues['temperature'])
+                    w = float(self.itemvalues['wind_speed'])
+                    h = float(self.itemvalues['humidity'])
+                    feelslike = t + 0.348*( 
+                                            (h/100)*6.105*(2.7182**((17.27*t)/(237.7+t)) )
+                                          ) - 0.7*w
+                    self.itemvalues['feelslike'] = '%.1f'%feelslike
                 except Exception as e:
                     logger.info('Openweathermap update error')
                     self.update_interval = 300
                 else:
-                    self.update_interval = 1800
+                    self.update_interval = 900
             if self.store_interval <= 0:
-                self.storedtemp.value = self.temperature
+                for itemdata, storeditem in self.storeditems.items():
+                    storeditem.value = self.itemvalues[itemdata]
                 self.store_interval = 7200
 
 
