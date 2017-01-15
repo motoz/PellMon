@@ -77,7 +77,7 @@ class Database(threading.Thread, _Database):
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
-        manager.setPluginPlaces([conf.plugin_dir])
+        manager.setPluginPlaces(conf.plugin_dirs)
         manager.collectPlugins()
         activated_plugins = []
         failed_plugins= []
@@ -425,7 +425,8 @@ class MyDaemon(Daemon):
             self.pollevent.set()
         global logger
         logger = logging.getLogger('pellMon')
-        logger.info('starting pelletMonitor')
+        logger.info('starting PellMon')
+        logger.info('Looking for plugins in %s', ', '.join(conf.plugin_dirs))
 
         # Load all plugins of 'protocol' category.
         conf.database = Database()
@@ -727,6 +728,17 @@ class config:
                 self.keyval_db = '/tmp/pellmon_settings.db'
             mkdir_p(os.path.dirname(self.keyval_db))
 
+        self.plugin_dirs = []
+        try:
+            plugin_dirs = parser.get('plugin_settings', 'plugin_dirs').split('\n')
+            self.plugin_dirs += [p.lstrip(' \t').rstrip(' \t') for p in plugin_dirs if p]
+        except ConfigParser.NoSectionError as e:
+            print 'noconf', e
+            pass
+        except Exception as e:
+            print e
+            logger.info('invalid setting for plugin_dirs')
+
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
     gid = pwd.getpwnam(user).pw_gid
@@ -798,7 +810,7 @@ def run():
     global conf
     conf = config(config_file)
     conf.dbus = args.DBUS
-    conf.plugin_dir = args.PLUGINDIR
+    conf.plugin_dirs.append(args.PLUGINDIR)
     conf.old_plugin_dir = args.OLDPLUGINDIR
     #conf.datadir = DATADIR
     #conf.plugin_datadir = os.path.join(DATADIR, 'plugins')
