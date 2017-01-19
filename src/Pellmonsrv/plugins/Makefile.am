@@ -11,7 +11,8 @@ SUBDIRS = scottecom \
 	onewire \
 	heatingcircuit \
 	nbecom \
-	openweathermap
+	openweathermap \
+	execplugin
 
 nobase_dist_plugins_DATA = \
 	scottecom.pellmon-plugin \
@@ -27,6 +28,7 @@ nobase_dist_plugins_DATA = \
 	consumption.pellmon-plugin \
 	heatingcircuit.pellmon-plugin \
 	nbecom.pellmon-plugin \
-	openweathermap.pellmon-plugin
+	openweathermap.pellmon-plugin \
+	execplugin.pellmon-plugin
 
 pluginsdir = $(pythondir)/Pellmonsrv/plugins

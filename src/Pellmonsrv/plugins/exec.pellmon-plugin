@@ -1,0 +1,9 @@
+[Core]
+Name = Exec
+Module = exec
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = External command execution plugin
