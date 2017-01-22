@@ -167,15 +167,20 @@ class MyDBUSService(dbus.service.Object):
                     return False
             return True
 
-        return sorted([ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str) or isinstance(atype, list)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name'])
+        return sorted(
+            [ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str) or isinstance(atype, list)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name']
+            )
 
     @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):
-        """Get list of all tags that make up the menu"""
-        menutags=[]
-        for plugin in conf.database.protocols:
-            menutags = menutags + plugin.plugin_object.getMenutags()
-        return sorted(list(set(menutags)))
+        """Get a sorted list of all tags that make up the menu"""
+        menutags = set()
+        for itemname, item in conf.database.items():
+            try:
+                menutags.update(set(item.tags))
+            except AttributeError, e:
+                pass
+        return sorted(list(menutags.difference(set(['All', 'Basic']))))
 
     @dbus.service.method('org.pellmon.int', in_signature='s', out_signature='s')
     def getPlugins(self, name):
