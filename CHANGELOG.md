@@ -1,12 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
-This project (mostly) adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.7.0~beta6] - 2017-01-09
+## [Unreleased]
 ### Added
 - Plugin Heatingcircuit. Controls the heating circuit mixing valve according to outside temperature
 - Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
-- Plugin Openweathermap. Read current temperature, wind speed, wind direction and humidity at your location from openweathermap.com and calculate apparent temperature from those.
+- Plugin Openweathermap. Read current temperature, wind speed, wind direction and humidity at your location from openweathermap.com and calculate apparent temperature from those. Depends on pyowm which can be installed with pip.
+- Plugin Exec. Runs external commands on item read/write.
 - Configure option --enable-debug makes it easy to set up the project to run directly from source
 
 ### Changed
