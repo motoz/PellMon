@@ -98,9 +98,6 @@ class owmplugin(protocols):
         t.setDaemon(True)
         t.start()
 
-    def getMenutags(self):
-        return ['Openweathermap']
-
     def update_thread(self):
         self.store_interval = 10
         while True:
@@ -114,7 +111,6 @@ class owmplugin(protocols):
                     temperature = weather.get_temperature(self.conf['unit'])
                     wind = weather.get_wind()
                     humidity = weather.get_humidity()
-                    print wind
                     self.itemvalues['wind_speed'] = unicode(wind['speed'])
                     self.itemvalues['wind_direction'] = unicode(wind['deg']) 
                     self.itemvalues['temperature'] = unicode(temperature['temp'])

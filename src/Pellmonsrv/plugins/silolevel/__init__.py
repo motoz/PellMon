@@ -57,7 +57,6 @@ itemDescriptions = {'silo_reset_level':     'Silo fill up to this amount',
                    }
 
 itemValues={}
-Menutags = ['SiloLevel']
 
 class silolevelplugin(protocols):
     def __init__(self):
@@ -180,9 +179,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 return 'OK'
         except Exception,e:
             return 'error'
-
-    def getMenutags(self):
-        return Menutags
 
     def graphData(self):
 

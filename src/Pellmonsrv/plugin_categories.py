@@ -53,9 +53,6 @@ class protocols(IPlugin):
         """Callback from plugin when a changed setting value is detected"""
         self.glob['handle_settings_changed'](item, oldvalue, newvalue, itemtype)
 
-    def getMenutags(self):
-        return []
-
     def getTemplate(self, template):
         try:
             return self.templates[template]

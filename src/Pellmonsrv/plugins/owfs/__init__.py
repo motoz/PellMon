@@ -31,7 +31,6 @@ logger = getLogger('pellMon')
 
 itemList=[]
 itemTags={}
-Menutags = ['OWFS']
 
 class owfsplugin(protocols):
     def __init__(self):
@@ -245,7 +244,4 @@ class owfsplugin(protocols):
             except Exception, e:
                 logger.debug('OWFS background poll error: '+str(e))
             sleep(5)
-
-    def getMenutags(self):
-        return Menutags
 

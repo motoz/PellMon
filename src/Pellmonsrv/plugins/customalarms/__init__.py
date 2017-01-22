@@ -29,7 +29,6 @@ logger = getLogger('pellMon')
 itemList=[]
 itemTags={}
 itemValues={}
-Menutags = ['CustomAlarms']
 alarms = {}
 
 class alarmplugin(protocols):
@@ -119,9 +118,6 @@ class alarmplugin(protocols):
                 return 'OK'
         except Exception,e:
             return 'error'
-
-    def getMenutags(self):
-        return Menutags
 
     def poll_thread(self):
         for name, data in alarms.items():

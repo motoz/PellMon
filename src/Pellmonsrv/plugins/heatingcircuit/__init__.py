@@ -25,8 +25,6 @@ from threading import Thread
 
 logger = getLogger('pellMon')
 
-Menutags = ['Heating circuit']
-
 class Heatingcircuitplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
@@ -74,9 +72,6 @@ class Heatingcircuitplugin(protocols):
 
         self.controllerthread = Thread(target = lambda:self.controller())
         self.controllerthread.setDaemon(True)
-
-    def getMenutags(self):
-        return Menutags
 
     def controller(self):
         """Calculate the controller output signal"""

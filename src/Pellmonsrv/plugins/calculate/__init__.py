@@ -32,7 +32,6 @@ logger = getLogger('pellMon')
 itemList=[]
 itemTags={}
 itemValues={}
-Menutags = ['Calculate']
 gstore = {}
 
 class Calc():
@@ -365,12 +364,6 @@ class calculateplugin(protocols):
                     return 'OK'
             except Exception,e:
                 return 'error'
-
-    def getMenutags(self):
-        return Menutags
-        t = Timer(5, self.poll_thread)
-        t.setDaemon(True)
-        t.start()
 
 class calcthread(Thread):
     def __init__(self, cycle, progitem, plugin_object):

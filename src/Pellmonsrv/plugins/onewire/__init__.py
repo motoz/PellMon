@@ -36,7 +36,6 @@ class onewireplugin(protocols):
         self.itemList=[]
         self.items = {}
         self.itemTags={}
-        self.Menutags = ['Onewire']
         self.w1_therm_temperature = re.compile(r't=([0-9]+)')
         self.itemrefs = []
         protocols.activate(self, conf, glob, db, *args, **kwargs)
@@ -125,8 +124,4 @@ class onewireplugin(protocols):
             except Exception, e:
                 logger.debug('onewire background poll error: '+str(e))
             sleep(5)
-
-    def getMenutags(self):
-        """ Return a list of the menus addded by this plugin """
-        return self.Menutags
 

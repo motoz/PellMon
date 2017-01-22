@@ -90,9 +90,6 @@ class scottecom(protocols):
         db = self.protocol.getDataBase()
         return db.keys()
 
-    def getMenutags(self):
-        return menus.getMenutags()
-
     def settings_pollthread(self, settings):
         """Loop through all items tagged as 'Settings' and write a message to the log when their values have changed"""
         for item in settings:

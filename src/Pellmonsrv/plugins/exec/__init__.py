@@ -31,7 +31,6 @@ class execplugin(protocols):
     def activate(self, conf, glob, db, *args, **kwargs):
         protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.itemrefs = []
-        self.menutags = set()
 
         config = {}
         for index_key, value in self.conf.items():
@@ -77,8 +76,6 @@ class execplugin(protocols):
                 item.max = itemconf.pop('max', '')
                 self.db.insert(item)
                 self.itemrefs.append(item)
-                self.menutags.update(
-                    set(item.tags).difference(set(['All', 'Basic'])))
 
             except Exception, e:
                 logger.info('Exec plugin config error: %s', str(e))
@@ -98,8 +95,5 @@ class execplugin(protocols):
             return 'ok'
         except subprocess.CalledProcessError as e:
             return 'error'
-
-    def getMenutags(self):
-        return list(self.menutags)
 
 

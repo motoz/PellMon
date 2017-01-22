@@ -77,8 +77,6 @@ itemDescriptions = {'feeder_rev_capacity' : 'Average grams fed in one revolution
                     'alarm' :               'Current burner alarm state',
                     }
 
-Menutags = ['pelletCalc', 'Overview']
-
 
 class pelletcalc(protocols):
     def __init__(self):
@@ -210,9 +208,6 @@ class pelletcalc(protocols):
                     self.store_setting(item, value)
                 return 'OK'#
         return 'Error'
-
-    def getMenutags(self):
-        return Menutags
 
     def calculate_state(self):
         try:

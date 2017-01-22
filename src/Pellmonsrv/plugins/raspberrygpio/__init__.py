@@ -36,8 +36,6 @@ logger = getLogger('pellMon')
 
 itemList=[]
 itemTags = {}
-Menutags = ['raspberryGPIO']
-
 
 def signal_handler(signal, frame):
     """ GPIO needs cleaning up on exit """
@@ -455,8 +453,5 @@ class raspberry_gpio(protocols):
                 return str(r)
         else:
             return['error']
-
-    def getMenutags(self):
-        return Menutags
 
 

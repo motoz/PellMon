@@ -25,5 +25,3 @@ Alltags = Tags+Menutags
 def itemtags(item):
     return [Alltags[i] for i in range(len(dataBaseTags[item])) if dataBaseTags[item][i] == 'X']
 
-def getMenutags():
-    return Menutags + ['All']

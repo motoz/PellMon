@@ -26,8 +26,6 @@ import subprocess
 
 logger = getLogger('pellMon')
 
-Menutags = ['Cleaning']
-
 class cleaningplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
@@ -79,9 +77,6 @@ class cleaningplugin(protocols):
         start = datetime.strptime(start,'%d/%m/%y %H:%M')
         start = int(time.mktime(start.timetuple()))
         return self.rrd_total(start, now)
-
-    def getMenutags(self):
-        return Menutags
 
     def rrd_total(self, start, end):
         start = str(start)

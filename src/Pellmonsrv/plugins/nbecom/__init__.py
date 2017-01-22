@@ -41,7 +41,6 @@ class nbecomplugin(protocols):
 
         protocols.activate(self, conf, glob, db, **kwargs)
         self.itemrefs = []
-        self.menutags = []
         self.conf = conf
         try:
             self.password = self.conf['password']
@@ -59,7 +58,6 @@ class nbecomplugin(protocols):
         item.description = 'Controller communication status'
         self.itemrefs.append(item)
         self.db.insert(item)
-        self.menutags.append('advanced_data')
 
         item = Getsetitem('controller_IP', None, getter=lambda i:self.proxy.addr[0] if self.proxy.controller_online else '')
         item.tags = ['All','Basic','advanced_data']
@@ -138,8 +136,6 @@ class nbecomplugin(protocols):
                 item.max = i['max']
             except KeyError:
                pass
-            if i['group'] not in self.menutags:
-                self.menutags.append(i['group'])
             item.tags = ['All', 'Basic', i['group']]
             try:
                 item.get_text = i['get_text']
@@ -207,5 +203,3 @@ class nbecomplugin(protocols):
                 pass
             time.sleep(1)
 
-    def getMenutags(self):
-        return self.menutags
