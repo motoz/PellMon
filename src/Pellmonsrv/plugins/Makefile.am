@@ -12,7 +12,7 @@ SUBDIRS = scottecom \
 	heatingcircuit \
 	nbecom \
 	openweathermap \
-	execplugin
+	exec
 
 nobase_dist_plugins_DATA = \
 	scottecom.pellmon-plugin \
@@ -29,6 +29,6 @@ nobase_dist_plugins_DATA = \
 	heatingcircuit.pellmon-plugin \
 	nbecom.pellmon-plugin \
 	openweathermap.pellmon-plugin \
-	execplugin.pellmon-plugin
+	exec.pellmon-plugin
 
 pluginsdir = $(pythondir)/Pellmonsrv/plugins

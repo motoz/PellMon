@@ -21,7 +21,8 @@ nobase_dist_conf_DATA = \
 	plugins/pelletcalc.conf \
 	plugins/heatingcircuit.conf \
 	plugins/openweathermap.conf \
-	plugins/nbecom.conf
+	plugins/nbecom.conf \
+	plugins/exec.conf
 
 EXTRA_DIST = \
 	database.conf.in \

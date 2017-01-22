@@ -1,4 +1,4 @@
-exec_PYTHON = \
+execplugin_PYTHON = \
 	__init__.py 
 
-execdir = $(pythondir)/Pellmonsrv/plugins/exec
+execplugindir = $(pythondir)/Pellmonsrv/plugins/exec

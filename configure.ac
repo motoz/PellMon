@@ -55,7 +55,7 @@ src/Pellmonsrv/plugins/onewire/Makefile \
 src/Pellmonsrv/plugins/heatingcircuit/Makefile \
 src/Pellmonsrv/plugins/nbecom/Makefile \
 src/Pellmonsrv/plugins/openweathermap/Makefile \
-src/Pellmonsrv/plugins/execplugin/Makefile \
+src/Pellmonsrv/plugins/exec/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 
