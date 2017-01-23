@@ -40,7 +40,7 @@ class cleaningplugin(protocols):
 
         self.migrate_settings('cleaning')
 
-        i = Cacheditem('clean_kg', 0, getter = lambda i:self.get_kg(i), timeout = 600)
+        i = Cacheditem('clean_kg', 0, getter = lambda i:self.get_kg(i), cachetime = 600)
         i.longname = 'Cleaning counter'
         i.type = 'R'
         i.unit = 'kg'

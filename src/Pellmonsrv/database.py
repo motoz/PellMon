@@ -54,14 +54,14 @@ class Getsetitem(Item):
         self._value = value
 
 class Cacheditem(Getsetitem):
-    def __init__(self, name, value=None, getter=None, setter=None, timeout=5):
+    def __init__(self, name, value=None, getter=None, setter=None, cachetime=5):
         self.update_time = 0
-        self.timeout = timeout
+        self.cachetime = cachetime
         super(Cacheditem, self).__init__(name, value, getter, setter)
 
     @Getsetitem.value.getter
     def value(self):
-        if time.time() - self.update_time < self.timeout:
+        if time.time() - self.update_time < self.cachetime:
             return self.cached_value
         else:
             with self.lock:

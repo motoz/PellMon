@@ -552,6 +552,7 @@ class PellMonWeb:
                 parameterlist = dbus.getFullDB(['',t1,t2,t3,t4])
             else:
                 parameterlist = dbus.getFullDB([level,t1,t2,t3,t4])
+            print parameterlist
             # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
             paramQueue = Queue.Queue(300)
             # Store the queue in the session

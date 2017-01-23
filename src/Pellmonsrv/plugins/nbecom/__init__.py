@@ -125,9 +125,9 @@ class nbecomplugin(protocols):
         for i in dirlist:
             i_id = i['group'] + '-' + i['name']
             if 'grouppath' in i:
-                item = Cacheditem(i_id, i['value'], getter=get_group, setter=set_value, timeout=2)
+                item = Cacheditem(i_id, i['value'], getter=get_group, setter=set_value, cachetime=2)
             else:
-                item = Cacheditem(i_id, i['value'], getter=get_value, setter=lambda i,v:self.proxy.set(self.db[i].path, v), timeout=2)
+                item = Cacheditem(i_id, i['value'], getter=get_value, setter=lambda i,v:self.proxy.set(self.db[i].path, v), cachetime=2)
             item.protocoldata =  i
             item.longname = i['name']
             item.type = i['type']
@@ -174,7 +174,7 @@ class nbecomplugin(protocols):
             timedata = time.strftime('%y%m%d,%H%M%S;', time.localtime())
             events = self.proxy.get(8, timedata, group=True)
             return ';'.join(events)
-        item = Cacheditem('event_id_list', None, getter=get_event_list, timeout = 5)
+        item = Cacheditem('event_id_list', None, getter=get_event_list, cachetime = 5)
         self.itemrefs.append(item)
         self.db.insert(item)
 

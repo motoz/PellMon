@@ -65,7 +65,7 @@ class execplugin(protocols):
                     self.writescript = writescript
                     setter = lambda item, value, script=writescript:self.execute_writescript(item, value, script)
 
-                item = Cacheditem(itemname, itemvalue, getter=getter, setter=setter, timeout=cachetime)
+                item = Cacheditem(itemname, itemvalue, getter=getter, setter=setter, cachetime=cachetime)
 
                 for key, value in itemconf.items():
                     setattr(item, key, value)
