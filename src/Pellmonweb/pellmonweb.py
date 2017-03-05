@@ -49,7 +49,7 @@ from threading import Timer, Lock
 import signal
 import simplejson
 import re
-import math
+import random
 
 try:
     from Pellmonsrv.version import __version__
@@ -207,6 +207,7 @@ class PellMonWeb:
         self.logview = LogViewer(logfile, lookup)
         self.auth = AuthController(credentials, lookup)
         self.consumptionview = Consumption(polling, db, dbus, lookup)
+        self.rand = random.random()
 
     @cherrypy.expose
     def autorefresh(self, **args):
@@ -667,10 +668,10 @@ class PellMonWeb:
             widgets.append(wr)
         tmpl = Template(plugintemplate, lookup=lookup)
 
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets, version = __version__)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets, version = __version__, rand=self.rand)
         
     @cherrypy.expose
-    def systemimage(self):
+    def systemimage(self, **args):
         return serve_file(system_image)
 
     @cherrypy.expose
