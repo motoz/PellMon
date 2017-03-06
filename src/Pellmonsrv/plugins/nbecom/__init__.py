@@ -38,6 +38,7 @@ class nbecomplugin(protocols):
         from nbeprotocol.protocol import Proxy
         global event_text, state_text, lang_longname, lang_description, set_langfile_location
         from nbeprotocol.language import event_text, state_text, lang_longname, lang_description
+        self.db_ready = False
 
         protocols.activate(self, conf, glob, db, **kwargs)
         self.itemrefs = []
@@ -75,9 +76,13 @@ class nbecomplugin(protocols):
         self.startthread.setDaemon(True)
         self.startthread.start()
 
-        self.startthread = threading.Thread(target=lambda:self.eventlogger())
-        self.startthread.setDaemon(True)
-        self.startthread.start()
+        self.eventthread = threading.Thread(target=lambda:self.eventlogger())
+        self.eventthread.setDaemon(True)
+        self.eventthread.start()
+
+        self.alarmthread = threading.Thread(target=lambda:self.alarm_poller())
+        self.alarmthread.setDaemon(True)
+        self.alarmthread.start()
 
 
     def start(self):
@@ -156,6 +161,41 @@ class nbecomplugin(protocols):
         item = Getsetitem('feeder_capacity', None, getter=lambda i:self.db['auger-auger_capacity'].value)
         self.itemrefs.append(item)
         self.db.insert(item)
+
+        def get_combined_alarm_state():
+            if int(self.db['operating_data-off_on_alarm'].value) >= 2:
+                return self.db.get_text('operating_data-state')
+            else:
+                return 'OK'
+
+        item = Getsetitem('alarm', None, getter=lambda i:get_combined_alarm_state())
+        item.tags = ['Basic', 'Overview', 'alarm']
+        item.description = 'Curren alarm state'
+        item.longname = 'Alarm'
+        item.type = 'R'
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
+        item = Getsetitem('start', None, setter=lambda i,v:self.db.set_value('misc-start', '1'))
+        item.type = 'W'
+        item.tags = ['Basic', 'Overview']
+        item.description = 'Start the burner'
+        item.longname = 'Start'
+        item.min = '0'
+        item.max = '0'
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
+        item = Getsetitem('stop', None, setter=lambda i,v:self.db.set_value('misc-stop', '1'))
+        item.type = 'W'
+        item.tags = ['Basic', 'Overview']
+        item.description = 'Stop the burner'
+        item.longname = 'Stop'
+        item.min = '0'
+        item.max = '0'
+        self.itemrefs.append(item)
+        self.db.insert(item)
+
         self.feeder_time = 0
         self.counter = None
         def get_feeder_time(i):
@@ -177,8 +217,11 @@ class nbecomplugin(protocols):
         item = Cacheditem('event_id_list', None, getter=get_event_list, cachetime = 5)
         self.itemrefs.append(item)
         self.db.insert(item)
+        self.db_ready = True
 
     def eventlogger(self):
+        while not self.db_ready:
+            time.sleep(1)
         while True:
             try:
                 logged_events = self.db['logged_event_id_list'].value.split(';')
@@ -202,4 +245,23 @@ class nbecomplugin(protocols):
                 print repr(e)
                 pass
             time.sleep(1)
+
+    def alarm_poller(self):
+        while not self.db_ready:
+            time.sleep(1)
+        alarm = self.db['alarm'].value
+        old_alarm = alarm
+        while True:
+            try:
+                alarm = self.db['alarm'].value
+                if not alarm == old_alarm:
+                    self.settings_changed('alarm', old_alarm, alarm, 'alarm')
+                old_alarm = alarm
+
+            except Exception as e:
+                print repr(e)
+                pass
+            time.sleep(5)
+
+
 
