@@ -4,13 +4,13 @@ PellMon
 
 PellMon is logging, monitoring and configuration solution for pellet burners. It consists of a backend server daemon, which
 uses RRDtool as a logging database, and a frontend daemon providing a responsive mobile friendly web based user interface. 
-Additionally there is a command line tool for interfacing with the server, and web based configuration tool.
+Additionally there is a command line tool for interfacing with the server and web based configuration tool.
+
 PellMon can communicate directly with a supported pellet burner, or it can use a feeder-auger revolution counter as
 base for pellet consumption calculation.
 
-PellMon uses plugins to provide data about your burner. The most fully featured plugin is **ScotteCom**, which enables communication 
-with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It gives you access to almost all configuration parameters 
-and measurement data, and also handles logging of alarms and mode/setting changes.
+PellMon uses plugins to provide data about your burner. The most fully featured plugins are **ScotteCom**, which enables communication 
+with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner and **NBEcom** for the newer NBE V7/10/13 controllers. They give you access to all configuration parameters and measurement data, and also handles logging of alarms and mode/setting changes.
 
 The plugin system makes it easy to add custom plugins for extended functionality, a 'template' plugin is provided as an example
 along with the other preinstalled plugins:
@@ -41,6 +41,8 @@ onewire input (ds2460 based) to count feeder auger revolutions for use with the 
 **Heatingcircuit** Automatically set the heating circuit mixing valve according to current outside temperature
 
 **Openweathermap** Read current temperature at your location from openweathermap.com
+
+**Exec** The Exec plugin calls external commands when reading/writing items
 
 Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
