@@ -7,10 +7,11 @@ All notable changes to this project will be documented in this file.
 - Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
 - Plugin Openweathermap. Read current temperature, wind speed, wind direction and humidity at your location from openweathermap.com and calculate apparent temperature from those. Depends on pyowm which can be installed with pip.
 - Plugin Exec. Runs external commands on item read/write.
-- Configure option --enable-debug makes it easy to set up the project to run directly from source
+- Configure option `--enable-debug` makes it easy to set up the project to run directly from source when developing
 
 ### Changed
 - Plugin interface to the database redesigned
+- Graph plugin layout changed, eg. bootstrap buttons used for going back and forward
 
 ### Fixed
 - Issue 71 fixed. Power calculated by the pelletcalc plugin could be > 0 while the burner is off if timer mode was used.
