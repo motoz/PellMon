@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [0.7.0-beta7] 2017-01-22
+## [0.7.0] 2017-03-12
 ### Added
 - Plugin Heatingcircuit. Controls the heating circuit mixing valve according to outside temperature
 - Plugin NBEcom for NBE V7/V13 pellet burners with ethernet connection. The plugin depends on python-crypto from the debian archive and xtea, which can be installed with pip
@@ -14,8 +14,8 @@ All notable changes to this project will be documented in this file.
 - Graph plugin layout changed, eg. bootstrap buttons used for going back and forward
 
 ### Fixed
-- Issue 71 fixed. Power calculated by the pelletcalc plugin could be > 0 while the burner is off if timer mode was used.
-- Onewire plugin fixed, was broken since 0.7.0~beta1
+- Issue 71. Power calculated by the pelletcalc plugin could be > 0 while the burner is off if timer mode was used.
+- Issue 75. Restarting pellmon now forces the browser to download the system image again to prevent browsers with aggressive caching (chrome...) to continue to use the old image after it has been changes.
 
 ## [0.6.1] - 2016-01-22
 ### Added
