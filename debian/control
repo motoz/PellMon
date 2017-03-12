@@ -2,10 +2,7 @@ Source: pellmon
 Section: web
 Priority: extra
 Maintainer: Anders Nylund <email@email.com>
-Build-Depends: debhelper (>=9),
-	autotools-dev,
-	python,
-	dh-python
+Build-Depends: autotools-dev, debhelper (>=9), dh-python, python
 Standards-Version: 3.9.5
 Homepage: http://github.com/motoz/pellmon
 Vcs-Git: git://anonscm.debian.org/collab-maint/pellmon.git
@@ -15,18 +12,19 @@ X-Python-Version: >= 2.6
 Package: pellmon
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends},
-	python,
-	adduser,
-	rrdtool,
-	python-serial,
-	python-cherrypy3,
-	python-dbus,
-	python-mako,
-	python-gobject,
-	python-simplejson,
-	python-dateutil,
-	python-argcomplete
+Depends: adduser,
+         python,
+         python-argcomplete,
+         python-cherrypy3,
+         python-dateutil,
+         python-dbus,
+         python-gobject,
+         python-mako,
+         python-serial,
+         python-simplejson,
+         python-crypto,
+         python-ws4py,
+         rrdtool,
+         ${misc:Depends}
 Description: pellet burner logger
  Pellet burner logger with cli and web frontends
-
