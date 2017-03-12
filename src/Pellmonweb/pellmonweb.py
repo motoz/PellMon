@@ -662,7 +662,7 @@ class PellMonWeb:
         parameterdict = {p['name']: p for p in parameterlist}
         for l in graph_lines:
             try:
-                l['label'] = unicode(parameterdict[l['name']]['label'])
+                l['label'] = unicode(parameterdict[l['name']]['label'].replace(' ', '&nbsp;'))
             except KeyError:
                 l['label'] = l['name']
 
@@ -906,7 +906,7 @@ def run():
     global timeChoices
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
     global timeNames
-    timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+    timeNames  = [t.replace(' ', '&nbsp;') for t in ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']]
     global timeSeconds
     timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
     ft=False
