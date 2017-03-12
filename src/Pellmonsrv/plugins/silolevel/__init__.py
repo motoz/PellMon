@@ -4,7 +4,7 @@
     Copyright (C) 2013  Anders Nylund
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
+    it under the terms of the GNU General Public License as published b
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
@@ -18,7 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
-from threading import Thread, Timer
+#from threading import Thread, Timer
 from os import path
 import os, grp, pwd
 import time
@@ -30,6 +30,7 @@ import simplejson as json
 import re
 import math
 import random
+from Pellmonsrv.database import Item, Getsetitem
 
 logger = getLogger('pellMon')
 
@@ -56,26 +57,53 @@ itemDescriptions = {'silo_reset_level':     'Silo fill up to this amount',
                    }
 
 itemValues={}
-Menutags = ['SiloLevel']
 
 class silolevelplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
         self.updateTime = 0
         self.siloData = None
         self.silo_days_left = None
         self.silo_level = 0
-        self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
-        self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
+        try:
+            self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
+        except Exception, e:
+            logger.info('Silolevel plugin error: feeder_time is missing from the database')
+            raise
+        try:
+            self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
+        except Exception, e:
+            logger.info('Silolevel plugin error: feeder_capacity is missing from the database')
+            raise
+        self.itemrefs = []
+
+        self.migrate_settings('silolevel')
+
         for item in itemList:
             if item['type'] == 'R/W':
-                self.store_setting(item['name'], confval = str(item['value']))
+                self.store_setting(item['name'], confval = item['value'])
+                value = self.load_setting(item['name'])
             else:
                 itemValues[item['name']] = item['value']
-        self.migrate_settings('silolevel')
+                value = item['value']
+
+            dbitem = Getsetitem(item['name'], value, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v) )
+            for key, value in item.iteritems():
+                if key is not 'value':
+                    dbitem.__setattr__(key, value)
+            if dbitem.name in itemTags:
+                dbitem.__setattr__('tags', itemTags[dbitem.name])
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
+
+        dbitem = Getsetitem('siloLevelData', None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+        dbitem.type = 'R'
+        self.db.insert(dbitem)
+        self.itemrefs.append(dbitem)
+
         self._insert_template('silolevel', """
 <h4>Silo level</h4>
 <div class="image-responsive" id="silolevel" style="height:400px">
@@ -125,6 +153,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
 """)
 
     def getItem(self, itemName):
+        #print 'getItem called', itemName
         if itemName == 'silo_level':
             self.getItem('siloLevelData')
             return str(self.silo_level)
@@ -142,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 itemValues[item] = value
                 return 'OK'
             else:
-                self.store_setting(item, str(value))
+                self.store_setting(item, value)
                 if item=='silo_reset_level':
                     d = datetime.fromtimestamp(time.time())
                     s = d.strftime('%d/%m/%y %H:%M')
@@ -150,30 +179,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 return 'OK'
         except Exception,e:
             return 'error'
-
-    def getDataBase(self):
-        l=[]
-        for item in itemList:
-            l.append(item['name'])
-        l.append('siloLevelData')
-        return l
-
-    def GetFullDB(self, tags):
-
-        def match(requiredtags, existingtags):
-            for rt in requiredtags:
-                if rt != '' and not rt in existingtags:
-                    return False
-            return True
-            
-        items = [item for item in itemList if match(tags, itemTags[item['name']]) ]
-        items.sort(key = lambda k:k['name'])
-        for item in items:
-            item['description'] = itemDescriptions[item['name']]
-        return items
-        
-    def getMenutags(self):
-        return Menutags
 
     def graphData(self):
 
@@ -279,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         }
 
         try:
-            w_data = json.loads(self.getGlobalItem('consumptionData8w'))['bardata']
+            w_data = json.loads(self.db.get_value('consumptionData8w'))['bardata']
             last_month = 0
             for data in w_data:
                 if data['label'] == 'last 8':
@@ -287,14 +292,14 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         last_month = data['data'][4][1] + data['data'][5][1] + data['data'][6][1] + data['data'][7][1]
 
             last_week = 0
-            w_data = json.loads(self.getGlobalItem('consumptionData7d'))['bardata']
+            w_data = json.loads(self.db.get_value('consumptionData7d'))['bardata']
             for data in w_data:
                 if data['label'] == 'last 7':
                     last_week = data['data'][1][1] + data['data'][2][1] + data['data'][3][1] + data['data'][4][1] + data['data'][5][1] + data['data'][6][1]*2
             logger.debug('last month: %s, last week: %s'%(last_month, last_week))
 
             year_old_data = False
-            year_data = json.loads(self.getGlobalItem('consumptionData1y'))['bardata']
+            year_data = json.loads(self.db.get_value('consumptionData1y'))['bardata']
             for data in year_data:
                 # if there is consumption logged a year ago, use that to make an estimation
                 if data['label'] == 'last 12':

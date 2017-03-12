@@ -24,4 +24,4 @@ initscript/pellmonweb
 pellmon_conf/
 version.py
 pellmoncli
-pellmonconf
+directories.py

@@ -1,0 +1,8 @@
+[Core]
+Name = Exec
+Module = exec
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Description = External command execution plugin

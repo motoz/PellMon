@@ -4,13 +4,13 @@ PellMon
 
 PellMon is logging, monitoring and configuration solution for pellet burners. It consists of a backend server daemon, which
 uses RRDtool as a logging database, and a frontend daemon providing a responsive mobile friendly web based user interface. 
-Additionally there is a command line tool for interfacing with the server, and web based configuration tool.
+Additionally there is a command line tool for interfacing with the server and web based configuration tool.
+
 PellMon can communicate directly with a supported pellet burner, or it can use a feeder-auger revolution counter as
 base for pellet consumption calculation.
 
-PellMon uses plugins to provide data about your burner. The most fully featured plugin is **ScotteCom**, which enables communication 
-with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner. It gives you access to almost all configuration parameters 
-and measurement data, and also handles logging of alarms and mode/setting changes.
+PellMon uses plugins to provide data about your burner. The most fully featured plugins are **ScotteCom**, which enables communication 
+with a NBE scotte/woody/biocomfort V4, V5 or V6 pellet burner and **NBEcom** for the newer NBE V7/10/13 controllers. They give you access to all configuration parameters and measurement data, and also handles logging of alarms and mode/setting changes.
 
 The plugin system makes it easy to add custom plugins for extended functionality, a 'template' plugin is provided as an example
 along with the other preinstalled plugins:
@@ -35,6 +35,14 @@ onewire input (ds2460 based) to count feeder auger revolutions for use with the 
 **Cleaning** Calculate how much fuel is burned since the boiler was last cleaned.
 
 **Onewire** Read onewire sensor data using the kernel driver interface /sys/bus/w1/
+
+**NBEcom** Connect to an NBE V7/V13 pellet burner over ethernet
+
+**Heatingcircuit** Automatically set the heating circuit mixing valve according to current outside temperature
+
+**Openweathermap** Read current temperature at your location from openweathermap.com
+
+**Exec** The Exec plugin calls external commands when reading/writing items
 
 Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
@@ -104,6 +112,16 @@ optional arguments:
 ###pellmon.conf
 The default configuration is split up in several files in the conf.d directory using the directive `config_dir = /etc/pellmon/conf.d` in pellmon.conf.
 
+##Run from source:
+    # This prepares the project to run directly from the working directory
+    ./autogen.sh
+    ./configure --enable-debug
+    make
+    cd src
+    ./pellmonsrv debug
+    # Run pellmonweb in another terminal
+    ./pellmonweb
+
 ##System installation:
     # Add system users
     sudo adduser --system --group --no-create-home pellmonsrv
@@ -132,31 +150,22 @@ The default configuration is split up in several files in the conf.d directory u
     sudo update-rc.d pellmonsrv remove
     sudo update-rc.d pellmonweb remove
 
-##User installation:
-    # Generate configure script
-    ./autogen.sh
-    # Configure for installation in home directory
-    ./configure --prefix=/home/<user>/.local
-    make
-    make install
-    # Start the daemons manually
-    /home/<user>/.local/bin/pellmonsrv.py -C /home/<user>/.local/etc/pellmon/pellmon.conf --PLUGINDIR /home/<user>/.local/lib/Pellmonsrv/plugins/ start
-    /home/<user>/.local/bin/pellmonweb.py -C /home/<user>/.local/etc/pellmon/pellmon.conf -D
-    # Stop the daemons manually
-    kill $(cat /tmp/pellmonsrv.pid)
-    kill $(cat /tmp/pellmonweb.pid)
-###Uninstall
-    make uninstall
-
 ##Dependencies:
     rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil python-argcomplete
 
 ##Optional dependencies:
     python-ws4py
-##Dependencies for plugins
+
+##Additional dependencies for plugins
 ###OWFS:
     pyownet
 
-##Build dependencies:
+###NBEcom:
+    python-crypto xtea
+
+###Openweathermap:
+    pyowm
+
+##Additional dependencies for building:
     autoconf
 

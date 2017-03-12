@@ -1,0 +1,9 @@
+[Core]
+Name = Heatingcircuit
+Module = heatingcircuit
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = Heating circuit mixing valve control

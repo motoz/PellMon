@@ -1,6 +1,6 @@
 [conf]
 # Read all *.conf files found in and below the "config_dir" directory
-config_dir = @confdir@/conf.d
+config_dir = @pellmonconfdir@
 
 # Full path to the logfile
 logfile = @localstatedir@/log/pellmonsrv/pellmon.log
