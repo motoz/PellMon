@@ -27,6 +27,7 @@ nobase_dist_foohtml_DATA = \
 	media/img/system_nbe.svg \
 	media/img/system_nbe_2w.svg \
 	media/img/system_nbe_3w.svg \
+	media/img/system_nbe_v7.svg \
 	media/img/apple-touch-icon-114x114.png \
 	media/img/apple-touch-icon-120x120.png \
 	media/img/apple-touch-icon-144x144.png \
