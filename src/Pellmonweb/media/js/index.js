@@ -66,7 +66,7 @@ var refreshGraph = function(getdata) {
         var selected = []
         $('.lineselection').each(function() {
             if ($(this).data('selected')=='yes') {
-                selected.push($( this ).text());
+                selected.push($( this ).data('linename'));
             }
         });
         for (series in data) {

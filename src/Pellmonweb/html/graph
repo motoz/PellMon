@@ -4,21 +4,21 @@
 
                 <div id="center">
                     <div class="col-centered">
-                        <p style="text-align: left">
+                        <p style="text-align: left; line-height: 180%;">
                             %for line in graphlines[:-1]:
-                                ${'<a href="#" style ="border-top-color:%s" data-linename="%s" class="lineselection %s" data-selected="%s">%s</a> | ' % (line['color'], line['name'], 'selected' if line['name'] in selectedlines else '', 'yes' if line['name'] in selectedlines else 'no', line['name'])}
+                                ${'<a href="#" style ="border-top-color:%s" data-linename="%s" class="lineselection %s" data-selected="%s">%s</a> &nbsp;&nbsp;' % (line['color'], line['name'], 'selected' if line['name'] in selectedlines else '', 'yes' if line['name'] in selectedlines else 'no', line['label'])}
                             %endfor
                             %for line in [graphlines[-1]]:
-                                ${'<a href="#" style ="border-top-color:%s" data-linename="%s" class="lineselection %s" data-selected="%s">%s</a>' % (line['color'], line['name'], 'selected' if line['name'] in selectedlines else '', 'yes' if line['name'] in selectedlines else 'no', line['name'])}
+                                ${'<a href="#" style ="border-top-color:%s" data-linename="%s" class="lineselection %s" data-selected="%s">%s</a>' % (line['color'], line['name'], 'selected' if line['name'] in selectedlines else '', 'yes' if line['name'] in selectedlines else 'no', line['label'])}
                             %endfor
                         </p>
-                        <p style="text-align: left">
+                        <p style="text-align: left; line-height: 180%;">
                             %for index in range(len(timeSeconds)):
-                                ${'<a href="#" data-time-choice="%s" data-title-text="%s" class="timeChoice %s">%s</a> | ' % (timeSeconds[index], timeNames[index], 'selected' if timeChoice == timeSeconds[index] else '', timeNames[index])}
+                                ${'<a href="#" data-time-choice="%s" data-title-text="%s" class="timeChoice %s">%s</a> &nbsp;&nbsp;' % (timeSeconds[index], timeNames[index], 'selected' if timeChoice == timeSeconds[index] else '', timeNames[index])}
                             %endfor
-                            <a href="#" class="left">go back </a>|
-                            <a href="#" class="right">go forward </a>|
-                            ${'<a href="#" class="autorefresh %s">Autorefresh graph</a>' % ('selected' if autorefresh else '')}
+                            ${'<a href="#" class="autorefresh %s">Autorefresh</a>' % ('selected' if autorefresh else '')}
+                            &nbsp; <a href="#" class="btn btn-info left">Back </a>
+                            <a href="#" class="btn btn-info right">Forward </a>
                         </p>
                     </div>
                 </div>

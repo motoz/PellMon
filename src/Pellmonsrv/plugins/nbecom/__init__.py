@@ -136,6 +136,7 @@ class nbecomplugin(protocols):
             item.protocoldata =  i
             item.longname = i['name']
             item.type = i['type']
+            item.label = i['name'].replace('_', ' ')
             try:
                 item.min = i['min']
                 item.max = i['max']
@@ -152,9 +153,13 @@ class nbecomplugin(protocols):
                 pass
             try:
                 item.longname = lang_longname(i_id)
+            except KeyError:
+                pass
+            try:
                 item.description = lang_description(i_id)
             except KeyError:
                 pass
+
             self.itemrefs.append(item)
             self.db.insert(item)
 

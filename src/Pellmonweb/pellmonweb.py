@@ -658,6 +658,13 @@ class PellMonWeb:
                 timeName = timeNames[i]
                 break;
 
+        parameterlist = dbus.getFullDB(['','','','',''])
+        parameterdict = {p['name']: p for p in parameterlist}
+        for l in graph_lines:
+            try:
+                l['label'] = unicode(parameterdict[l['name']]['label'])
+            except KeyError:
+                l['label'] = l['name']
 
         plugintemplate = '<%inherit file="index.html"/>'
         widgets = []
