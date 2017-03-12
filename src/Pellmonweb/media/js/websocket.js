@@ -26,7 +26,7 @@ $(document).ready(function() {
         for (i in jsonObject) {
             obj = jsonObject[i];
             container = $('#' + obj.name + '-value');
-            container.html(obj.value);
+            container.text(obj.value);
      }
   };
 

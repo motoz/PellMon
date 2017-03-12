@@ -49,10 +49,10 @@ from threading import Timer, Lock
 import signal
 import simplejson
 import re
-import math
+import random
 
 try:
-    from version import __version__
+    from Pellmonsrv.version import __version__
 except:
     __version__ = '@VERSION@'
 
@@ -207,6 +207,7 @@ class PellMonWeb:
         self.logview = LogViewer(logfile, lookup)
         self.auth = AuthController(credentials, lookup)
         self.consumptionview = Consumption(polling, db, dbus, lookup)
+        self.rand = random.random()
 
     @cherrypy.expose
     def autorefresh(self, **args):
@@ -521,17 +522,8 @@ class PellMonWeb:
         paramlist = [param for param in parameters.split(',') if param in db]
         responselist = [ {'name':param, 'value':dbus.getItem(param)} for param in paramlist]
         message = simplejson.dumps(responselist)
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         return message
-
-        if cherrypy.request.method == "GET":
-            if param in(parameterlist):
-                try:
-                    result = dbus.getItem(param)
-                except:
-                    result = 'error'
-            else: result = 'not found'
-            cherrypy.response.headers['Content-Type'] = 'application/json'
-            return simplejson.dumps(dict(param=param, value=result))
 
     @cherrypy.expose
     @require() #requires valid login
@@ -561,6 +553,7 @@ class PellMonWeb:
                 parameterlist = dbus.getFullDB(['',t1,t2,t3,t4])
             else:
                 parameterlist = dbus.getFullDB([level,t1,t2,t3,t4])
+            print parameterlist
             # Set up a queue and start a thread to read all items to the queue, the parameter view will empty the queue bye calling /getparams/
             paramQueue = Queue.Queue(300)
             # Store the queue in the session
@@ -582,7 +575,7 @@ class PellMonWeb:
                 try:
                     a = item['longname']
                 except:
-                    item['longname'] = item['name']
+                    item['longname'] = item['name'].title()
                 try:
                     a = item['unit']
                 except:
@@ -603,12 +596,12 @@ class PellMonWeb:
                     else:
                         # get parameter
                         try:
-                            values[parameterlist.index(item['name'])]=escape(dbus.getItem(item['name']))
+                            values[parameterlist.index(item['name'])]=dbus.getItem(item['name'])
                         except:
                             values[parameterlist.index(item['name'])]='error'
             tmpl = lookup.get_template("parameters.html")
             tags = dbus.getMenutags()
-            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=t1, tags=tags, websockets=websockets, webroot=cherrypy.request.script_name, from_page=cherrypy.url())
+            return tmpl.render(username=cherrypy.session.get('_cp_username'), data = datalist, params=paramlist, commands=commandlist, values=values, level=level, heading=escape(t1), tags=tags, websockets=websockets, webroot=cherrypy.request.script_name, from_page=cherrypy.url())
         except DbusNotConnected:
             return "Pellmonsrv not running?"
 
@@ -665,6 +658,13 @@ class PellMonWeb:
                 timeName = timeNames[i]
                 break;
 
+        parameterlist = dbus.getFullDB(['','','','',''])
+        parameterdict = {p['name']: p for p in parameterlist}
+        for l in graph_lines:
+            try:
+                l['label'] = unicode(parameterdict[l['name']]['label'].replace(' ', '&nbsp;'))
+            except KeyError:
+                l['label'] = l['name']
 
         plugintemplate = '<%inherit file="index.html"/>'
         widgets = []
@@ -675,10 +675,10 @@ class PellMonWeb:
             widgets.append(wr)
         tmpl = Template(plugintemplate, lookup=lookup)
 
-        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets, version = __version__)
+        return tmpl.render(username=cherrypy.session.get('_cp_username'), empty=False, autorefresh=autorefresh, timeSeconds = timeSeconds, timeChoices=timeChoices, timeNames=timeNames, timeChoice=timespan, graphlines=graph_lines, selectedlines = lines, timeName = timeName, websockets=websockets, webroot=cherrypy.request.script_name, widgets = widgets, version = __version__, rand=self.rand)
         
     @cherrypy.expose
-    def systemimage(self):
+    def systemimage(self, **args):
         return serve_file(system_image)
 
     @cherrypy.expose
@@ -699,7 +699,7 @@ def parameterReader(q, parameterlist):
     #parameterlist=dbus.getdb()
     for item in parameterlist:
         try:
-            value = escape(dbus.getItem(item['name']))
+            value = dbus.getItem(item['name'])
         except:
             value='error'
         q.put((item['name'],value))
@@ -731,9 +731,15 @@ def walk_config_dir(config_dir, parser):
                 except:
                     cherrypy.log("can not parse config file %s"%f)
 
+try:
+    from Pellmonsrv.directories import DATADIR, CONFDIR, LOCALSTATEDIR
+except ImportError:
+    DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 
-def run(DATADIR):
-    MEDIA_DIR = os.path.join(DATADIR, 'media')
+def run():
+    MEDIA_DIR = os.path.join(DATADIR, 'Pellmonweb', 'media')
     argparser = argparse.ArgumentParser(prog='pellmonweb')
     argparser.add_argument('-D', '--DAEMONIZE', action='store_true', help='Run as daemon')
     argparser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonweb.pid', help='Full path to pidfile')
@@ -749,7 +755,7 @@ def run(DATADIR):
 
     #Look for temlates in this directory
     global lookup
-    lookup = myLookup(directories=[os.path.join(DATADIR, 'html')], dbus=dbus)
+    lookup = myLookup(directories=[os.path.join(DATADIR, 'Pellmonweb', 'html')], dbus=dbus)
 
     config_file = args.CONFIG
 
@@ -758,14 +764,9 @@ def run(DATADIR):
         plugins.PIDFile(cherrypy.engine, pidfile).subscribe()
 
     if args.USER:
-        # Load the configuration file
-        if not os.path.isfile(config_file):
-            config_file = '/etc/pellmon.conf'
-        if not os.path.isfile(config_file):
-            config_file = '/usr/local/etc/pellmon.conf'
-#        if not os.path.isfile(config_file):
-#            cherrypy.log("config file not found")
-#            sys.exit(1)
+
+        config_file = os.path.join(CONFDIR, 'pellmon.conf')
+
         try:
             parser.read(config_file)
         except:
@@ -806,13 +807,6 @@ def run(DATADIR):
         plugins.DropPrivileges(cherrypy.engine, uid=uid, gid=gid, umask=033).subscribe()
 
     # Load the configuration file
-    if not os.path.isfile(config_file):
-        config_file = '/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        config_file = '/usr/local/etc/pellmon.conf'
-#    if not os.path.isfile(config_file):
-#        cherrypy.log("config file not found")
-#        sys.exit(1)
     try:
         parser.read(config_file)
         config_dir = parser.get('conf', 'config_dir')
@@ -912,7 +906,7 @@ def run(DATADIR):
     global timeChoices
     timeChoices = ['time1h', 'time3h', 'time8h', 'time24h', 'time3d', 'time1w']
     global timeNames
-    timeNames  = ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']
+    timeNames  = [t.replace(' ', '&nbsp;') for t in ['1 hour', '3 hours', '8 hours', '24 hours', '3 days', '1 week']]
     global timeSeconds
     timeSeconds = [3600, 3600*3, 3600*8, 3600*24, 3600*24*3, 3600*24*7]
     ft=False

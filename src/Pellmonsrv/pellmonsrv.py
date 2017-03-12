@@ -40,12 +40,19 @@ import sys, traceback
 import urllib2 as urllib
 import simplejson as json
 from Pellmonsrv import __file__ as pluginpath
-import sqlite3
-
+from database import Database as _Database
+from database import init_keyval_storage
 try:
     from version import __version__
-except:
-    __version__ = '@VERSION@'
+except ImportError:
+    __version__ = '_dev_'
+
+try:
+    from directories import DATADIR, CONFDIR, LOCALSTATEDIR
+except ImportError:
+    DATADIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    CONFDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    LOCALSTATEDIR = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 
 class dbus_signal_handler(logging.Handler):
     """Emit log messages as a dbus signal"""
@@ -57,19 +64,12 @@ class dbus_signal_handler(logging.Handler):
         s = json.dumps([{'name':'__event__', 'value':msg}])
         self.dbus_service.changed_parameters(s)
 
-class Database(threading.Thread):
+class Database(threading.Thread, _Database):
     def __init__(self):
-        class getset:
-            def __init__(self, item, obj):
-                self.item = item
-                self.obj = obj
-            def getItem(self):
-                return self.obj.getItem(self.item)
-            def setItem(self, value):
-                return self.obj.setItem(self.item, value)
         threading.Thread.__init__(self)
+        init_keyval_storage(conf.keyval_db)
+        _Database.__init__(self)
         self.dbus_service = None
-        self.items={}
         self.values={}
         self.protocols=[]
         self.setDaemon(True)
@@ -77,7 +77,7 @@ class Database(threading.Thread):
         # Initialize and activate all plugins of 'Protocols' category
         global manager
         manager = PluginManager(categories_filter={ "Protocols": protocols})
-        manager.setPluginPlaces([conf.plugin_dir])
+        manager.setPluginPlaces(conf.plugin_dirs)
         manager.collectPlugins()
         activated_plugins = []
         failed_plugins= []
@@ -86,15 +86,15 @@ class Database(threading.Thread):
             if plugin_name in plugins:
                 try:
                     plugin = plugins[plugin_name]
-                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals())
+                    plugin.plugin_object.activate(conf.plugin_conf[plugin.name], globals(), self)
                     self.protocols.append(plugin)
-                    for item in plugin.plugin_object.getDataBase():
-                        self.items[item] = getset(item, plugin.plugin_object)
                     activated_plugins.append(plugin.name)
                 except Exception as e:
-                    #print str(e), plugin.name
                     failed_plugins.append(plugin.name)
-                    logger.debug('Plugin error:%s'%(traceback.format_exc(sys.exc_info()[1])))
+                    if conf.command == 'debug':
+                        raise
+                    else:
+                        logger.info('%s plugin error: %s'%(plugin_name, str(e))   )
         if activated_plugins:
             logger.info('Activated plugins: %s'%', '.join(activated_plugins))
         if failed_plugins:
@@ -105,9 +105,12 @@ class Database(threading.Thread):
         while True:
             time.sleep(2)
             changed_params = []
-            for item_name in self.items:
+            for item_name, item in self.items():
                 try:
-                    value = self.items[item_name].getItem()
+                    try:
+                        value = item.get_text(item.value)
+                    except AttributeError:
+                        value = item.value
                     if item_name in self.values:
                         if value != self.values[item_name]:
                             changed_params.append({'name':item_name, 'value':value})
@@ -143,37 +146,41 @@ class MyDBUSService(dbus.service.Object):
         if param == 'pellmonsrv_version':
             return __version__
         else:
-            return conf.database.items[param].getItem()
+            return conf.database.get_text(param)
 
     @dbus.service.method('org.pellmon.int')
     def SetItem(self, param, value):
         """Get the value for a parameter/command item"""
-        return conf.database.items[param].setItem(value)
+        return conf.database.set_value(param, value)
 
     @dbus.service.method('org.pellmon.int', out_signature='as')
     def GetDB(self):
-        """Get list of all data/parameter/command items"""
-        db=[]
-        for plugin in conf.database.protocols:
-            db = db + plugin.plugin_object.getDataBase()
-        db.sort()
-        return db
+        """Get list of all item names"""
+        return sorted(conf.database.keys())
 
     @dbus.service.method(dbus_interface='org.pellmon.int', in_signature='as', out_signature='aa{sv}')
     def GetFullDB(self, tags):
-        """Get list of all data/parameter/command items"""
-        db=[]
-        for plugin in conf.database.protocols:
-            db = db + plugin.plugin_object.GetFullDB(tags)
-        return db
+        """Get list of all items with matching tags"""
+        def match(requiredtags, existingtags):
+            for rt in requiredtags:
+                if rt != '' and not rt in existingtags:
+                    return False
+            return True
+
+        return sorted(
+            [ { aname:atype for aname,atype in vars(v).items() if isinstance(atype, str) or isinstance(atype, list)} for k,v in conf.database.items() if hasattr(v,'tags') and match(tags, v.tags)], key=lambda i:i['name']
+            )
 
     @dbus.service.method('org.pellmon.int',out_signature='as')
     def getMenutags(self):
-        """Get list of all tags that make up the menu"""
-        menutags=[]
-        for plugin in conf.database.protocols:
-            menutags = menutags + plugin.plugin_object.getMenutags()
-        return menutags
+        """Get a sorted list of all tags that make up the menu"""
+        menutags = set()
+        for itemname, item in conf.database.items():
+            try:
+                menutags.update(set(item.tags))
+            except AttributeError, e:
+                pass
+        return sorted(list(menutags.difference(set(['All', 'Basic']))))
 
     @dbus.service.method('org.pellmon.int', in_signature='s', out_signature='s')
     def getPlugins(self, name):
@@ -181,63 +188,12 @@ class MyDBUSService(dbus.service.Object):
             template = plugin.plugin_object.getTemplate(name)
             if template:
                 return template
-        return 'Template not found'
+        return 'Template not found '+name
 
     #@dbus.service.signal(dbus_interface='org.pellmon.int', signature='aa{sv}')
     @dbus.service.signal(dbus_interface='org.pellmon.int', signature='s')
     def changed_parameters(self, message):
         pass
-
-class Keyval_storage(object):
-    def __init__(self, dbfile):
-        self.dbfile = dbfile
-        conn = sqlite3.connect(dbfile)
-        cursor = conn.cursor()
-        self.lock = threading.Lock()
-        try:
-            cursor.execute("SELECT value from keyval")
-        except sqlite3.OperationalError:
-            cursor.execute("CREATE TABLE keyval (id TEXT PRIMARY KEY, value TEXT, confvalue TEXT NOT NULL DEFAULT '-')")
-        conn.commit()
-        conn.close()
-
-    def readval(self, item):
-        with self.lock:
-            try:
-                conn = sqlite3.connect(self.dbfile)
-                cursor = conn.cursor()
-                cursor.execute("SELECT value FROM keyval WHERE id=?", (item,))
-                value, = cursor.next()
-                conn.close()
-                return value.encode('ascii')
-            except Exception, e:
-                return 'error'
-
-    def writeval(self, item, value=None, confval=None):
-        value = str(value)
-        with self.lock:
-            try:
-                conn = sqlite3.connect(self.dbfile)
-                cursor = conn.cursor()
-                if confval is None:
-                    cursor.execute("""INSERT OR REPLACE INTO keyval (id, value, confvalue   ) VALUES (
-                                            ?,?,(select confvalue from keyval where id =    ?
-                                    ))""", (item, value, item))
-                    conn.commit()
-                else:
-                    try:
-                        cursor.execute("SELECT value, confvalue FROM keyval WHERE id=?", (item,))
-                        value,confvalue = cursor.next()
-                        if confvalue != confval:
-                            cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
-                            conn.commit()
-                    except:
-                        cursor.execute("INSERT OR REPLACE INTO keyval (id, value, confvalue) VALUES (?,?,?)", (item, confval, confval))
-                        conn.commit()
-                conn.close()
-            except Exception as e: #ssqlite3.OperationalError:
-                raise
-
 
 class Poller(threading.Thread):
     def __init__(self, ev):
@@ -270,7 +226,7 @@ class Poller(threading.Thread):
                                 value = 'U'
                         else:
                             try:
-                                value = conf.database.items[data['name']].getItem()
+                                value = conf.database[data['name']].value
                                 try:
                                     if 'COUNTER'  in data['ds_type'] or 'DERIVE' in data['ds_type']:
                                         value = str(int(value))
@@ -293,14 +249,16 @@ class Poller(threading.Thread):
                                 except:
                                     pass
                     except IOError as e:
-                        logger.info('IOError: %s,  Trying Z01...'%e.strerror)
+                        #logger.info('IOError: %s,  Trying Z01...'%str(e))
+#                        import traceback
+#                        traceback.print_exc()
                         try:
                             # Strange fix for stange problem with some scotte burners
-                            conf.database.items['oxygen_regulation'].getItem()
+                            conf.database['oxygen_regulation'].value
                         except Exception as e:
                             logger.info('error in retry %s'%str(e) )
                     except Exception as e:
-                        logger.debug('error polling %s: %s'%(item['ds_name'], str(e)) )
+                        logger.debug('error polling %s: %s'%(data['name'], str(e)) )
                         
                     itemlist.append(value)
                     lastupdate[data['name']] = value
@@ -472,7 +430,8 @@ class MyDaemon(Daemon):
             self.pollevent.set()
         global logger
         logger = logging.getLogger('pellMon')
-        logger.info('starting pelletMonitor')
+        logger.info('starting PellMon')
+        logger.info('Looking for plugins in %s', ', '.join(conf.plugin_dirs))
 
         # Load all plugins of 'protocol' category.
         conf.database = Database()
@@ -590,9 +549,15 @@ class config:
         # create file handler for logger
         try:
             self.logfile = parser.get('conf', 'logfile')
+            try:
+                logdir = os.path.dirname(self.logfile)
+                mkdir_p(logdir)
+            except:
+                pass
             fh = logging.handlers.WatchedFileHandler(self.logfile)
         except:
             fh = logging.StreamHandler()
+
         # create formatter and add it to the handlers
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
@@ -695,10 +660,10 @@ class config:
             self.RrdCreateString="rrdtool create %s --step %u "%(self.nvdb, self.poll_interval)
             for item in self.pollData:
                 self.RrdCreateString += item['ds_type'] % (item['ds_name'], self.poll_interval*4) + ' ' 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:10:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:100:20000 " 
-            self.RrdCreateString += "RRA:AVERAGE:0,999:1000:20000" 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:1:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:10:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:100:20000 " 
+            self.RrdCreateString += "RRA:AVERAGE:0.1:1000:20000" 
 
         # dict to hold known recent values of db items
         self.dbvalues = {} 
@@ -767,9 +732,17 @@ class config:
             except:
                 self.keyval_db = '/tmp/pellmon_settings.db'
             mkdir_p(os.path.dirname(self.keyval_db))
-            self.keyval_storage = Keyval_storage(self.keyval_db)
 
-
+        self.plugin_dirs = []
+        try:
+            plugin_dirs = parser.get('plugin_settings', 'plugin_dirs').split('\n')
+            self.plugin_dirs += [p.lstrip(' \t').rstrip(' \t') for p in plugin_dirs if p]
+        except ConfigParser.NoSectionError as e:
+            print 'noconf', e
+            pass
+        except Exception as e:
+            print e
+            logger.info('invalid setting for plugin_dirs')
 
 def getgroups(user):
     gids = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
@@ -825,7 +798,7 @@ def run():
     parser.add_argument('-P', '--PIDFILE', default='/tmp/pellmonsrv.pid', help='Full path to pidfile')
     parser.add_argument('-U', '--USER', help='Run as USER')
     parser.add_argument('-G', '--GROUP', default='nogroup', help='Run as GROUP')
-    parser.add_argument('-C', '--CONFIG', default='pellmon.conf', help='Full path to config file')
+    parser.add_argument('-C', '--CONFIG', default=None, help='Full path to config file')
     parser.add_argument('-D', '--DBUS', default='SESSION', choices=['SESSION', 'SYSTEM'], help='which bus to use, SESSION is default')
     parser.add_argument('-p', '--PLUGINDIR', default='-', help='Full path to plugin directory')
     parser.add_argument('-O', '--OLDPLUGINDIR', default='-', help='Transfer settings from the old plugin directory if exists')
@@ -834,38 +807,29 @@ def run():
     if args.PLUGINDIR == '-':
         args.PLUGINDIR = os.path.join(os.path.dirname(pluginpath), 'plugins')
 
-    config_file = args.CONFIG
-    if not os.path.isfile(config_file):
-        config_file = '/etc/pellmon.conf'
-    if not os.path.isfile(config_file):
-        config_file = '/usr/local/etc/pellmon.conf'
-#    if not os.path.isfile(config_file):
-#        sys.stderr.write('Configuration file not found, exiting\n')
-#        sys.exit(1)
-
+    if args.CONFIG is not None:
+        config_file = args.CONFIG
+    else:
+        config_file = os.path.join(CONFDIR, 'pellmon.conf')
     # Init global configuration from the conf file
     global conf
     conf = config(config_file)
     conf.dbus = args.DBUS
-    conf.plugin_dir = args.PLUGINDIR
+    conf.plugin_dirs.append(args.PLUGINDIR)
     conf.old_plugin_dir = args.OLDPLUGINDIR
+    #conf.datadir = DATADIR
+    #conf.plugin_datadir = os.path.join(DATADIR, 'plugins')
 
     if args.USER:
         conf.USER = args.USER
     if args.GROUP:
         conf.GROUP = args.GROUP
 
-    try:
-        logdir = os.path.dirname(conf.logfile)
-        mkdir_p(logdir)
-    except:
-        pass
-
     if conf.polling:
         dbfile = conf.db
         dbdir = os.path.dirname(dbfile)
         mkdir_p(dbdir)
-
+        logdir = os.path.dirname(conf.logfile)
         if args.USER:
             uid = pwd.getpwnam(args.USER).pw_uid
             gid = grp.getgrnam(args.GROUP).gr_gid
@@ -880,6 +844,8 @@ def run():
 
     # must be be set before calling daemon.start
     daemon.pidfile = args.PIDFILE
+
+    conf.command = args.command
 
     commands[args.command]()
 

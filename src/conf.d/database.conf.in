@@ -9,13 +9,12 @@
 #
 # The data names are read from the plugins that define them,
 # and are written to the rrd database "ds-name" that has a matching "dxx".
-#
-# The three ds_names feeder_capacity, feeder_time and _logtick must be
-# connected to data items with the exact same names.
 
 #############################################################
 # Here you choose which data items to write to the database #
 #############################################################
+
+# These are good for a scotte V4/5/6 burner
 d01 = power_kW
 d02 = boiler_temp
 d03 = chute_temp
@@ -28,6 +27,19 @@ d09 = indoor_temp
 d10 = outside_temp
 #######################################################
 
+# Example config for a scotte V7/10/13 burner
+#d01 = operating_data-power_kw
+#d02 = operating_data-boiler_temp
+#d03 = operating_data-shaft_temp
+#d04 = operating_data-photo_level
+#d05 = operating_data-oxygen_ref
+#d06 = operating_data-oxygen
+#d07 = operating_data-power_pct
+#d08 = operating_data-smoke_temp
+#d09 = advanced_data-outdoor_temp
+
+# The three ds_names feeder_capacity, feeder_time and _logtick must be
+# connected to data items with the exact same names.
 # Don't change these:
 dd1 = feeder_time
 dd2 = feeder_capacity

@@ -18,6 +18,7 @@
 """
 
 from Pellmonsrv.plugin_categories import protocols
+from Pellmonsrv.database import Item, Getsetitem
 from threading import Thread, Timer
 from ConfigParser import ConfigParser
 from os import path
@@ -57,14 +58,29 @@ class Consumption_plugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
-    def activate(self, conf, glob):
-        protocols.activate(self, conf, glob)
-        self.db = self.glob['conf'].db
-        self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
-        self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
+    def activate(self, conf, glob, db, *args, **kwargs):
+        protocols.activate(self, conf, glob, db, *args, **kwargs)
+        try:
+            self.feeder_time = self.glob['conf'].item_to_ds_name['feeder_time']
+        except Exception, e:
+            logger.info('Consumption plugin error: feeder_time is missing from the database')
+            raise
+        try:
+            self.feeder_capacity = self.glob['conf'].item_to_ds_name['feeder_capacity']
+        except Exception, e:
+            logger.info('Consumption plugin error: feeder_capacity is missing from the database')
+            raise
         self.totals=WeakValueDictionary()
         self.totals_fifo=[None]*200
         self.cache_lock = threading.Lock()
+        self.itemrefs = []
+        self.rrdfile = self.glob['conf'].db
+        for item in itemList:
+            dbitem = Getsetitem(item['name'], None, lambda i:self.getItem(i), lambda i,v:self.setItem(i,v))
+            for key, value in item.iteritems():
+                dbitem.__setattr__(key, value)
+            self.db.insert(dbitem)
+            self.itemrefs.append(dbitem)
         self._insert_template('consumption', """
 <h4>Consumption</h4>
 
@@ -190,6 +206,7 @@ class Consumption_plugin(protocols):
             average = total / bars
             return json.dumps({'bardata':bardata_, 'total':total, 'average':average})
         except Exception, e:
+            print e
             return str(e)
 
     def rrd_total(self, start, end, cache=True):
@@ -200,7 +217,7 @@ class Consumption_plugin(protocols):
                 starts = self.totals[start]
                 total = starts.data[end].data
             except Exception, e:
-                command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:%s:AVERAGE'%(self.db,self.feeder_time),'DEF:b=%s:%s:AVERAGE'%(self.db,self.feeder_capacity), 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
+                command = ['rrdtool', 'graph', '--start', start, '--end', end,'-', 'DEF:a=%s:%s:AVERAGE'%(self.rrdfile,self.feeder_time),'DEF:b=%s:%s:AVERAGE'%(self.rrdfile,self.feeder_capacity), 'CDEF:c=a,b,*,360000,/', 'VDEF:s=c,TOTAL', 'PRINT:s:\"%.2lf\"']
                 cmd = subprocess.Popen(command, shell=False, stdout=subprocess.PIPE)
                 try:
                     total = cmd.communicate()[0].splitlines()[1]
@@ -219,7 +236,7 @@ class Consumption_plugin(protocols):
                     #print str(e)
                     total = None
         if total:
-            return total
+            return total.replace(',', '.')
         else:
             return None
 
