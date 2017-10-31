@@ -31,7 +31,7 @@ import traceback
 logger = getLogger('pellMon')
 
 itemList = [
-          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',    'type':'R/W', 'unit':'g/360s', 'value': '1000', 'min':'0', 'max':'5000' },
+          {'name':'feeder_capacity',      'longname':'feeder 6 min capacity',    'type':'R/W', 'unit':'g/360s', 'value': '1000', 'min':'0', 'max':'10000' },
           {'name':'feeder_time',          'longname':'feeder time',              'type':'R',   'unit':'s',      'value': '0'    },
 ]
 
