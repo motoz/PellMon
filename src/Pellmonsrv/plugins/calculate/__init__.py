@@ -168,6 +168,14 @@ class Calc():
                 self.stack.append(gstore[var])
             except:
                 raise ValueError('no global named %s'%var)
+        elif c == 'str==':
+            item2 = self.stack.pop()
+            item1 = self.stack.pop()
+            self.stack.append(unicode(int(str(item1) == str(item2))))
+        elif c == 'str!=':
+            item2 = self.stack.pop()
+            item1 = self.stack.pop()
+            self.stack.append(unicode(int(str(item1) != str(item2))))
         else:
             self.stack.append(c)
         self.IP += 1
