@@ -36,7 +36,7 @@ class onewireplugin(protocols):
         self.itemList=[]
         self.items = {}
         self.itemTags={}
-        self.w1_therm_temperature = re.compile(r't=([0-9]+)')
+        self.w1_therm_temperature = re.compile(r't=([-0-9]+)')
         self.itemrefs = []
         protocols.activate(self, conf, glob, db, *args, **kwargs)
         try:
