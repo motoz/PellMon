@@ -254,7 +254,7 @@ class Poller(threading.Thread):
 #                        traceback.print_exc()
                         try:
                             # Strange fix for stange problem with some scotte burners
-                            conf.database['oxygen_regulation'].value
+                            dummy_read = conf.database['oxygen_regulation'].value
                         except Exception as e:
                             logger.info('error in retry %s'%str(e) )
                     except Exception as e:
