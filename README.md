@@ -46,9 +46,9 @@ onewire input (ds2460 based) to count feeder auger revolutions for use with the 
 
 Plugin documentation is found in the configuration file at plugins/plugin-name.conf
 
-####Contains:
+#### Contains:
 
-###pellmonsrv:
+### pellmonsrv:
 Communication daemon. Implements a DBUS interface for reading and writing setting values and reading of measurement data. Optionally handles logging of measurement data to an RRD database. 
 <pre>
 usage: pellmonsrv.py [-h] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-D {SESSION,SYSTEM}] [-p PLUGINDIR]
@@ -73,7 +73,7 @@ optional arguments:
                         Full path to plugin directory
 </pre>
 
-###pellmonweb:
+### pellmonweb:
 Webserver and webapp, plotting of measurement, calculated consumption and data and parameter reading/writing.
 <pre>
 usage: pellmonweb.py [-h] [-D] [-P PIDFILE] [-U USER] [-G GROUP] [-C CONFIG] [-d {SESSION,SYSTEM}]
@@ -91,13 +91,13 @@ optional arguments:
   -d {SESSION,SYSTEM}, --DBUS {SESSION,SYSTEM}
                         which bus to use, SESSION is default
 </pre>
-###pellmoncli:
+### pellmoncli:
 
 Interactive command line client with tab completion. Reading and writing of setting values, and reading of measurement data.
 
     usage: pellmoncli.py [-h] {get,set,list,i}
 
-###pellmonconf:
+### pellmonconf:
 Web based text editor for the configuration files
 <pre>
 pellmonconf -h
@@ -109,10 +109,10 @@ optional arguments:
   -H HOST, --host HOST  Host for webinterface, default 0.0.0.0
 </pre>
 
-###pellmon.conf
+### pellmon.conf
 The default configuration is split up in several files in the conf.d directory using the directive `config_dir = /etc/pellmon/conf.d` in pellmon.conf.
 
-##Run from source:
+## Run from source:
     # This prepares the project to run directly from the working directory
     ./autogen.sh
     ./configure --enable-debug
@@ -122,7 +122,7 @@ The default configuration is split up in several files in the conf.d directory u
     # Run pellmonweb in another terminal
     ./pellmonweb
 
-##System installation:
+## System installation:
     # Add system users
     sudo adduser --system --group --no-create-home pellmonsrv
     sudo adduser --system --group --no-create-home pellmonweb
@@ -144,28 +144,28 @@ The default configuration is split up in several files in the conf.d directory u
     # Start the daemons manually, or reboot
     sudo service pellmonsrv start
     sudo service pellmonweb start
-###Uninstall
+### Uninstall
     sudo make uninstall
     # Remove from init if you added them
     sudo update-rc.d pellmonsrv remove
     sudo update-rc.d pellmonweb remove
 
-##Dependencies:
+## Dependencies:
     rrdtool python-serial python-cherrypy3 python-dbus python-mako python-gobject python-simplejson python-dateutil python-argcomplete
 
-##Optional dependencies:
+## Optional dependencies:
     python-ws4py
 
-##Additional dependencies for plugins
-###OWFS:
+## Additional dependencies for plugins
+### OWFS:
     pyownet
 
-###NBEcom:
+### NBEcom:
     python-crypto xtea
 
-###Openweathermap:
+### Openweathermap:
     pyowm
 
-##Additional dependencies for building:
+## Additional dependencies for building:
     autoconf
 
