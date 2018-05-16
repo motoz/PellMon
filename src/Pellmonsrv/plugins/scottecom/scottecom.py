@@ -23,6 +23,7 @@ from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv.database import Item, Getsetitem
 import menus
 from descriptions import dataDescriptions
+import timerstatus
 
 class scottecom(protocols):
     def __init__(self):
@@ -79,6 +80,14 @@ class scottecom(protocols):
             self.dataDescriptions = dataDescriptions
         except:
             self.logger.info('scottecom protocol setup failed')
+
+        self.registerTimerStatus()
+
+    def registerTimerStatus(self):
+        """Register timer_status item."""
+        timerstatus_item = timerstatus.get_item(self.db)
+        self.db.insert(timerstatus_item)
+        self.itemrefs.append(timerstatus_item)
 
     def getItem(self, item, raw=False):
         return self.protocol.getItem(item, raw)
