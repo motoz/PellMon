@@ -37,7 +37,7 @@ class Proxy:
         'sun', 'vacuum', 'misc', 'alarm', 'manual')
 #    consumption_data = ('total_hours', 'total_days', 'total_months', 'total_years', 'dhw_hours', 'dhw_days', 'dhw_months', 'dhw_years', 'counter')
 
-    def __init__(self, password, port=1920, addr=None, serial=None):
+    def __init__(self, password, port=8483, addr=None, serial=None):
         self.password = password
         self.discover_addr = (addr, port)
         self.lock = threading.Lock()
@@ -46,6 +46,15 @@ class Proxy:
         self.connected = False
 
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        for p in range(port+1, 9999):
+            try:
+                s.bind(('', p))
+                break
+            except socket.error:
+                if p==9999:
+                    logger.info('No free 4 digit port found')
+
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if addr == '<broadcast>':
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
