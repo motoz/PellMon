@@ -163,8 +163,10 @@ class Proxy:
                         request.sequencenumber += 1
                         if request.sequencenumber >= 99:
                            request.sequencenumber = 0
+                        request.controllerid = self.serial
                         try:
                             if not self.controller_online:
+                                logger.info('Looking for controller with S/N %s'%self.serial)
                                 self.s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                                 self.s.settimeout(3)
                                 self.s.sendto(request.encode(), self.discover_addr)

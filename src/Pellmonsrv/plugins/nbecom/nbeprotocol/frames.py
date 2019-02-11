@@ -20,17 +20,20 @@
 import time
 from protocolexceptions import *
 from random import SystemRandom
+from logging import getLogger
 
 START = b'\x02'
 END = b'\x04'
 STATUS_CODES = (0,1,2,3)
 FUNCTION_CODES = (0,1,2,3,4,5,6,7,8,9,10,11)
 
+logger = getLogger('pellMon')
+
 class Request_frame(object):
-    def __init__(self, version = 'V1'):
+    def __init__(self):
         self.REQUEST_HEADER_SIZE = 52
         self.appid = ''.join([chr(SystemRandom().randrange(128)) for x in range(12)])
-        self.controllerid = 'id'
+        self.controllerid = '0'*6
         self.encrypted = False
         self.sequencenumber = 0
         self.pincode = '0123456789'
@@ -42,7 +45,11 @@ class Request_frame(object):
         while True:
             success = True
             self.framedata = ('%12s'%self.appid[:12]).encode('ascii')
-            self.framedata += ('%6s'%self.controllerid[:6]).encode('ascii')
+            try:
+                self.framedata += ('%06d'%int(self.controllerid[:6])).encode('ascii')
+            except ValueError:
+                logger.info('Serial %s number is not valid'%self.controllerid)
+                self.framedata += '0'*6
 
             if self.encrypted:
                 if hasattr(self, 'xtea_key'):
