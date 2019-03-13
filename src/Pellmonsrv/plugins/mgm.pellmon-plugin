@@ -1,0 +1,9 @@
+[Core]
+Name = MGM
+Module = mgm
+
+[Documentation]
+Author = Anders Nylund
+Version = 0.1
+Website = http://github.com/motoz/PellMon
+Description = Integrate with an MGM burner
