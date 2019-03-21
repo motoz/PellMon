@@ -24,7 +24,28 @@ from threading import Timer
 from time import sleep
 import xml.etree.ElementTree as et
 import requests
+import ctypes, os
+
 logger = getLogger('pellMon')
+
+CLOCK_MONOTONIC_RAW = 4 # see <linux/time.h>
+
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_nsec', ctypes.c_long)
+    ]
+
+librt = ctypes.CDLL('librt.so.1', use_errno=True)
+clock_gettime = librt.clock_gettime
+clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+
+def monotonic_time():
+    t = timespec()
+    if clock_gettime(CLOCK_MONOTONIC_RAW , ctypes.pointer(t)) != 0:
+        errno_ = ctypes.get_errno()
+        raise OSError(errno_, os.strerror(errno_))
+    return t.tv_sec + t.tv_nsec * 1e-9
 
 class owmplugin(protocols):
     def __init__(self):
@@ -35,6 +56,7 @@ class owmplugin(protocols):
         self.itemrefs = []
         self.storeditems = {}
         self.itemvalues = {}
+        self.feeder_time = 0
         try:
             self.url = self.conf['url']
         except:
@@ -74,27 +96,46 @@ class owmplugin(protocols):
             except KeyError:
                 pass
 
-        self.update_interval = 1
+        i = Storeditem('feeder_capacity', '1500')
+        additem(i, 'R/W')
+        i = Getsetitem('feeder_time', '0', getter=lambda item:str(int(self.feeder_time)))
+        additem(i, 'R')
+
+
+        self.update_interval = 0.1
 
         t = Timer(0, self.update_thread)
         t.setDaemon(True)
         t.start()
 
     def update_thread(self):
+        last_update = None
+        self.feeder_time = 0
         while True:
             sleep(self.update_interval)
             try:
-                response = requests.get(self.url)
+                response = requests.get(self.url)#, timeout=5)
+                now = monotonic_time()
+                if last_update:
+                    time_diff = now - last_update
+                    feeder_capacity = float(self.db['feeder_capacity'].value) / 360
+                    power = float(self.itemvalues['RATED_POWER'])/10
+                    self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity
+                    print 'feeder_time:', self.feeder_time, 'timediff:', time_diff, 'power:', power, 'feeder_capacity', feeder_capacity
+                last_update = now
+                
                 root = et.fromstring(response.text)
                 for element in root:
                     try:
                         self.itemvalues[element.tag] = unicode(element.text)
                     except KeyError:
                         pass
+
             except Exception as e:
+                print e
                 logger.info('MGM update error')
-                if self.update_interval < 600:
+                if self.update_interval < 30:
                     self.update_interval = self.update_interval * 2
             else:
-                self.update_interval = 1
+                self.update_interval = 5
 
