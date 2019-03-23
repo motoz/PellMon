@@ -120,7 +120,9 @@ class owmplugin(protocols):
                     time_diff = now - last_update
                     feeder_capacity = float(self.db['feeder_capacity'].value) / 360
                     power = float(self.itemvalues['RATED_POWER'])/10
-                    self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity
+                    proc_id = self.itemvalues['PROC_ID']
+                    if proc_id == '5':
+                        self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity
                     print 'feeder_time:', self.feeder_time, 'timediff:', time_diff, 'power:', power, 'feeder_capacity', feeder_capacity
                 last_update = now
                 
