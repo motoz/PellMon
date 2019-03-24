@@ -74,19 +74,41 @@ class owmplugin(protocols):
         config = {}
         for index_key, value in self.conf.items():
             if '_' in index_key:
-                index, key = index_key.split('_')
+                index, key = index_key.rsplit('_', 1)
                 try:
                     config[index][key] = value
                 except KeyError:
                     config[index] = {key:value}
+        # Get all enumerations
+        enumerations = {}
+        for enum_id, enum in config.items():
+            enum_id = enum_id.split('_')
+            try:
+                if enum_id[1] == 'enum':
+                    enumerations[enum_id[0]] = enum
+            except IndexError:
+                pass
 
+        # Get all item definitions
         for index, itemconf in config.items():
             try:
                 itemname = itemconf.pop('item')
                 itemvalue = itemconf.pop('default', '0')
                 itemdata = itemconf.pop('data');
-
-                i = Getsetitem(itemname, itemvalue, getter=lambda item, d=itemdata:self.itemvalues[d])
+                try:
+                    scalefactor = itemconf.pop('scalefactor', '1')
+                    scalefactor = float(scalefactor) 
+                except ValueError:
+                    logger.info('MGM plugin: invalid scaling factor %s'%scalefactor)
+                itemenumeration = itemconf.pop('enumeration', None)
+                if itemenumeration:
+                    enum = enumerations[itemenumeration]
+                    getfunc = lambda item,d=itemdata,e=enum: e[self.itemvalues[d]]
+                elif scalefactor == 1:
+                    getfunc = lambda item,d=itemdata:self.itemvalues[d]
+                else:
+                    getfunc = lambda item, d=itemdata,s=scalefactor:str(float(self.itemvalues[d])*s)
+                i = Getsetitem(itemname, itemvalue, getter=getfunc)
 
                 for key, value in itemconf.items():
                     setattr(i, key, value)
@@ -101,6 +123,9 @@ class owmplugin(protocols):
         i = Getsetitem('feeder_time', '0', getter=lambda item:str(int(self.feeder_time)))
         additem(i, 'R')
 
+        self.state = 'OK'
+        i = Getsetitem('alarm', '0', getter=lambda item:self.state) 
+        additem(i, 'R')
 
         self.update_interval = 0.1
 
@@ -127,6 +152,7 @@ class owmplugin(protocols):
                 last_update = now
                 
                 root = et.fromstring(response.text)
+                self.state = 'OK'
                 for element in root:
                     try:
                         self.itemvalues[element.tag] = unicode(element.text)
@@ -135,6 +161,7 @@ class owmplugin(protocols):
 
             except Exception as e:
                 print e
+                self.state = 'Disconnected'
                 logger.info('MGM update error')
                 if self.update_interval < 30:
                     self.update_interval = self.update_interval * 2
