@@ -21,7 +21,7 @@ from Pellmonsrv.plugin_categories import protocols
 from Pellmonsrv.database import Getsetitem, Storeditem
 from logging import getLogger
 from threading import Timer
-from time import sleep
+from time import sleep, time
 import xml.etree.ElementTree as et
 import requests
 import ctypes, os
@@ -57,6 +57,7 @@ class owmplugin(protocols):
         self.storeditems = {}
         self.itemvalues = {}
         self.feeder_time = 0
+        self.errorcounter = 0
         try:
             self.url = self.conf['url']
         except:
@@ -120,6 +121,13 @@ class owmplugin(protocols):
 
         i = Storeditem('feeder_capacity', '1500')
         additem(i, 'R/W')
+
+        i = Storeditem('effeciency', '90')
+        i.longname = 'Effeciency'
+        i.unit = '%'
+        i.description = 'Effeciency used in burner power calculation. Used for pellet consumption calculation.'
+        additem(i, 'R/W')
+
         i = Getsetitem('feeder_time', '0', getter=lambda item:str(int(self.feeder_time)))
         additem(i, 'R')
 
@@ -136,35 +144,46 @@ class owmplugin(protocols):
     def update_thread(self):
         last_update = None
         self.feeder_time = 0
+        if self.errorcounter > 100:
+            self.errorcounter = 0
         while True:
             sleep(self.update_interval)
             try:
-                response = requests.get(self.url)#, timeout=5)
-                now = monotonic_time()
-                if last_update:
-                    time_diff = now - last_update
-                    feeder_capacity = float(self.db['feeder_capacity'].value) / 360
-                    power = float(self.itemvalues['RATED_POWER'])/10
-                    proc_id = self.itemvalues['PROC_ID']
-                    if proc_id == '5':
-                        self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity
-                    print 'feeder_time:', self.feeder_time, 'timediff:', time_diff, 'power:', power, 'feeder_capacity', feeder_capacity
-                last_update = now
-                
-                root = et.fromstring(response.text)
-                self.state = 'OK'
-                for element in root:
-                    try:
-                        self.itemvalues[element.tag] = unicode(element.text)
-                    except KeyError:
-                        pass
-
+                response = requests.get(self.url, timeout=8)
+                if response.status_code == requests.codes.ok:
+                    now = monotonic_time()
+                    if last_update:
+                        time_diff = now - last_update
+                        feeder_capacity = float(self.db['feeder_capacity'].value) / 360
+                        power = float(self.itemvalues['RATED_POWER'])/10
+                        proc_id = self.itemvalues['PROC_ID']
+                        try:
+                            effeciency = float(self.db['effeciency'].value) / 100
+                        except ValueError:
+                            effeciency = 1
+                        if proc_id == '5':
+                            self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity / effeciency
+                    last_update = now
+                    
+                    root = et.fromstring(response.text)
+                    self.state = 'OK'
+                    for element in root:
+                        text = unicode(element.text)
+                        if 'PROC_ID' in self.itemvalues and self.itemvalues['PROC_ID'] != '5' and element.tag == 'RATED_POWER':
+                            text = u'0'
+                        self.itemvalues[element.tag] = text 
+                else:
+                    response.raise_for_status()
             except Exception as e:
-                print e
-                self.state = 'Disconnected'
-                logger.info('MGM update error')
-                if self.update_interval < 30:
+                print time(), str(e)
+                if self.update_interval < 20:
                     self.update_interval = self.update_interval * 2
+                else:
+                    if self.errorcounter == 0:
+                        self.state = 'Disconnected'
+                        logger.info('MGM update error: %s'%repr(e))
+                        logger.info('update interval %s', self.update_interval)
+                    self.errorcounter +=1
             else:
                 self.update_interval = 5
-
+                self.errorcounter = 0
