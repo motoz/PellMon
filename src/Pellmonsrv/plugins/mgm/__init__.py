@@ -122,10 +122,10 @@ class owmplugin(protocols):
         i = Storeditem('feeder_capacity', '1500')
         additem(i, 'R/W')
 
-        i = Storeditem('effeciency', '90')
-        i.longname = 'Effeciency'
+        i = Storeditem('efficiency', '90')
+        i.longname = 'Efficiency'
         i.unit = '%'
-        i.description = 'Effeciency used in burner power calculation. Used for pellet consumption calculation.'
+        i.description = 'Efficiency used in burner power calculation. Used for pellet consumption calculation.'
         additem(i, 'R/W')
 
         i = Getsetitem('feeder_time', '0', getter=lambda item:str(int(self.feeder_time)))
@@ -158,11 +158,11 @@ class owmplugin(protocols):
                         power = float(self.itemvalues['RATED_POWER'])/10
                         proc_id = self.itemvalues['PROC_ID']
                         try:
-                            effeciency = float(self.db['effeciency'].value) / 100
+                            efficiency = float(self.db['efficiency'].value) / 100
                         except ValueError:
-                            effeciency = 1
+                            efficiency = 1
                         if proc_id == '5':
-                            self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity / effeciency
+                            self.feeder_time +=  (power / 4.8 / 3600) * 1000 * time_diff / feeder_capacity / efficiency
                     last_update = now
                     
                     root = et.fromstring(response.text)
