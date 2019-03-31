@@ -47,7 +47,7 @@ def monotonic_time():
         raise OSError(errno_, os.strerror(errno_))
     return t.tv_sec + t.tv_nsec * 1e-9
 
-class owmplugin(protocols):
+class mgmplugin(protocols):
     def __init__(self):
         protocols.__init__(self)
 
@@ -59,9 +59,11 @@ class owmplugin(protocols):
         self.feeder_time = 0
         self.errorcounter = 0
         try:
-            self.url = self.conf['url']
+            self.host = self.conf['host']
+            self.status_url = self.conf['host'] + self.conf['status']
+            self.boilercmd_url = self.conf['host'] + self.conf['boilercmd']
         except:
-            logger.info('"url" missing from mgm plugin configuration')
+            logger.info('"host", "status" or "command" missing from mgm plugin configuration')
             return
 
         def additem(i, item_type='R'):
@@ -95,27 +97,49 @@ class owmplugin(protocols):
             try:
                 itemname = itemconf.pop('item')
                 itemvalue = itemconf.pop('default', '0')
-                itemdata = itemconf.pop('data');
                 try:
-                    scalefactor = itemconf.pop('scalefactor', '1')
-                    scalefactor = float(scalefactor) 
-                except ValueError:
-                    logger.info('MGM plugin: invalid scaling factor %s'%scalefactor)
-                itemenumeration = itemconf.pop('enumeration', None)
-                if itemenumeration:
-                    enum = enumerations[itemenumeration]
-                    getfunc = lambda item,d=itemdata,e=enum: e[self.itemvalues[d]]
-                elif scalefactor == 1:
-                    getfunc = lambda item,d=itemdata:self.itemvalues[d]
-                else:
-                    getfunc = lambda item, d=itemdata,s=scalefactor:str(float(self.itemvalues[d])*s)
-                i = Getsetitem(itemname, itemvalue, getter=getfunc)
+                    itemdata = itemconf.pop('data');
+                    try:
+                        scalefactor = itemconf.pop('scalefactor', '1')
+                        scalefactor = float(scalefactor) 
+                    except ValueError:
+                        logger.info('MGM plugin: invalid scaling factor %s'%scalefactor)
+                    try:
+                        bitmask = itemconf.pop('bitmask', None)
+                        bitmask = int(scalefactor) 
+                    except ValueError:
+                        logger.info('MGM plugin: invalid bitmask %s'%bitmask)
 
-                for key, value in itemconf.items():
-                    setattr(i, key, value)
-                additem(i)
-                self.itemvalues[i]=itemvalue
+                    itemenumeration = itemconf.pop('enumeration', None)
+                    if itemenumeration:
+                        enum = enumerations[itemenumeration]
+                        getfunc = lambda item,d=itemdata,e=enum: e[self.itemvalues[d]]
+                    elif scalefactor == 1:
+                        getfunc = lambda item,d=itemdata:self.itemvalues[d]
+                    elif bitmask:
+                        getfunc = lambda item, d=itemdata,s=scalefactor,m=bitmask:str((int(self.itemvalues[d]) & m)*s)
+                    else:
+                        getfunc = lambda item, d=itemdata,s=scalefactor:str(float(self.itemvalues[d])*s)
+                    i = Getsetitem(itemname, itemvalue, getter=getfunc)
 
+                    for key, value in itemconf.items():
+                        setattr(i, key, value)
+                    additem(i)
+                    self.itemvalues[i]=itemvalue
+
+                except KeyError:
+                    try:
+                        print 'commands'
+                        command = itemconf.pop('command')
+                        parameter = itemconf.pop('parameter')
+                        print command, itemname, parameter
+                        if command == 'boilercmd':
+                            i = Getsetitem(itemname, itemvalue, setter=lambda item, value, p=parameter:self.boiler_cmd(p))
+                            for key, value in itemconf.items():
+                                setattr(i, key, value)
+                            additem(i, 'W')
+                    except KeyError:
+                        pass
             except KeyError:
                 pass
 
@@ -141,6 +165,9 @@ class owmplugin(protocols):
         t.setDaemon(True)
         t.start()
 
+    def boiler_cmd(self, param):
+        requests.get(self.boilercmd_url + param, timeout=2)
+
     def update_thread(self):
         last_update = None
         self.feeder_time = 0
@@ -149,7 +176,7 @@ class owmplugin(protocols):
         while True:
             sleep(self.update_interval)
             try:
-                response = requests.get(self.url, timeout=8)
+                response = requests.get(self.status_url, timeout=8)
                 if response.status_code == requests.codes.ok:
                     now = monotonic_time()
                     if last_update:
