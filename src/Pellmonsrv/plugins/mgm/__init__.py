@@ -166,7 +166,7 @@ class mgmplugin(protocols):
         t.start()
 
     def boiler_cmd(self, param):
-        requests.get(self.boilercmd_url + param, timeout=2)
+        response = requests.get(self.boilercmd_url +'?'+ param, timeout=5)
 
     def update_thread(self):
         last_update = None
