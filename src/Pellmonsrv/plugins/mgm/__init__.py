@@ -129,10 +129,8 @@ class mgmplugin(protocols):
 
                 except KeyError:
                     try:
-                        print 'commands'
                         command = itemconf.pop('command')
                         parameter = itemconf.pop('parameter')
-                        print command, itemname, parameter
                         if command == 'boilercmd':
                             i = Getsetitem(itemname, itemvalue, setter=lambda item, value, p=parameter:self.boiler_cmd(p))
                             for key, value in itemconf.items():
@@ -173,6 +171,7 @@ class mgmplugin(protocols):
         self.feeder_time = 0
         if self.errorcounter > 100:
             self.errorcounter = 0
+        oldmode = None
         while True:
             sleep(self.update_interval)
             try:
@@ -200,7 +199,15 @@ class mgmplugin(protocols):
                         text = unicode(element.text)
                         if 'PROC_ID' in self.itemvalues and self.itemvalues['PROC_ID'] != '5' and element.tag == 'RATED_POWER':
                             text = u'0'
-                        self.itemvalues[element.tag] = text 
+                        self.itemvalues[element.tag] = text
+                    if not oldmode:
+                        oldmode = self.db['mode'].value
+                    try:
+                        if oldmode != self.db['mode'].value:
+                            logger.info('Mode went from %s to %s'%(oldmode, self.db['mode'].value))
+                            oldmode = self.db['mode'].value
+                    except Exception as e:
+                        pass
                 else:
                     response.raise_for_status()
             except Exception as e:
@@ -210,7 +217,7 @@ class mgmplugin(protocols):
                 else:
                     if self.errorcounter == 0:
                         self.state = 'Disconnected'
-                        logger.info('The burner is disconnected)
+                        logger.info('The burner is disconnected')
                     self.errorcounter +=1
             else:
                 self.update_interval = 5
