@@ -193,6 +193,8 @@ class mgmplugin(protocols):
                     last_update = now
                     
                     root = et.fromstring(response.text)
+                    if self.state == 'Disconnected':
+                        logger.info('The burner is connected!')
                     self.state = 'OK'
                     for element in root:
                         text = unicode(element.text)
@@ -203,13 +205,12 @@ class mgmplugin(protocols):
                     response.raise_for_status()
             except Exception as e:
                 print time(), str(e)
-                if self.update_interval < 20:
+                if self.update_interval < 60:
                     self.update_interval = self.update_interval * 2
                 else:
                     if self.errorcounter == 0:
                         self.state = 'Disconnected'
-                        logger.info('MGM update error: %s'%repr(e))
-                        logger.info('update interval %s', self.update_interval)
+                        logger.info('The burner is disconnected)
                     self.errorcounter +=1
             else:
                 self.update_interval = 5
