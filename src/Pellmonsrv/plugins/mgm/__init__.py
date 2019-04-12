@@ -58,13 +58,6 @@ class mgmplugin(protocols):
         self.itemvalues = {}
         self.feeder_time = 0
         self.errorcounter = 0
-        try:
-            self.host = self.conf['host']
-            self.status_url = self.conf['host'] + self.conf['status']
-            self.boilercmd_url = self.conf['host'] + self.conf['boilercmd']
-        except:
-            logger.info('"host", "status" or "command" missing from mgm plugin configuration')
-            return
 
         def additem(i, item_type='R'):
             i.tags = ['All', 'Basic', 'MGM']
@@ -73,6 +66,12 @@ class mgmplugin(protocols):
             i.max = ''
             self.db.insert(i)
             self.itemrefs.append(i)
+
+        i = Storeditem('mgm_ip', '0.0.0.0')
+        i.label = 'MGM IP'
+        i.longname = 'MGM IP'
+        i.description = 'The IP that the MGM controller is reachable on'
+        additem(i, 'R/W')
 
         config = {}
         for index_key, value in self.conf.items():
@@ -164,7 +163,11 @@ class mgmplugin(protocols):
         t.start()
 
     def boiler_cmd(self, param):
-        response = requests.get(self.boilercmd_url +'?'+ param, timeout=5)
+        try:
+            boilercmd_url = 'http://' + self.db['mgm_ip'].value + self.conf['boilercmd']
+            response = requests.get(boilercmd_url +'?'+ param, timeout=5)
+        except:
+            logger.info('boiler command failed, "boilercmd" missing from conf?')
 
     def update_thread(self):
         last_update = None
@@ -173,9 +176,15 @@ class mgmplugin(protocols):
             self.errorcounter = 0
         oldmode = None
         while True:
+            try:
+                status_url = 'http://' + self.db['mgm_ip'].value + self.conf['status']
+            except:
+                time.sleep(10)
+                continue
+
             sleep(self.update_interval)
             try:
-                response = requests.get(self.status_url, timeout=8)
+                response = requests.get(status_url, timeout=8)
                 if response.status_code == requests.codes.ok:
                     now = monotonic_time()
                     if last_update:
