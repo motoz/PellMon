@@ -105,8 +105,11 @@ class mgmplugin(protocols):
                         logger.info('MGM plugin: invalid scaling factor %s'%scalefactor)
                     try:
                         bitmask = itemconf.pop('bitmask', None)
-                        bitmask = int(bitmask) 
+                        if bitmask:
+                            bitmask = int(bitmask)
+                            scalefactor = 0
                     except ValueError:
+                        bitmask = 0
                         logger.info('MGM plugin: invalid bitmask %s'%bitmask)
 
                     itemenumeration = itemconf.pop('enumeration', None)
@@ -116,7 +119,7 @@ class mgmplugin(protocols):
                     elif scalefactor == 1:
                         getfunc = lambda item,d=itemdata:self.itemvalues[d]
                     elif bitmask:
-                        getfunc = lambda item, d=itemdata,s=scalefactor,m=bitmask:str((int(self.itemvalues[d]) & m)*s)
+                        getfunc = lambda item, d=itemdata,s=scalefactor,m=bitmask:str((int(self.itemvalues[d]) & m))
                     else:
                         getfunc = lambda item, d=itemdata,s=scalefactor:str(float(self.itemvalues[d])*s)
                     i = Getsetitem(itemname, itemvalue, getter=getfunc)
@@ -126,7 +129,7 @@ class mgmplugin(protocols):
 
                     for key, value in itemconf.items():
                         setattr(i, key, value)
-                    self.itemvalues[i]=itemvalue
+                    self.itemvalues[itemname]=itemvalue
 
                 except KeyError:
                     try:
