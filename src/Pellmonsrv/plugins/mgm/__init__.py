@@ -121,9 +121,11 @@ class mgmplugin(protocols):
                         getfunc = lambda item, d=itemdata,s=scalefactor:str(float(self.itemvalues[d])*s)
                     i = Getsetitem(itemname, itemvalue, getter=getfunc)
 
+                    additem(i)
+                    i.tags = itemconf.pop('tags').split(      )
+
                     for key, value in itemconf.items():
                         setattr(i, key, value)
-                    additem(i)
                     self.itemvalues[i]=itemvalue
 
                 except KeyError:
@@ -132,9 +134,10 @@ class mgmplugin(protocols):
                         parameter = itemconf.pop('parameter')
                         if command == 'boilercmd':
                             i = Getsetitem(itemname, itemvalue, setter=lambda item, value, p=parameter:self.boiler_cmd(p))
+                            additem(i, 'W')
+                            i.tags = itemconf.pop('tags').split()
                             for key, value in itemconf.items():
                                 setattr(i, key, value)
-                            additem(i, 'W')
                     except KeyError:
                         pass
             except KeyError:
@@ -142,15 +145,18 @@ class mgmplugin(protocols):
 
         i = Storeditem('feeder_capacity', '1500')
         additem(i, 'R/W')
+        i.tags = ['All', 'MGM']
 
         i = Storeditem('efficiency', '90')
         i.longname = 'Efficiency'
         i.unit = '%'
         i.description = 'Efficiency used in burner power calculation. Used for pellet consumption calculation.'
         additem(i, 'R/W')
+        i.tags = ['All', 'MGM']
 
         i = Getsetitem('feeder_time', '0', getter=lambda item:str(int(self.feeder_time)))
         additem(i, 'R')
+        i.tags = ['All', 'MGM']
 
         self.state = 'OK'
         i = Getsetitem('alarm', '0', getter=lambda item:self.state) 
