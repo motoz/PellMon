@@ -105,7 +105,7 @@ class mgmplugin(protocols):
                         logger.info('MGM plugin: invalid scaling factor %s'%scalefactor)
                     try:
                         bitmask = itemconf.pop('bitmask', None)
-                        bitmask = int(scalefactor) 
+                        bitmask = int(bitmask) 
                     except ValueError:
                         logger.info('MGM plugin: invalid bitmask %s'%bitmask)
 
