@@ -166,6 +166,9 @@ The default configuration is split up in several files in the conf.d directory u
 ### Openweathermap:
     pyowm
 
+### MGM:
+    python-requests
+
 ## Additional dependencies for building:
     autoconf
 

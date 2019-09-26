@@ -1,4 +1,4 @@
-AC_INIT([PellMon], [0.7.1~alpha1])
+AC_INIT([PellMon], [0.7.1~alpha2])
 
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_PYTHON([2.7])
@@ -56,6 +56,7 @@ src/Pellmonsrv/plugins/heatingcircuit/Makefile \
 src/Pellmonsrv/plugins/nbecom/Makefile \
 src/Pellmonsrv/plugins/openweathermap/Makefile \
 src/Pellmonsrv/plugins/exec/Makefile \
+src/Pellmonsrv/plugins/mgm/Makefile \
 src/Scotteprotocol/Makefile \
 src/Pellmonweb/Makefile ])
 
