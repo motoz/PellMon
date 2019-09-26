@@ -50,7 +50,7 @@ class nbecomplugin(protocols):
         try:
             self.serial = self.conf['serial']
         except:
-            self.serial = None
+            self.serial = '0'*6
 
         item = Getsetitem('controller_online', None, getter=lambda i:1 if self.proxy.controller_online else 0)
         item.tags = ['All','Basic','advanced_data']
