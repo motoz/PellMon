@@ -22,7 +22,8 @@ nobase_dist_conf_DATA = \
 	plugins/heatingcircuit.conf \
 	plugins/openweathermap.conf \
 	plugins/nbecom.conf \
-	plugins/exec.conf
+	plugins/exec.conf \
+	plugins/mgm.conf
 
 EXTRA_DIST = \
 	database.conf.in \
