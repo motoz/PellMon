@@ -177,7 +177,7 @@ class Response_frame(object):
         i += 3
         if not len(record) == self.size + self.RESPONSE_HEADER_SIZE:
             raise protocol_error('wrong length')
-        self.payload = (record[i:i+self.size]).decode('ascii')
+        self.payload = (record[i:i+self.size]).decode('ascii', errors="ignore")
         i += self.size
         if not record[i] == END[0]:
             raise protocol_error('end missing')
