@@ -115,11 +115,14 @@ class mgmplugin(protocols):
                     itemenumeration = itemconf.pop('enumeration', None)
                     if itemenumeration:
                         enum = enumerations[itemenumeration]
-                        getfunc = lambda item,d=itemdata,e=enum: e[self.itemvalues[d]]
+                        if bitmask:
+                            getfunc = lambda item,d=itemdata,e=enum,m=bitmask: e[str(int(self.itemvalues[d]) & m)]
+                        else:
+                            getfunc = lambda item,d=itemdata,e=enum: e[self.itemvalues[d]] 
                     elif scalefactor == 1:
                         getfunc = lambda item,d=itemdata:self.itemvalues[d]
                     elif bitmask:
-                        getfunc = lambda item, d=itemdata,s=scalefactor,m=bitmask:str((int(self.itemvalues[d]) & m))
+                        getfunc = lambda item, d=itemdata,s=scalefactor,m=bitmask:str(int(self.itemvalues[d]) & m)
                     else:
                         getfunc = lambda item, d=itemdata,s=scalefactor:str(float(self.itemvalues[d])*s)
                     i = Getsetitem(itemname, itemvalue, getter=getfunc)
